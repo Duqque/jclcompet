@@ -54,4 +54,3 @@
   </section>
 </div>
 <section class="card" style="margin-bottom:1.2rem"><div class="card-head"><h2 style="font-size:1.15rem;margin:0">Avancement par tapis</h2><a class="small" href="<?= e(url($base . '/tapis')) ?>">Gérer les écrans TV</a></div><?php include dirname(__DIR__) . '/_progress.php'; ?></section>
-<section class="card"><div class="card-head"><h2 style="font-size:1.15rem;margin:0">Dernières actions</h2><a class="small" href="<?= e(url($base . '/journal')) ?>">Journal complet</a></div><?php $rows = $recent; include dirname(__DIR__) . '/_audit_rows.php'; ?></section>

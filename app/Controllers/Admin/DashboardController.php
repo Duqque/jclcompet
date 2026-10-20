@@ -43,7 +43,6 @@ final class DashboardController extends AdminController
             $data['stats'] = CompetitionService::stats($cid);
             $data['progress'] = CompetitionService::tatamiProgress($cid);
             $data['tv'] = TvTokenService::forCompetition($cid);
-            $data['recent'] = Database::all('SELECT * FROM audit_logs WHERE competition_id = ? ORDER BY id DESC LIMIT 12', [$cid]);
         }
         $data['competitions'] = Database::all("SELECT * FROM competitions WHERE status <> 'archived' ORDER BY event_date DESC LIMIT 8");
         $data['notifications'] = NotificationService::forUser(Auth::user(), 8);

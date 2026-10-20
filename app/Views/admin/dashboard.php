@@ -21,10 +21,6 @@
   </section>
 <?php endif; ?>
 <div class="grid grid-2">
-  <section class="card">
-    <div class="card-head"><h2 style="font-size:1.2rem;margin:0">Dernières actions</h2><?php if ($current): ?><a class="small" href="<?= e(url('/admin/competitions/' . $current['id'] . '/journal')) ?>">Tout le journal</a><?php endif; ?></div>
-    <?php $rows = $recent ?? []; include __DIR__ . '/_audit_rows.php'; ?>
-  </section>
   <div class="stack">
     <section class="card">
       <div class="card-head"><h2 style="font-size:1.2rem;margin:0">Notifications</h2>

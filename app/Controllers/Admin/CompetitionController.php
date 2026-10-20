@@ -65,7 +65,6 @@ final class CompetitionController extends AdminController
             'progress' => CompetitionService::tatamiProgress($cid),
             'tv' => TvTokenService::forCompetition($cid),
             'issues' => DurationRuleService::configurationIssues($cid),
-            'recent' => Database::all('SELECT * FROM audit_logs WHERE competition_id = ? ORDER BY id DESC LIMIT 15', [$cid]),
             'byCategory' => Database::all(
                 "SELECT ac.name, ac.name_m, ac.name_f, ac.format, a.sex, COUNT(*) AS n, SUM(r.attendance_status = 'present') AS present
                  FROM registrations r JOIN athletes a ON a.id = r.athlete_id JOIN age_categories ac ON ac.id = r.age_category_id
