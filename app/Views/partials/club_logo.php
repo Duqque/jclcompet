@@ -1,0 +1,2 @@
+<?php /** @var ?string $logo @var string $name @var int $size */ $size = $size ?? 40; ?>
+<?php if (!empty($logo)): ?><img class="club-logo" src="<?= e(url('/' . ltrim($logo, '/'))) ?>" alt="" width="<?= (int) $size ?>" height="<?= (int) $size ?>" loading="lazy" style="width:<?= (int) $size ?>px;height:<?= (int) $size ?>px"><?php else: ?><span class="club-mono" aria-hidden="true" style="width:<?= (int) $size ?>px;height:<?= (int) $size ?>px"><?= e(initials($name ?? '')) ?></span><?php endif; ?>

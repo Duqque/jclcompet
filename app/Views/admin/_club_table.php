@@ -1,0 +1,4 @@
+<?php if (!$rows): ?><p class="muted">Aucun classement pour l'instant.</p><?php else: ?>
+<div class="table-wrap"><table class="table-compact"><thead><tr><th>Rang</th><th>Club</th><th>Part.</th><th>Pts</th><th>Or</th><th>Ar.</th><th>Br.</th><th>4e</th><th>5e</th></tr></thead><tbody>
+<?php foreach ($rows as $r): ?><tr><td class="num"><strong><?= (int) ($by === 'points' ? $r['rank_points'] : $r['rank_medals']) ?></strong></td><td><?= e($r['name']) ?></td><td class="num"><?= (int) $r['participants'] ?></td><td class="num"><?= (int) $r['points'] ?></td><td class="num"><?= (int) $r['gold'] ?></td><td class="num"><?= (int) $r['silver'] ?></td><td class="num"><?= (int) $r['bronze'] ?></td><td class="num"><?= (int) $r['fourth'] ?></td><td class="num"><?= (int) $r['fifth'] ?></td></tr><?php endforeach; ?>
+</tbody></table></div><?php endif; ?>

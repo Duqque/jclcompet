@@ -1,0 +1,17 @@
+/.env
+/vendor/
+/storage/logs/*
+/storage/documents/*
+/storage/exports/*
+/storage/cache/*
+/storage/uploads/*
+/public/uploads/*
+!/storage/**/.gitkeep
+!/public/uploads/.gitkeep
+!/public/uploads/.htaccess
+!/storage/*/.gitkeep
+.phpunit.result.cache
+/.phpunit.cache/
+.DS_Store
+/.claude/
+/storage/backups/

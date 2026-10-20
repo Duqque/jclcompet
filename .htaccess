@@ -1,0 +1,14 @@
+# Si l'hébergement ne permet pas de faire pointer le domaine sur public/ (cas fréquent : public_html),
+# ce fichier redirige tout vers public/ et interdit l'accès aux dossiers privés.
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(app|config|database|routes|storage|tests|vendor|bin|docs)(/|$) - [F,L]
+    RewriteRule ^\.env - [F,L]
+    RewriteRule ^(composer\.(json|lock)|phpunit\.xml.*|README\.md)$ - [F,L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

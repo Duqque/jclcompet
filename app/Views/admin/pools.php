@@ -1,0 +1,153 @@
+<?php
+use App\Services\PoolGenerator;
+$u = url('/admin/competitions/' . $c['id'] . '/poules');
+$api = url('/api/admin/competitions/' . $c['id'] . '/poules');
+$heading = 'Poules et tapis'; include __DIR__ . '/_head.php';
+$draft = $g && $g['status'] === 'draft';
+$validated = $g && $g['status'] === 'validated';
+$post = fn (string $op, string $label, string $cls = 'btn-ghost', array $hidden = [], ?string $confirm = null) =>
+    '<form method="post" action="' . e($u) . '"' . ($confirm ? ' data-confirm="' . e($confirm) . '"' : '') . '>' . csrf_field() . '<input type="hidden" name="op" value="' . e($op) . '">'
+    . implode('', array_map(fn ($k, $v) => '<input type="hidden" name="' . e($k) . '" value="' . e($v) . '">', array_keys($hidden), $hidden))
+    . '<button class="btn btn-sm ' . $cls . '" type="submit">' . $label . '</button></form>';
+$allPools = $pools;
+?>
+<section class="card" style="margin-bottom:1.2rem">
+  <div class="card-head">
+    <div>
+      <h2 style="margin:0;font-size:1.2rem"><?= !$g ? 'Aucune poule générée' : ($draft ? 'Proposition en brouillon' : 'Composition validée') ?></h2>
+      <p class="small muted" style="margin:.2rem 0 0"><?= (int) $participants ?> athlètes présents et confirmés (catégories avec combats) · regroupement <?= $grouping === 'weight_category' ? 'par catégorie de poids' : 'morphologique' ?> · tailles <?= e($c['pool_sizes']) ?><?= $g ? ' · générée le ' . e(short_datetime($g['created_at'])) : '' ?></p>
+    </div>
+    <div class="btn-group">
+      <?php if (!$validated || ($loads && array_sum(array_column($loads['tatamis'], 'done')) === 0)): ?>
+        <?= $post('generate', $g ? 'Régénérer les poules' : 'Générer les poules', 'btn-red', [], $g ? 'Régénérer ? Les poules non verrouillées seront recomposées (les poules verrouillées sont conservées).' : null) ?>
+      <?php endif; ?>
+      <?php if ($g): ?><?= $post('distribute', 'Répartir sur les tapis') ?><?php endif; ?>
+      <?php if ($g && (!$validated || ($loads && array_sum(array_column($loads['tatamis'], 'done')) === 0))): ?><?= $post('cancel', 'Annuler la génération', 'btn-danger', [], 'Annuler la génération en cours ? Les poules (et les combats non commencés) seront supprimés.') ?><?php endif; ?>
+    </div>
+  </div>
+  <?php if ($draft): ?>
+    <form method="post" action="<?= e($u) ?>" class="btn-group" data-confirm="Valider définitivement la composition ? Les combats seront créés avec la durée applicable et apparaîtront chez les commissaires.">
+      <?= csrf_field() ?><input type="hidden" name="op" value="validate">
+      <?php if ($unplaced): ?><label class="check"><input type="checkbox" name="acknowledge_unplaced" value="1"> Je confirme laisser <?= count($unplaced) ?> athlète(s) hors poule</label><?php endif; ?>
+      <button class="btn btn-green" type="submit">Valider la composition</button>
+    </form>
+  <?php elseif (!$g): ?>
+    <p>Le système utilise uniquement les athlètes <strong>présents</strong> et confirmés, sépare toujours âges et sexes, compose les poules en rapprochant les poids et propose une répartition équilibrée sur les tapis. Rien n'est définitif avant validation.</p>
+    <p><a href="<?= e(url('/accueil/' . $c['id'])) ?>">Contrôler les présences</a> · <a href="<?= e(url('/admin/competitions/' . $c['id'] . '/parametres')) ?>">Paramètres des poules</a></p>
+  <?php endif; ?>
+</section>
+
+<?php foreach (($report['groups'] ?? []) as $grp): if ($grp['status'] !== 'needs_decision') continue; ?>
+  <section class="card" style="border-left:6px solid var(--orange);margin-bottom:1rem">
+    <h2 style="font-size:1.05rem;margin-bottom:.3rem"><?= e($grp['label']) ?> — décision nécessaire</h2>
+    <p class="small"><?= e($grp['issue']['reason']) ?> Aucun athlète n'a été écarté : choisissez une solution.</p>
+    <div class="btn-group">
+      <?php foreach ($grp['issue']['alternatives'] as $alt): ?>
+        <?php if ($alt['type'] === 'sizes'): ?><?= $post('decide', 'Accepter : ' . e($alt['label']), 'btn-yellow', ['group_key' => $grp['key'], 'type' => 'sizes', 'sizes' => implode(',', $alt['sizes'])]) ?>
+        <?php elseif ($alt['type'] === 'unplaced'): ?><?= $post('decide', e($alt['label']), 'btn-ghost', ['group_key' => $grp['key'], 'type' => 'unplaced'], 'Laisser ces athlètes hors poule ? La décision est consignée au journal.') ?>
+        <?php elseif ($alt['type'] === 'merge'): ?>
+          <form method="post" action="<?= e($u) ?>" class="btn-group"><?= csrf_field() ?><input type="hidden" name="op" value="decide"><input type="hidden" name="type" value="merge"><input type="hidden" name="group_key" value="<?= e($grp['key']) ?>">
+            <label class="sr-only" for="m<?= e(md5($grp['key'])) ?>">Regrouper avec</label>
+            <select id="m<?= e(md5($grp['key'])) ?>" name="into" style="max-width:280px;min-height:34px"><?php foreach ($groups as $k => $label): if ($k === $grp['key'] || explode('|', $k)[1] !== explode('|', $grp['key'])[1]) continue; ?><option value="<?= e($k) ?>"><?= e($label) ?></option><?php endforeach; ?></select>
+            <button class="btn btn-ghost btn-sm" type="submit">Regrouper (exception explicite)</button></form>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+  </section>
+<?php endforeach; ?>
+
+<?php if ($warnings): ?>
+<details class="card" style="margin-bottom:1rem"><summary><strong><?= count($warnings) ?> point(s) d'attention</strong> (écarts de poids, même club, tailles, durées)</summary>
+  <ul class="small" style="margin:.6rem 0 0"><?php foreach ($warnings as $w): ?><li class="<?= $w['level'] === 'error' ? 'field-error' : '' ?>"><?= e($w['message']) ?></li><?php endforeach; ?></ul></details>
+<?php endif; ?>
+
+<?php if ($loads): ?>
+<section class="card" style="margin-bottom:1.2rem">
+  <div class="card-head"><h2 style="margin:0;font-size:1.1rem">Charge des tapis</h2><span class="small muted">Écart entre le tapis le plus et le moins chargé : <strong><?= e(hours_label((int) $loads['spread_seconds'])) ?></strong> · battement <?= (int) $loads['gap_seconds'] ?> s entre combats</span></div>
+  <div class="table-wrap"><table class="table-compact">
+    <thead><tr><th>Tapis</th><th>Poules</th><th>Combats</th><th>Temps estimé</th><th>Avancement</th><th>Restants</th><th>Temps restant</th></tr></thead>
+    <tbody><?php foreach ($loads['tatamis'] as $l): $pct = $l['bouts'] ? round($l['done'] / $l['bouts'] * 100) : 0; ?>
+      <tr><td><strong>Tapis <?= (int) $l['tatami']['number'] ?></strong></td><td class="num"><?= $l['pools'] ?></td><td class="num"><?= $l['bouts'] ?></td><td class="num"><?= e(hours_label($l['seconds'])) ?></td>
+        <td style="min-width:140px"><div class="progress green"><span style="width:<?= $pct ?>%"></span></div><span class="small muted"><?= $pct ?> %</span></td><td class="num"><?= $l['bouts'] - $l['done'] ?></td><td class="num"><?= e(hours_label($l['remaining_seconds'])) ?></td></tr>
+    <?php endforeach; ?></tbody>
+  </table></div>
+</section>
+<?php endif; ?>
+
+<?php if ($g): ?>
+<p class="small muted">Glissez une poule vers un autre tapis, un athlète vers une autre poule, ou un athlète sur un autre athlète pour les échanger. Sur tablette, utilisez les menus « Déplacer » sous chaque poule et le formulaire en bas de page.</p>
+<div class="pool-board" data-pool-board data-api="<?= e($api) ?>">
+  <?php foreach (array_merge($tatamis, [['id' => 0, 'number' => null]]) as $t): $list = $byTatami[$t['id']] ?? []; if ($t['id'] === 0 && !$list) continue; ?>
+    <section class="mat-col" data-tatami="<?= (int) $t['id'] ?>">
+      <header><strong><?= $t['number'] ? 'Tapis ' . (int) $t['number'] : 'Non affectées' ?></strong><span><?= count($list) ?> poules · <?= array_sum(array_column($list, 'bouts_total')) ?> combats · <?= e(hours_label(array_sum(array_column($list, 'estimated_seconds')))) ?></span></header>
+      <div class="drop">
+        <?php foreach ($list as $i => $p): $locked = (int) $p['is_locked'] === 1; $started = $p['bouts_started'] > 0;
+          $clubs = array_count_values(array_filter(array_column($p['athletes'], 'club_id'))); ?>
+          <article class="pool<?= $locked ? ' locked' : '' ?><?= $started ? ' started' : '' ?>" data-pool="<?= (int) $p['id'] ?>"<?= !$started ? ' draggable="true"' : '' ?>>
+            <header><strong><?= e($p['label']) ?></strong>
+              <?php if ($locked): ?><span class="badge badge-yellow" title="Verrouillée">🔒</span><?php endif; ?>
+              <span class="badge"><?= (int) $p['size'] ?></span></header>
+            <ol>
+              <?php foreach ($p['athletes'] as $a): ?>
+                <li class="athlete<?= ($a['club_id'] && ($clubs[$a['club_id']] ?? 0) > 1) ? ' dup' : '' ?>" data-reg="<?= (int) $a['registration_id'] ?>"<?= !$started && !$locked ? ' draggable="true"' : '' ?>>
+                  <?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span>
+                  <?php if ($p['final_rank'] ?? false): endif; ?>
+                </li>
+              <?php endforeach; ?>
+            </ol>
+            <footer>
+              <span>N° <?= (int) $p['number'] ?> · <?= (int) $p['bouts_total'] ?> comb. · <?= e(hours_label((int) $p['estimated_seconds'])) ?><?= $p['spread_pct'] > 0 ? ' · écart ' . number_format($p['spread_pct'], 1, ',', '') . ' %' : '' ?><?= $started ? ' · ' . (int) $p['bouts_done'] . ' validés' : '' ?></span>
+              <span style="flex:1"></span>
+              <?php if (!$started): ?>
+                <form method="post" action="<?= e($u) ?>"><?= csrf_field() ?><input type="hidden" name="op" value="<?= $locked ? 'unlock' : 'lock' ?>"><input type="hidden" name="pool_id" value="<?= (int) $p['id'] ?>"><button class="icon-btn" type="submit" title="<?= $locked ? 'Déverrouiller' : 'Verrouiller' ?>"><?= $locked ? 'Déverrouiller' : 'Verrouiller' ?></button></form>
+              <?php endif; ?>
+              <details><summary class="icon-btn">Déplacer</summary>
+                <form method="post" action="<?= e($u) ?>" style="padding:.4rem 0;display:grid;gap:.3rem"><?= csrf_field() ?><input type="hidden" name="op" value="move_pool"><input type="hidden" name="pool_id" value="<?= (int) $p['id'] ?>">
+                  <select name="tatami_id" aria-label="Tapis" style="min-height:34px"><?php foreach ($tatamis as $tt): ?><option value="<?= (int) $tt['id'] ?>"<?= selected($p['tatami_id'], $tt['id']) ?>>Tapis <?= (int) $tt['number'] ?></option><?php endforeach; ?></select>
+                  <input name="position" type="number" min="1" placeholder="Position (facultatif)" aria-label="Position" style="min-height:34px">
+                  <button class="btn btn-ghost btn-sm" type="submit">Déplacer la poule</button></form>
+                <?php if (!$started && !$locked): ?>
+                  <?= $post('new_pool', 'Créer une poule vide du même groupe', 'btn-ghost', ['pool_id' => $p['id']]) ?>
+                  <?= $post('regroup', 'Recalculer ce groupe', 'btn-ghost', ['group_key' => $p['group_key']], 'Recalculer toutes les poules non commencées de ce groupe ?') ?>
+                  <?php if (!$p['athletes']): ?><?= $post('delete_pool', 'Supprimer la poule vide', 'btn-danger', ['pool_id' => $p['id']]) ?><?php endif; ?>
+                <?php endif; ?>
+              </details>
+            </footer>
+          </article>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endforeach; ?>
+</div>
+
+<div class="grid grid-2" style="margin-top:1.4rem">
+  <section class="card">
+    <h2 style="font-size:1.1rem">Déplacer ou échanger (sans glisser-déposer)</h2>
+    <?php $opts = ''; foreach ($allPools as $p) { foreach ($p['athletes'] as $a) { $opts .= '<option value="' . (int) $a['registration_id'] . '">' . e($a['last_name'] . ' ' . $a['first_name'] . ' — ' . $p['label']) . '</option>'; } } ?>
+    <form method="post" action="<?= e($u) ?>" class="stack"><?= csrf_field() ?><input type="hidden" name="op" value="move_athlete">
+      <div class="field"><label>Athlète</label><select name="registration_id"><?= $opts ?></select></div>
+      <div class="field"><label>Vers la poule</label><select name="pool_id"><?php foreach ($allPools as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['number'] . ' · ' . $p['label']) ?></option><?php endforeach; ?></select></div>
+      <label class="check"><input type="checkbox" name="allow_exception" value="1"> Exception autorisée (catégorie différente — jamais filles/garçons)</label>
+      <button class="btn btn-ghost" type="submit">Déplacer l'athlète</button></form>
+    <hr style="border:0;border-top:1px solid var(--line);margin:1.2rem 0">
+    <form method="post" action="<?= e($u) ?>" class="stack"><?= csrf_field() ?><input type="hidden" name="op" value="swap">
+      <div class="field"><label>Athlète A</label><select name="a"><?= $opts ?></select></div>
+      <div class="field"><label>Athlète B</label><select name="b"><?= $opts ?></select></div>
+      <label class="check"><input type="checkbox" name="allow_exception" value="1"> Exception autorisée</label>
+      <button class="btn btn-ghost" type="submit">Échanger</button></form>
+  </section>
+  <section class="card">
+    <h2 style="font-size:1.1rem"><?= count($unplaced) ?> athlète(s) présent(s) non placé(s)</h2>
+    <?php if (!$unplaced): ?><p class="muted">Tous les athlètes présents sont placés.</p><?php else: ?>
+      <p class="small muted">Arrivés après la génération, retirés d'une poule ou laissés hors poule. Aucun résultat existant n'est écrasé : ajoutez-les à une poule non commencée ou recalculez leur groupe.</p>
+      <ul style="list-style:none;padding:0;margin:0"><?php foreach ($unplaced as $up): ?>
+        <li style="padding:.6rem 0;border-bottom:1px solid var(--line)"><strong><?= e($up['last_name'] . ' ' . $up['first_name']) ?></strong> <span class="small muted"><?= e($up['group_label']) ?><?= $up['ref_weight'] ? ' · ' . e(kg($up['ref_weight'])) : '' ?></span>
+          <div class="btn-group" style="margin-top:.35rem">
+            <?php foreach ($up['suggestions'] as $sg): ?><?= $post('move_athlete', 'Ajouter à ' . e($sg['pool']['label']) . ' (' . $sg['size'] . ($sg['full'] ? ', complète' : '') . ')', $sg['full'] ? 'btn-ghost' : 'btn-yellow', ['registration_id' => $up['id'], 'pool_id' => $sg['pool']['id']]) ?><?php endforeach; ?>
+            <?= $post('regroup', 'Recalculer le groupe', 'btn-ghost', ['group_key' => $up['group_key']], 'Recalculer les poules non commencées de ce groupe en intégrant cet athlète ?') ?>
+          </div></li>
+      <?php endforeach; ?></ul>
+    <?php endif; ?>
+  </section>
+</div>
+<?php endif; ?>

@@ -1,0 +1,37 @@
+/* Classement public — affichage de salle, distinct de l'administration. */
+.board { background: var(--ink); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+.board-head { display: flex; align-items: center; gap: 1.2rem; padding: 1rem clamp(16px, 3vw, 40px); background: var(--red); }
+.board-head img { width: clamp(64px, 8vw, 110px); }
+.board-head h1 { margin: 0; font-size: clamp(1.3rem, 3vw, 2.4rem); }
+.board-kicker { margin: 0; font: 700 italic .95rem var(--font-display); text-transform: uppercase; color: var(--yellow); }
+.board-meta { margin-left: auto; display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; justify-content: flex-end; font-weight: 600; }
+.board.stale .board-meta span { color: var(--yellow); }
+.board-totals { display: flex; flex-wrap: wrap; gap: clamp(1rem, 4vw, 3.5rem); padding: 1rem clamp(16px, 3vw, 40px); background: var(--yellow); color: var(--ink); }
+.board-totals div { display: flex; align-items: baseline; gap: .45rem; }
+.board-totals strong { font: 900 italic clamp(1.6rem, 3.6vw, 2.8rem)/1 var(--font-display); }
+.board-totals strong small { font-size: .5em; }
+.board-totals span { font-weight: 700; text-transform: uppercase; font-size: .85rem; }
+.board-totals .g { color: #8a6d00; } .board-totals .s { color: #5e6670; } .board-totals .b { color: #8a4a20; }
+.board-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px, 2vw, 28px); padding: clamp(12px, 2vw, 28px) clamp(16px, 3vw, 40px); }
+.board-grid h2 { color: var(--yellow); margin-bottom: .8rem; }
+.board-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.board-list li { display: grid; grid-template-columns: 52px 46px 1fr auto; align-items: center; gap: .8rem; padding: .55rem .9rem; background: var(--ink-2); border-radius: 6px; }
+.board-list li.top-1 { background: linear-gradient(90deg, rgba(201,162,39,.35), var(--ink-2) 60%); }
+.board-list li.top-2 { background: linear-gradient(90deg, rgba(154,163,173,.3), var(--ink-2) 60%); }
+.board-list li.top-3 { background: linear-gradient(90deg, rgba(176,106,59,.3), var(--ink-2) 60%); }
+.board-list .rank { font: 900 italic 1.8rem/1 var(--font-display); text-align: center; }
+.board-list img, .board-list .mono { width: 44px; height: 44px; border-radius: 50%; background: var(--white); object-fit: contain; }
+.board-list .mono { display: grid; place-items: center; color: var(--ink); font: 800 italic .8rem var(--font-display); }
+.board-list .name strong { display: block; font-size: 1.1rem; line-height: 1.15; }
+.board-list .name small { color: rgba(255,255,255,.6); }
+.board-list .pts { text-align: right; }
+.board-list .pts strong { font: 900 italic 2rem/1 var(--font-display); color: var(--yellow); }
+.board-list .pts small { display: block; color: rgba(255,255,255,.6); }
+.board-list .meds { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .35rem; max-width: 190px; }
+.board-list .meds i { font: 800 normal 1.1rem var(--font-display); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); }
+.board-list .meds .g { background: var(--gold); } .board-list .meds .s { background: var(--silver); } .board-list .meds .b { background: var(--bronze); color: var(--white); }
+.board-list .meds small { width: 100%; text-align: right; color: rgba(255,255,255,.6); }
+.board-list .empty-row { display: block; color: rgba(255,255,255,.7); }
+.board-foot { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .8rem clamp(16px, 3vw, 40px); font-size: .9rem; color: rgba(255,255,255,.7); }
+.board-foot a { color: var(--yellow); }
+@media (max-width: 900px) { .board-grid { grid-template-columns: 1fr; } .board-head { flex-wrap: wrap; } }
