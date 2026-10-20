@@ -13,7 +13,11 @@
     <div class="field"><label for="max_weight_spread_pct">Alerte écart de poids (%)</label><input id="max_weight_spread_pct" name="max_weight_spread_pct" type="number" min="0" max="100" value="<?= (int) $s['max_weight_spread_pct'] ?>"></div>
     <label class="check"><input type="checkbox" name="use_measured_weight" value="1"<?= checked($s['use_measured_weight']) ?>> Utiliser le poids mesuré à la pesée lorsqu'il existe</label>
     <label class="check"><input type="checkbox" name="avoid_same_club" value="1"<?= checked($s['avoid_same_club']) ?>> Séparer les combattants d'un même club quand c'est possible</label>
-    <label class="check"><input type="checkbox" name="interleave_pools" value="1"<?= checked($s['interleave_pools']) ?>> Alterner les combats de deux poules d'un tapis (récupération)</label>
+    <label class="check"><input type="checkbox" name="interleave_pools" value="1"<?= checked($s['interleave_pools']) ?>> Enchaîner les poules d'un tapis (récupération) :</label>
+    <div class="form-grid" style="margin:.4rem 0 .6rem">
+      <div class="field"><label for="interleave_block">Combats d'une poule avant de passer à la suivante</label><input id="interleave_block" name="interleave_block" type="number" min="1" max="10" value="<?= (int) ($s['interleave_block'] ?? 2) ?>"></div>
+      <div class="field"><label for="interleave_scope">Poules enchaînées</label><select id="interleave_scope" name="interleave_scope"><option value="age"<?= selected($s['interleave_scope'] ?? 'age', 'age') ?>>Celles d'une même catégorie d'âge (même tranche horaire)</option><option value="tatami"<?= selected($s['interleave_scope'] ?? 'age', 'tatami') ?>>Toutes les poules du tapis</option></select></div>
+    </div>
     <label class="check"><input type="checkbox" name="pools_published" value="1"<?= checked($s['pools_published']) ?>> Publier les poules aux clubs (espace club)</label>
   </div></fieldset>
 
@@ -53,6 +57,7 @@
     <div class="field"><label for="tv_result_seconds">Affichage de « Victoire » sur la TV (s)</label><input id="tv_result_seconds" name="tv_result_seconds" type="number" min="3" max="300" value="<?= (int) $s['tv_result_seconds'] ?>"><span class="hint">Ensuite, l'écran présente le combat suivant.</span></div>
     <div class="field"><label for="public_refresh_seconds">Rafraîchissement du classement public (s)</label><input id="public_refresh_seconds" name="public_refresh_seconds" type="number" min="30" max="900" value="<?= (int) $s['public_refresh_seconds'] ?>"></div>
     <label class="check"><input type="checkbox" name="public_live" value="1"<?= checked($s['public_live']) ?>> Direct public des tapis</label>
+    <label class="check"><input type="checkbox" name="public_podium_photos" value="1"<?= checked($s['public_podium_photos'] ?? false) ?>> Photos des judokas sur l'annonce des podiums (écran de classement public — avec l'accord des familles)</label>
     <label class="check"><input type="checkbox" name="public_mat_results" value="1"<?= checked($s['public_mat_results']) ?>> Résultats publics par tapis</label>
   </div></fieldset>
 

@@ -162,15 +162,95 @@ final class SiteController extends Controller
         $bouts = Database::one("SELECT COUNT(*) AS total, SUM(status = 'validated') AS done FROM bouts WHERE competition_id = ? AND status <> 'cancelled'", [$cid]);
         return [
             'competition' => ['name' => $c['name'], 'edition' => $c['edition_label'], 'status' => $c['status']],
-            'points' => array_map($map, RankingService::clubTable($cid, 'points')),
-            'medals' => array_map($map, RankingService::clubTable($cid, 'medals')),
+            'points' => array_map($map, RankingService::clubTable($cid, 'points', true)),
+            'medals' => array_map($map, RankingService::clubTable($cid, 'medals', true)),
             'totals' => RankingService::medalTotals($cid) + [
                 'participants' => (int) Database::value("SELECT COUNT(*) FROM registrations WHERE competition_id = ? AND status = 'confirmed' AND attendance_status = 'present'", [$cid]),
                 'bouts_done' => (int) $bouts['done'], 'bouts_total' => (int) $bouts['total'],
             ],
             'updated_at' => RankingService::lastUpdate($cid),
             'generated_at' => date('Y-m-d H:i:s'),
+            'stamp' => self::rankingStamp($cid),
+            'podiums' => self::podiums($c),
         ];
+    }
+
+    /** Empreinte des résultats validés : change dès qu'un commissaire valide ou corrige un combat. */
+    public static function rankingStamp(int $cid): string
+    {
+        $row = Database::one(
+            "SELECT COUNT(*) AS n, MAX(validated_at) AS v, MAX(updated_at) AS u FROM bouts WHERE competition_id = ? AND status = 'validated'",
+            [$cid]
+        );
+        $r = Database::value('SELECT MAX(computed_at) FROM athlete_rankings WHERE competition_id = ?', [$cid]);
+        return substr(sha1(json_encode([$row, $r])), 0, 16);
+    }
+
+    /** Podiums des poules terminées (annonce en direct sur l'écran de classement). */
+    public static function podiums(array $c): array
+    {
+        $cid = (int) $c['id'];
+        $photos = (bool) SettingsService::get($cid, 'public_podium_photos');
+        $rows = Database::all(
+            "SELECT ar.pool_id, ar.place, ar.medal, ar.registration_id, ar.computed_at, a.first_name, a.last_name, a.photo_document_id,
+                    c.id AS club_id, c.name AS club_name, c.short_name AS club_short, c.logo_path, c.brand_color,
+                    p.number AS pool_number, p.sex, ac.name AS age_name, ac.name_m, ac.name_f, ac.sort_order AS age_sort, wc.label AS weight_label
+             FROM athlete_rankings ar
+             JOIN registrations r ON r.id = ar.registration_id JOIN athletes a ON a.id = r.athlete_id
+             LEFT JOIN clubs c ON c.id = ar.club_id
+             JOIN pools p ON p.id = ar.pool_id JOIN age_categories ac ON ac.id = p.age_category_id
+             LEFT JOIN weight_categories wc ON wc.id = p.weight_category_id
+             WHERE ar.competition_id = ? ORDER BY ar.pool_id, ar.place",
+            [$cid]
+        );
+        $out = [];
+        $colors = [];
+        foreach ($rows as $x) {
+            $pid = (int) $x['pool_id'];
+            if ($x['club_id'] && !isset($colors[$x['club_id']])) {
+                $colors[$x['club_id']] = \App\Services\ClubColorService::forClub(['id' => $x['club_id'], 'logo_path' => $x['logo_path'], 'brand_color' => $x['brand_color']]);
+            }
+            $out[$pid] ??= [
+                'pool_id' => $pid, 'pool_number' => (int) $x['pool_number'], 'at' => $x['computed_at'],
+                'category' => CategoryService::label(['name' => $x['age_name'], 'name_m' => $x['name_m'], 'name_f' => $x['name_f']], $x['sex']),
+                'weight' => $x['weight_label'], 'athletes' => [],
+            ];
+            $out[$pid]['athletes'][] = [
+                'place' => (int) $x['place'], 'medal' => $x['medal'], 'first_name' => $x['first_name'], 'last_name' => $x['last_name'],
+                'club' => $x['club_name'], 'club_short' => $x['club_short'] ?: $x['club_name'],
+                'logo' => $x['logo_path'] ? url('/' . ltrim($x['logo_path'], '/')) : null,
+                'color' => $x['club_id'] ? $colors[$x['club_id']] : \App\Services\ClubColorService::FALLBACK,
+                'photo' => $photos && $x['photo_document_id'] ? url('/classement/' . $c['slug'] . '/photo/' . $x['registration_id']) : null,
+            ];
+        }
+        return array_values($out);
+    }
+
+    public function rankingStampApi(Request $r): Response
+    {
+        $c = CompetitionService::findBySlug((string) $r->param('slug'));
+        return $this->json(['stamp' => self::rankingStamp((int) $c['id'])])->header('Cache-Control', 'no-store');
+    }
+
+    /** Photo d'un judoka classé, seulement si l'organisation l'autorise pour l'écran de classement. */
+    public function podiumPhoto(Request $r): Response
+    {
+        $c = CompetitionService::findBySlug((string) $r->param('slug'));
+        $cid = (int) $c['id'];
+        $doc = SettingsService::get($cid, 'public_podium_photos') ? Database::value(
+            'SELECT a.photo_document_id FROM athlete_rankings ar JOIN registrations rg ON rg.id = ar.registration_id JOIN athletes a ON a.id = rg.athlete_id
+             WHERE ar.competition_id = ? AND ar.registration_id = ?',
+            [$cid, (int) $r->param('rid')]
+        ) : null;
+        if (!$doc) {
+            throw new HttpException(404, 'Photo introuvable.');
+        }
+        $d = DocumentService::find((int) $doc);
+        $file = DocumentService::dir() . '/' . ($d['thumb_name'] ?: $d['stored_name']);
+        if (!is_file($file)) {
+            throw new HttpException(404, 'Photo introuvable.');
+        }
+        return Response::file($file, $d['mime_type'], 'photo.jpg', true)->header('Cache-Control', 'private, max-age=300');
     }
 
     public function rankingApi(Request $r): Response

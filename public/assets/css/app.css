@@ -207,7 +207,7 @@ dialog::backdrop { background: rgba(24,24,27,.35); backdrop-filter: blur(3px); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; padding: .9rem 1.5rem 1.3rem; flex-wrap: wrap; }
 
 /* Avatars : logo de club, photo de judoka, initiales */
-.club-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: contain; background: var(--white); border: 1px solid var(--line); flex: none; }
+.club-logo { width: 40px; height: 40px; box-sizing: border-box; padding: 2px; border-radius: 26%; object-fit: contain; object-position: center; background: var(--white); border: 0; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(24,24,27,.06); flex: none; }
 .club-mono, .avatar-mono { width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; background: var(--surface-2); color: var(--ink-2); font: 600 .78rem var(--font-body); letter-spacing: .02em; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
 
@@ -228,8 +228,8 @@ dialog::backdrop { background: rgba(24,24,27,.35); backdrop-filter: blur(3px); }
 .club-picker { display: inline-flex; }
 .club-picker-btn { --club: var(--ink); display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .3rem .9rem .3rem .35rem; border: 0; border-radius: 999px; background: var(--white); box-shadow: var(--shadow); font: inherit; color: var(--ink); cursor: pointer; text-align: left; transition: box-shadow .15s; }
 .club-picker-btn:hover { box-shadow: var(--shadow-lg); }
-.club-picker-btn .cp-logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--club) 14%, white); flex: none; overflow: hidden; }
-.club-picker-btn .cp-logo img, .club-picker-btn .cp-logo .club-mono { width: 26px !important; height: 26px !important; }
+.club-picker-btn .cp-logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--white); box-shadow: 0 0 0 1px var(--line); flex: none; overflow: hidden; }
+.club-picker-btn .cp-logo img, .club-picker-btn .cp-logo .club-mono { width: 28px !important; height: 28px !important; padding: 2px; box-shadow: none; object-fit: contain; }
 .club-picker-btn .cp-logo .icon { width: 18px; height: 18px; color: var(--muted); }
 .club-picker-btn .cp-txt small { display: block; font-size: .68rem; color: var(--muted); line-height: 1.1; }
 .club-picker-btn .cp-txt strong { display: block; font-size: .9rem; font-weight: 600; line-height: 1.2; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -249,8 +249,8 @@ dialog::backdrop { background: rgba(24,24,27,.35); backdrop-filter: blur(3px); }
 .club-pick:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg), inset 0 0 0 1.5px color-mix(in srgb, var(--club) 45%, transparent); color: var(--ink); }
 .club-pick[aria-current=true] { box-shadow: var(--shadow-lg), inset 0 0 0 2px var(--club); }
 .club-pick[aria-current=true]::after { content: ""; position: absolute; top: .6rem; right: .6rem; width: 10px; height: 10px; border-radius: 50%; background: var(--club); box-shadow: 0 0 0 3px var(--white); }
-.club-pick .crest { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: var(--white); box-shadow: 0 6px 18px color-mix(in srgb, var(--club) 25%, transparent); }
-.club-pick .crest img, .club-pick .crest .club-mono { width: 64px !important; height: 64px !important; object-fit: contain; border-radius: 50%; }
+.club-pick .crest { display: grid; place-items: center; width: 80px; height: 80px; border-radius: 24px; background: var(--white); box-shadow: 0 6px 18px color-mix(in srgb, var(--club) 25%, transparent); }
+.club-pick .crest img, .club-pick .crest .club-mono { width: 56px !important; height: 56px !important; object-fit: contain; border-radius: 0; padding: 0; box-shadow: none; background: transparent; }
 .club-pick .crest .club-mono { font-size: 1rem; }
 .club-pick .crest .club-mono.all { display: grid; place-items: center; background: var(--surface-2); }
 .club-pick .crest .club-mono.all .icon { width: 26px; height: 26px; color: var(--ink-2); }
@@ -258,3 +258,11 @@ dialog::backdrop { background: rgba(24,24,27,.35); backdrop-filter: blur(3px); }
 .club-pick .cnt { font-size: .72rem; color: var(--muted); margin-top: -.3rem; }
 .club-pick.all { --club: var(--ink); }
 @media (max-width: 560px) { .cd-grid { grid-template-columns: repeat(2, 1fr); } .cd-head { flex-wrap: wrap; } .cd-head .search { order: 3; flex-basis: 100%; } }
+.club-pick .ok { display: inline-flex; align-items: center; gap: .2rem; font-size: .68rem; font-weight: 600; color: var(--green); background: var(--green-soft); padding: .1rem .5rem; border-radius: 999px; }
+.club-pick .ok .icon { width: 11px; height: 11px; }
+/* Logos de club : toujours dans une carte blanche, jamais déformés */
+.club-mono { border-radius: 26%; background: var(--white); box-shadow: 0 0 0 1px var(--line); }
+.club-logo[width="40"], .clubs-grid .club-logo { padding: 4px; }
+/* Place dans une pastille (couleur de la médaille) */
+.place-pill { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 .4rem; border-radius: 999px; background: var(--surface-2); font-weight: 700; font-size: .86rem; font-variant-numeric: tabular-nums; color: var(--ink); vertical-align: middle; }
+.place-pill.medal-gold { background: #f2c94c; } .place-pill.medal-silver { background: #d4d7dd; } .place-pill.medal-bronze { background: #e0a370; }

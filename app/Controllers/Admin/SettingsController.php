@@ -57,6 +57,8 @@ final class SettingsController extends AdminController
             'max_weight_spread_pct' => $int('max_weight_spread_pct', 0, 100, 10),
             'avoid_same_club' => $bool('avoid_same_club'),
             'interleave_pools' => $bool('interleave_pools'),
+            'interleave_block' => max(1, min(10, (int) ($r->post['interleave_block'] ?? 2))),
+            'interleave_scope' => ($r->post['interleave_scope'] ?? 'age') === 'tatami' ? 'tatami' : 'age',
             'score_model' => [
                 'use_yuko' => $bool('use_yuko'),
                 'wazaari_for_ippon' => $int('wazaari_for_ippon', 1, 5, 2),
@@ -75,6 +77,7 @@ final class SettingsController extends AdminController
             'public_refresh_seconds' => $int('public_refresh_seconds', 30, 900, 120),
             'public_mat_results' => $bool('public_mat_results'),
             'public_live' => $bool('public_live'),
+            'public_podium_photos' => $bool('public_podium_photos'),
             'pools_published' => $bool('pools_published'),
             'late_registration_allowed' => $bool('late_registration_allowed'),
             'late_registration_requires_validation' => $bool('late_registration_requires_validation'),

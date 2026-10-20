@@ -31,7 +31,9 @@ final class SettingsService
         'preferred_pool_size' => 4,
         'max_weight_spread_pct' => 10,           // seuil d'alerte (écart de poids dans une poule, en %)
         'avoid_same_club' => true,
-        'interleave_pools' => true,              // alterne les combats de deux poules d'un même tapis (récupération)
+        'interleave_pools' => true,              // enchaîne les poules d'un même tapis par blocs de combats (récupération)
+        'interleave_block' => 2,                 // nombre de combats d'une poule avant de passer à la suivante
+        'interleave_scope' => 'age',             // 'age' : poules d'une même catégorie d'âge · 'tatami' : toutes les poules du tapis
         'pool_group_overrides' => [],            // décisions de l'administrateur pour les groupes sans répartition valide
         // Classement des poules
         'pool_ranking' => [
@@ -48,6 +50,7 @@ final class SettingsService
         'public_refresh_seconds' => 120,
         'public_mat_results' => true,
         'public_live' => true,
+        'public_podium_photos' => false,         // photos des judokas sur l'annonce des podiums (accord des familles requis)
         'pools_published' => false,
         // Inscriptions
         'late_registration_allowed' => true,

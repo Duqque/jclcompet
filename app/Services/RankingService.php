@@ -326,14 +326,39 @@ final class RankingService
     // Lecture
     // ------------------------------------------------------------------
 
-    public static function clubTable(int $competitionId, string $by = 'points'): array
+    public static function clubTable(int $competitionId, string $by = 'points', bool $withAllClubs = false): array
     {
         $order = $by === 'medals' ? 'cr.rank_medals, c.name' : 'cr.rank_points, c.name';
-        return Database::all(
+        $rows = Database::all(
             "SELECT cr.*, c.name, c.short_name, c.city, c.department, c.logo_path FROM club_rankings cr JOIN clubs c ON c.id = cr.club_id
              WHERE cr.competition_id = ? ORDER BY $order",
             [$competitionId]
         );
+        if (!$withAllClubs) {
+            return $rows;
+        }
+        // Tous les clubs engagés apparaissent, même sans point : à égalité à la dernière place.
+        $known = array_flip(array_map('intval', array_column($rows, 'club_id')));
+        $others = Database::all(
+            "SELECT c.id AS club_id, c.name, c.short_name, c.city, c.department, c.logo_path,
+                    (SELECT COUNT(*) FROM registrations r WHERE r.competition_id = :c1 AND r.club_id = c.id AND r.status = 'confirmed' AND r.attendance_status = 'present') AS participants
+             FROM clubs c
+             WHERE c.id IN (SELECT club_id FROM registrations WHERE competition_id = :c2 AND status IN ('pending','confirmed') AND club_id IS NOT NULL
+                            UNION SELECT club_id FROM competition_clubs WHERE competition_id = :c3)
+             ORDER BY c.name",
+            ['c1' => $competitionId, 'c2' => $competitionId, 'c3' => $competitionId]
+        );
+        $rank = $rows ? max(array_map(fn ($r) => (int) $r[$by === 'medals' ? 'rank_medals' : 'rank_points'], $rows)) + 1 : 1;
+        if ($rows && (int) end($rows)['points'] === 0 && $by === 'points') {
+            $rank = (int) end($rows)['rank_points'];
+        }
+        foreach ($others as $o) {
+            if (isset($known[(int) $o['club_id']])) {
+                continue;
+            }
+            $rows[] = $o + ['points' => 0, 'gold' => 0, 'silver' => 0, 'bronze' => 0, 'fourth' => 0, 'fifth' => 0, 'rank_points' => $rank, 'rank_medals' => $rank];
+        }
+        return $rows;
     }
 
     public static function individual(int $competitionId, ?int $clubId = null): array

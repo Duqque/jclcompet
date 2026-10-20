@@ -21,7 +21,7 @@
 .tv-row-a { background: var(--a-bg); color: var(--a-fg); }
 .tv-row-b { background: var(--white); color: var(--b-fg); }
 .tv-logo { width: 22vh; height: 22vh; border-radius: 50%; display: grid; place-items: center; }
-.tv-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background: var(--white); }
+.tv-logo img { width: 100%; height: 100%; box-sizing: border-box; padding: 1.8vh; object-fit: contain; border-radius: 24%; background: var(--white); }
 .tv-logo .mono { width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.18); font: 900 italic 6vh var(--font-display); }
 .tv-row-b .tv-logo .mono { background: var(--floor); }
 .tv-name { font: 900 italic 8.4vh/.98 var(--font-display); text-transform: uppercase; letter-spacing: -.01em; }

@@ -22,7 +22,8 @@ $card = function (?array $cl) use ($pickerMode, $pickerHref, $pickerAllLabel, $p
     $style = $cl ? ' style="--club:' . e($cl['color']) . '"' : '';
     $logo = $cl ? (function () use ($cl) { ob_start(); $logo = $cl['logo_path']; $name = $cl['name']; $size = 64; include BASE_PATH . '/app/Views/partials/club_logo.php'; return ob_get_clean(); })() : '<span class="club-mono all">' . icon('users') . '</span>';
     $inner = '<span class="crest">' . $logo . '</span><span class="nm">' . e($cl ? ($cl['short_name'] ?: $cl['name']) : $pickerAllLabel) . '</span>'
-        . (isset($cl['n']) || (!$cl && $pickerTotal !== null) ? '<span class="cnt">' . (int) ($cl['n'] ?? $pickerTotal) . ' judokas</span>' : '');
+        . (isset($cl['n']) || (!$cl && $pickerTotal !== null) ? '<span class="cnt">' . (int) ($cl['n'] ?? $pickerTotal) . ' judokas</span>' : '')
+        . (!empty($cl['list_ok']) ? '<span class="ok">' . icon('check') . 'Liste validée</span>' : '');
     $attrs = ' class="club-pick' . ($cl ? '' : ' all') . '"' . $style . ($on ? ' aria-current="true"' : '') . ' data-name="' . e(mb_strtolower($cl ? $cl['name'] . ' ' . ($cl['short_name'] ?? '') . ' ' . ($cl['city'] ?? '') : '')) . '" title="' . e($cl['name'] ?? $pickerAllLabel) . '"';
     if ($pickerMode === 'filter-link') {
         return '<a href="' . e($pickerHref($id)) . '"' . $attrs . '>' . $inner . '</a>';

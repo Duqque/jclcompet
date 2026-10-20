@@ -300,6 +300,50 @@ final class RegistrationService
         return CompetitionService::registrationWindowOpen($competition);
     }
 
+    /**
+     * L'entraîneur valide la liste de son club : toutes ses inscriptions en attente sont confirmées
+     * automatiquement et l'administration est prévenue.
+     */
+    public static function validateClubList(int $competitionId, int $clubId): int
+    {
+        $competition = CompetitionService::find($competitionId);
+        CompetitionService::assertWritable($competition);
+        $count = (int) Database::value("SELECT COUNT(*) FROM registrations WHERE competition_id = ? AND club_id = ? AND status IN ('pending','confirmed')", [$competitionId, $clubId]);
+        if ($count === 0) {
+            throw new DomainError('Inscrivez au moins un judoka avant de valider la liste.');
+        }
+        $confirmed = Database::transaction(function () use ($competitionId, $clubId, $count) {
+            $n = Database::run(
+                "UPDATE registrations SET status = 'confirmed', needs_validation = 0, validated_by = ?, validated_at = NOW()
+                 WHERE competition_id = ? AND club_id = ? AND status = 'pending'",
+                [Auth::id(), $competitionId, $clubId]
+            )->rowCount();
+            Database::run(
+                'INSERT INTO club_list_validations (competition_id, club_id, validated_by, validated_at, registrations_count) VALUES (?, ?, ?, NOW(), ?)
+                 ON DUPLICATE KEY UPDATE validated_by = VALUES(validated_by), validated_at = NOW(), registrations_count = VALUES(registrations_count)',
+                [$competitionId, $clubId, Auth::id(), $count]
+            );
+            return $n;
+        });
+        $club = (string) Database::value('SELECT name FROM clubs WHERE id = ?', [$clubId]);
+        NotificationService::notifyAdmins($competitionId, 'club_list', "Liste validée par $club : $count judoka(s) confirmé(s) automatiquement.", '/admin/competitions/' . $competitionId . '/inscriptions?club_id=' . $clubId);
+        AuditLogger::log('registrations.club_list_validated', 'club', $clubId, null, ['count' => $count, 'confirmed' => $confirmed], null, $competitionId);
+        return $count;
+    }
+
+    /** Dernière validation de liste du club (null si jamais validée), avec le nombre d'inscriptions modifiées depuis. */
+    public static function clubListValidation(int $competitionId, int $clubId): ?array
+    {
+        $v = Database::one('SELECT v.*, u.display_name FROM club_list_validations v LEFT JOIN users u ON u.id = v.validated_by WHERE v.competition_id = ? AND v.club_id = ?', [$competitionId, $clubId]);
+        if ($v) {
+            $v['changed_since'] = (int) Database::value(
+                "SELECT COUNT(*) FROM registrations WHERE competition_id = ? AND club_id = ? AND (created_at > ? OR updated_at > ?)",
+                [$competitionId, $clubId, $v['validated_at'], $v['validated_at']]
+            );
+        }
+        return $v;
+    }
+
     public static function inPool(int $registrationId): bool
     {
         return (bool) Database::value(

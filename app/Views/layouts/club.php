@@ -16,17 +16,23 @@ $link = fn (string $href, string $label, string $ic, bool $exact = false) => '<a
 <div class="bo"><div class="bo-frame">
   <aside class="bo-side" id="bo-side" aria-label="Navigation de l'espace club">
     <a class="bo-brand" href="<?= e(url('/espace-club')) ?>"><?php $logo = $club['logo_path']; $name = $club['name']; $size = 46; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?><span><?= e($club['short_name'] ?: $club['name']) ?><small>Espace club</small></span></a>
+    <?php $mc = !empty($c) ? $c : \App\Controllers\Club\ClubSpaceController::currentCompetition(); ?>
     <nav class="bo-nav">
-      <h2>Compétitions</h2>
-      <?= $link('/espace-club', 'Mes compétitions', 'calendar', true) ?>
-      <?php if (!empty($c)): $b = '/espace-club/competitions/' . $c['id']; ?>
-        <div class="comp-context"><strong><?= e($c['name']) ?></strong><span><?= e(\App\Services\CompetitionService::statusLabel($c['status'])) ?></span></div>
-        <?= $link($b, 'Mes inscrits', 'users', true) ?>
-        <?= $link($b . '/poules', 'Poules et horaires', 'grid') ?>
+      <?php if ($mc): $b = '/espace-club/competitions/' . $mc['id']; ?>
+        <a class="comp-context" href="<?= e(url('/espace-club')) ?>" title="Changer de compétition"><strong><?= e($mc['name']) ?></strong><span><?= e(fr_date($mc['event_date'])) ?> · <?= e(\App\Services\CompetitionService::statusLabel($mc['status'])) ?></span></a>
+        <h2>Compétition</h2>
+        <?= $link($b, 'Mes combattants', 'users', true) ?>
+        <?= $link($b . '/poules', 'Poules en direct', 'grid') ?>
         <?= $link($b . '/resultats', 'Résultats du club', 'trophy') ?>
+        <?= $link($b . '/photos', 'Photos', 'image') ?>
+        <a href="<?= e(url($b . '/resultats.pdf')) ?>" target="_blank" rel="noopener"><?= icon('download') ?><span>Résultats en PDF</span></a>
+        <a href="<?= e(url('/classement/' . $mc['slug'])) ?>" target="_blank" rel="noopener"><?= icon('chart') ?><span>Classement en direct ↗</span></a>
+        <a href="<?= e(url('/competitions/' . $mc['slug'])) ?>" target="_blank" rel="noopener"><?= icon('calendar') ?><span>Programme ↗</span></a>
       <?php endif; ?>
       <h2>Club</h2>
+      <?= $link('/espace-club', 'Toutes mes compétitions', 'calendar', true) ?>
       <?= $link('/espace-club/profil', 'Informations du club', 'id') ?>
+      <?= $link('/compte/mot-de-passe', 'Mot de passe', 'lock') ?>
     </nav>
     <div class="bo-user">
       <span class="avatar-mono"><?= e(initials($user['display_name'])) ?></span>

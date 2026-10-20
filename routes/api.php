@@ -14,6 +14,7 @@ use App\Controllers\Admin\PoolController;
 
 // Public, lecture seule
 $router->get('/api/public/competitions/{slug}/classement', [SiteController::class, 'rankingApi']);
+$router->get('/api/public/competitions/{slug}/classement/etat', [SiteController::class, 'rankingStampApi']);
 $router->get('/api/public/competitions/{slug}/direct', [SiteController::class, 'liveApi']);
 
 // Écran TV : jeton d'affichage dans la requête, aucune écriture possible

@@ -54,7 +54,34 @@ final class DemoSeeder
         $this->bouts($cid);
         $this->sales($cid);
         $this->gallery($cid);
+        $this->upcoming($clubs);
         return $cid;
+    }
+
+    /** Second tournoi fictif, à venir, inscriptions ouvertes : pour essayer l'ajout de combattants côté club. */
+    private function upcoming(array $clubs): void
+    {
+        $year = (int) date('Y');
+        $cid = CompetitionService::create([
+            'name' => 'Tournoi d\'hiver de démonstration (données fictives)',
+            'tagline' => 'Compétition fictive à venir : inscriptions en ligne ouvertes',
+            'description' => "**Données de démonstration** : compétition fictive pour tester les inscriptions des clubs.",
+            'event_date' => date('Y-m-d', strtotime('+45 days')),
+            'start_time' => '09:00:00', 'venue' => 'Salle de démonstration', 'address' => '1 rue de l\'Exemple', 'city' => 'Démoville',
+            'registration_opens_at' => date('Y-m-d H:i:s', strtotime('-2 days')),
+            'registration_closes_at' => date('Y-m-d 23:59:00', strtotime('+38 days')),
+            'age_reference_date' => $year . '-12-31', 'mat_count' => 4, 'expected_participants' => 120, 'pool_sizes' => '3,4,5',
+            'is_demo' => 1,
+        ], ['U11', 'U13', 'U15'], true);
+        Database::run("UPDATE competitions SET status = 'registrations_open' WHERE id = ?", [$cid]);
+        // Quelques inscriptions déjà faites par le JC Lensois (compte coach@demo-judo.test)
+        foreach ([['Martinot', 'Lucas', 'M', 10, 31.5], ['Perrinet', 'Inès', 'F', 9, 27.0], ['Moreaux', 'Hugo', 'M', 12, 41.2]] as [$last, $first, $sex, $age, $kg]) {
+            RegistrationService::register($cid, [
+                'last_name' => $last, 'first_name' => $first, 'sex' => $sex, 'birth_date' => sprintf('%d-%02d-15', $year - $age, mt_rand(1, 12)),
+                'declared_weight_kg' => $kg, 'grade' => 'Orange',
+            ], ['actor' => 'club', 'club_id' => $clubs[1]]);
+        }
+        Database::run('UPDATE athletes SET is_demo = 1 WHERE id IN (SELECT athlete_id FROM registrations WHERE competition_id = ?)', [$cid]);
     }
 
     private function accounts(): array
@@ -116,6 +143,7 @@ final class DemoSeeder
         SettingsService::set($cid, 'weight_input', 'weight');
         SettingsService::set($cid, 'pool_grouping', 'morphological');
         SettingsService::set($cid, 'pools_published', true);
+        SettingsService::set($cid, 'public_podium_photos', true);
         Database::run("UPDATE competitions SET status = 'registrations_open' WHERE id = ?", [$cid]);
         return $cid;
     }

@@ -47,7 +47,9 @@ final class RegistrationController extends AdminController
             'rows' => RegistrationService::list($cid, $f, null, $per, $offset), 'total' => $total, 'page' => $page, 'pages' => (int) ceil($total / $per),
             'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'), 'ages' => CategoryService::ageCategories($cid),
             'clubChips' => \App\Services\ClubColorService::decorate(Database::all(
-                "SELECT c.id, c.name, c.short_name, c.city, c.logo_path, c.brand_color, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
+                "SELECT c.id, c.name, c.short_name, c.city, c.logo_path, c.brand_color, COUNT(*) AS n,
+                        (SELECT v.validated_at FROM club_list_validations v WHERE v.competition_id = r.competition_id AND v.club_id = c.id) AS list_ok
+                 FROM registrations r JOIN clubs c ON c.id = r.club_id
                  WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY c.name",
                 [$cid]
             )),

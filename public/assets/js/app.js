@@ -182,6 +182,16 @@
     const empty = d.querySelector('.cd-empty'); if (empty) empty.hidden = shown > 0;
   });
 
+  // Onglets dans une fenêtre (ex. « Ajouter un combattant ») et ouverture automatique après une erreur de saisie
+  document.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-tab]');
+    if (!tab) return;
+    const box = tab.closest('dialog, .tabs-box') || document;
+    box.querySelectorAll('[data-tab]').forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+    box.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
+  });
+  document.querySelectorAll('dialog[data-open-on-load]').forEach((d) => d.showModal());
+
   // Validation des formulaires : messages affichés dans la page, jamais de bulle du navigateur.
   const fieldMsg = (el) => {
     const box = el.closest('.field') || el.parentElement;

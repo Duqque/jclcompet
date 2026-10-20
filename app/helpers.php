@@ -275,3 +275,24 @@ function belt(string $color, bool $asImg = false): string
     }
     return '<span class="belt belt-' . ($color === 'red' ? 'red' : 'white') . '" aria-hidden="true">' . $svg . '</span>';
 }
+
+/**
+ * Logo de club pour les PDF : toujours dans une carte blanche, proportions respectées (jamais déformé).
+ * $box = côté de la carte en mm ; à défaut de logo, initiales du club.
+ */
+function pdf_logo(?string $path, string $name, float $box = 6.5): string
+{
+    $src = pdf_image($path);
+    $inner = $box * .8;
+    if ($src) {
+        $raw = base64_decode(substr($src, strpos($src, ',') + 1));
+        $size = @getimagesizefromstring($raw) ?: [1, 1];
+        $ratio = $size[1] > 0 ? $size[0] / $size[1] : 1;
+        [$w, $h] = $ratio >= 1 ? [$inner, $inner / $ratio] : [$inner * $ratio, $inner];
+        // La carte blanche est l'image elle-même (fond, bordure, marges intérieures) : alignement parfait avec le texte.
+        $pv = ($box - $h) / 2;
+        $ph = ($box - $w) / 2;
+        return '<img class="lbox-img" src="' . e($src) . '" alt="" style="width:' . round($w, 2) . 'mm;height:' . round($h, 2) . 'mm;padding:' . round($pv, 2) . 'mm ' . round($ph, 2) . 'mm">';
+    }
+    return '<span class="lbox mono" style="width:' . round($box, 2) . 'mm;height:' . round($box, 2) . 'mm;line-height:' . round($box, 2) . 'mm;font-size:' . round($box * .75, 1) . 'pt">' . e(initials($name)) . '</span>';
+}

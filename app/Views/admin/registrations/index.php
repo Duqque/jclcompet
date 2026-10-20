@@ -15,6 +15,8 @@ $attLabel = ['expected' => ['', 'Attendu'], 'present' => ['badge-green', 'Prése
   <div class="stat"><strong><?= (int) $stats['clubs'] ?></strong><span>clubs</span></div>
   <div class="stat"><strong><?= (int) $stats['present'] ?><small> / <?= (int) $stats['registered'] ?></small></strong><span>présents</span></div>
   <div class="stat<?= $stats['absent'] ? ' warn' : '' ?>"><strong><?= (int) $stats['absent'] ?></strong><span>absents / forfaits</span></div>
+  <?php $okLists = count(array_filter($clubChips, fn ($cl) => !empty($cl['list_ok']))); ?>
+  <div class="stat"><strong><?= $okLists ?><small> / <?= count($clubChips) ?></small></strong><span>listes validées par les clubs</span></div>
   <?php if ($stats['pending_validation']): ?><a class="stat warn" style="text-decoration:none;color:inherit" href="<?= e($q(['status' => 'pending', 'page' => null])) ?>"><strong><?= (int) $stats['pending_validation'] ?></strong><span>à valider</span></a><?php endif; ?>
 </div>
 

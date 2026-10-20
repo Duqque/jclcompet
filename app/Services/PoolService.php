@@ -993,43 +993,56 @@ final class PoolService
      * Ordre de passage des combats sur un tapis. Les poules se suivent dans leur ordre ;
      * avec le réglage « alterner les poules », les combats de deux poules consécutives sont entrelacés (récupération).
      */
+    /**
+     * Ordre des combats d'un tapis. Les combats déjà commencés gardent leur place ; les suivants sont enchaînés
+     * poule par poule par blocs (par défaut 2 combats de A, 2 de B, 2 de C, puis A, B, C…) entre les poules
+     * d'une même tranche horaire (même catégorie d'âge) ou de tout le tapis, selon les paramètres.
+     */
     public static function resequenceTatami(int $tatamiId): void
     {
         $tatami = Database::one('SELECT competition_id FROM tatamis WHERE id = ?', [$tatamiId]);
         if (!$tatami) {
             return;
         }
-        $interleave = (bool) SettingsService::get((int) $tatami['competition_id'], 'interleave_pools');
+        $cid = (int) $tatami['competition_id'];
+        $interleave = (bool) SettingsService::get($cid, 'interleave_pools');
+        $block = max(1, (int) (SettingsService::get($cid, 'interleave_block') ?: 2));
+        $scope = SettingsService::get($cid, 'interleave_scope') === 'tatami' ? 'tatami' : 'age';
         $pools = Database::all(
             "SELECT p.id, p.age_category_id, p.sex FROM pools p JOIN pool_generations g ON g.id = p.generation_id
              WHERE p.tatami_id = ? AND g.status IN ('draft','validated') ORDER BY p.order_on_tatami, p.number",
             [$tatamiId]
         );
-        $sequence = [];
-        $done = Database::column("SELECT id FROM bouts WHERE tatami_id = ? AND status IN ('validated','finished','in_progress') ORDER BY order_on_tatami, id", [$tatamiId]);
-        $sequence = array_map('intval', $done);
-        $i = 0;
-        while ($i < count($pools)) {
-            $block = [$pools[$i]];
-            if ($interleave && isset($pools[$i + 1]) && $pools[$i + 1]['age_category_id'] === $pools[$i]['age_category_id']) {
-                $block[] = $pools[$i + 1];
+        $sequence = array_map('intval', Database::column("SELECT id FROM bouts WHERE tatami_id = ? AND status IN ('validated','finished','in_progress') ORDER BY order_on_tatami, id", [$tatamiId]));
+        // Tranches : poules consécutives d'une même catégorie d'âge (ou tout le tapis)
+        $runs = [];
+        foreach ($pools as $p) {
+            $key = $interleave ? ($scope === 'tatami' ? 'all' : (string) $p['age_category_id']) : 'p' . $p['id'];
+            if (!$runs || $runs[count($runs) - 1]['key'] !== $key) {
+                $runs[] = ['key' => $key, 'pools' => []];
             }
+            $runs[count($runs) - 1]['pools'][] = $p;
+        }
+        foreach ($runs as $run) {
             $lists = [];
-            foreach ($block as $p) {
+            foreach ($run['pools'] as $p) {
                 $lists[] = array_map('intval', Database::column("SELECT id FROM bouts WHERE pool_id = ? AND tatami_id = ? AND status = 'scheduled' ORDER BY phase = 'final', order_in_pool", [$p['id'], $tatamiId]));
             }
-            $max = max(array_map('count', $lists) ?: [0]);
-            for ($k = 0; $k < $max; $k++) {
-                foreach ($lists as $l) {
-                    if (isset($l[$k])) {
-                        $sequence[] = $l[$k];
+            $pos = array_fill(0, count($lists), 0);
+            do {
+                $added = false;
+                foreach ($lists as $k => $l) {
+                    $take = array_slice($l, $pos[$k], $block);
+                    if ($take) {
+                        array_push($sequence, ...$take);
+                        $pos[$k] += count($take);
+                        $added = true;
                     }
                 }
-            }
-            $i += count($block);
+            } while ($added);
         }
-        foreach ($sequence as $pos => $boutId) {
-            Database::run('UPDATE bouts SET order_on_tatami = ? WHERE id = ?', [$pos + 1, $boutId]);
+        foreach ($sequence as $i => $boutId) {
+            Database::run('UPDATE bouts SET order_on_tatami = ? WHERE id = ?', [$i + 1, $boutId]);
         }
     }
 

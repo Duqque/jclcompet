@@ -10,14 +10,13 @@ $medalLabel = ['gold' => 'Or', 'silver' => 'Argent', 'bronze' => 'Bronze'];
   $gold = count(array_filter($rows, fn ($r) => $r['medal'] === 'gold'));
   $silver = count(array_filter($rows, fn ($r) => $r['medal'] === 'silver'));
   $bronze = count(array_filter($rows, fn ($r) => $r['medal'] === 'bronze'));
-  $logo = pdf_image($cl['club']['logo'] ?? null);
   $groups = [];
   foreach ($rows as $r) {
       $groups[CategoryService::label(['name' => $r['pool']['age_name'], 'name_m' => $r['pool']['name_m'], 'name_f' => $r['pool']['name_f']], $r['pool']['sex'])][] = $r;
   } ?>
   <div class="card" style="background:#f5f5f3;border:0">
     <table class="card-head" style="margin:0"><tr>
-      <td style="width:15mm"><?php if ($logo): ?><img src="<?= e($logo) ?>" alt="" style="width:12mm;height:12mm"><?php else: ?><span class="mono" style="width:12mm;height:12mm;line-height:12mm;border-radius:6mm;font-size:9pt"><?= e(initials($cl['club']['name'])) ?></span><?php endif; ?></td>
+      <td style="width:17mm"><?= pdf_logo($cl['club']['logo'] ?? null, $cl['club']['name'], 13) ?></td>
       <td><p class="eyebrow">Résultats du club</p><h2 style="margin:0;font-size:14pt"><?= e($cl['club']['name']) ?></h2></td>
       <td class="right"><span class="pill"><?= count($rows) ?> judokas</span><span class="pill" style="background:#f2c94c">Or <?= $gold ?></span><span class="pill" style="background:#d4d7dd">Argent <?= $silver ?></span><span class="pill" style="background:#e0a370">Bronze <?= $bronze ?></span></td>
     </tr></table>

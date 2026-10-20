@@ -39,7 +39,21 @@ final class ClubSpaceController extends Controller
         if ($c['status'] === 'draft') {
             throw new HttpException(404, 'Compétition introuvable.');
         }
+        \App\Core\Session::put('club_competition_id', (int) $c['id']);
         return $c;
+    }
+
+    /** Compétition affichée dans le menu : la dernière consultée, sinon celle en cours ou la prochaine. */
+    public static function currentCompetition(): ?array
+    {
+        $id = (int) \App\Core\Session::get('club_competition_id', 0);
+        if ($id && ($c = Database::one("SELECT * FROM competitions WHERE id = ? AND status <> 'draft'", [$id]))) {
+            return $c;
+        }
+        return Database::one(
+            "SELECT * FROM competitions WHERE status NOT IN ('draft','archived')
+             ORDER BY status = 'in_progress' DESC, event_date < CURDATE(), ABS(DATEDIFF(event_date, CURDATE())) LIMIT 1"
+        );
     }
 
     private function render(string $tpl, array $data): Response
@@ -101,7 +115,87 @@ final class ClubSpaceController extends Controller
             'canEdit' => RegistrationService::clubCanEdit($c) && $c['status'] !== 'archived',
             'athletes' => Database::all('SELECT * FROM athletes WHERE club_id = ? AND id NOT IN (SELECT athlete_id FROM registrations WHERE competition_id = ? AND status IN ("pending","confirmed")) ORDER BY last_name, first_name', [$club['id'], $cid]),
             'scripts' => ['registration-form.js'], 'reg' => null,
+            'listValidation' => RegistrationService::clubListValidation($cid, (int) $club['id']),
+            'attendanceOpen' => self::attendanceOpen($c),
+            'weighIn' => \App\Services\SettingsService::get($cid, 'weight_input') === 'weight',
+            'clubRow' => $club,
         ] + RegistrationController::formData($c));
+    }
+
+    /** Photos de la compétition : l'entraîneur les consulte et peut en ajouter. */
+    public function photos(Request $r): Response
+    {
+        $club = $this->club();
+        $c = $this->comp($r);
+        return $this->render('photos', [
+            'title' => 'Photos · ' . $c['name'], 'c' => $c,
+            'photos' => \App\Services\GalleryService::photos((int) $c['id']),
+            'hasPassword' => (bool) \App\Services\GalleryService::passwordHash((int) $c['id']),
+            'canUpload' => $c['status'] !== 'archived',
+        ]);
+    }
+
+    public function uploadPhotos(Request $r): Response
+    {
+        $club = $this->club();
+        $c = $this->comp($r);
+        $caption = trim($r->str('caption'));
+        $ids = \App\Services\GalleryService::upload((int) $c['id'], $_FILES['photos'] ?? [], $caption !== '' ? $caption : 'Photo ' . ($club['short_name'] ?: $club['name']));
+        \App\Services\NotificationService::notifyAdmins((int) $c['id'], 'gallery', count($ids) . ' photo(s) ajoutée(s) par ' . $club['name'] . '.', '/admin/site?onglet=photos');
+        \App\Services\AuditLogger::log('gallery.club_upload', 'club', (int) $club['id'], null, ['photos' => count($ids)], null, (int) $c['id']);
+        return $this->redirect('/espace-club/competitions/' . $c['id'] . '/photos', count($ids) . ' photo(s) ajoutée(s). Merci !');
+    }
+
+    /** Résultats du club en PDF (catégorie par catégorie, ordre des âges, des poids et du classement). */
+    public function resultsPdf(Request $r): Response
+    {
+        $club = $this->club();
+        $c = $this->comp($r);
+        $g = PoolService::activeGeneration((int) $c['id']);
+        $clubs = $g ? \App\Controllers\Admin\PdfController::clubResults(PoolService::pools((int) $g['id']), (int) $c['id'], (int) $club['id']) : [];
+        $data = ['c' => $c, 'opt' => ['show_competition' => true], 'docTitle' => 'Résultats du club', 'docSubtitle' => $club['name'], 'generatedAt' => date('d/m/Y H:i'), 'clubs' => $clubs];
+        return \App\Services\PdfService::render('resultats-clubs', $data, 'resultats-' . $c['slug'] . '.pdf', 'portrait', isset($r->query['html']));
+    }
+
+    /** Le jour J, l'entraîneur pointe la présence et le poids de ses propres judokas. */
+    public static function attendanceOpen(array $c): bool
+    {
+        return in_array($c['status'], ['registrations_closed', 'attendance', 'pool_preparation', 'in_progress'], true)
+            || ($c['status'] === 'registrations_open' && $c['event_date'] === date('Y-m-d'));
+    }
+
+    public function mark(Request $r): Response
+    {
+        $club = $this->club();
+        $c = $this->comp($r);
+        $reg = RegistrationService::find((int) $r->param('rid'));
+        if ((int) $reg['competition_id'] !== (int) $c['id'] || (int) $reg['club_id'] !== (int) $club['id']) {
+            throw new HttpException(403);
+        }
+        if (!self::attendanceOpen($c)) {
+            throw new \App\Services\DomainError('Le pointage des présences ouvre le jour de la compétition.');
+        }
+        $status = $r->str('status') ?: 'present';
+        $raw = trim(str_replace(',', '.', $r->str('measured_weight_kg')));
+        $weight = $raw !== '' ? (float) $raw : null;
+        if ($weight !== null && RegistrationService::inPool((int) $reg['id'])) {
+            throw new \App\Services\DomainError('Ce judoka est déjà placé en poule : son poids ne peut plus être modifié (contactez l\'organisation).');
+        }
+        \App\Services\AttendanceService::mark((int) $reg['id'], $status, $weight, $r->str('note') ?: null);
+        $label = ['present' => 'présent(e)', 'absent' => 'absent(e)', 'to_check' => 'à vérifier', 'expected' => 'attendu(e)'][$status] ?? $status;
+        return $this->redirect('/espace-club/competitions/' . $c['id'] . '#j' . $reg['id'], $reg['first_name'] . ' ' . $reg['last_name'] . ' : ' . $label . ($weight !== null ? ', pesé(e) ' . kg($weight) : '') . '.');
+    }
+
+    /** L'entraîneur valide la liste de son club : confirmation automatique côté administration. */
+    public function validateList(Request $r): Response
+    {
+        $club = $this->club();
+        $c = $this->comp($r);
+        if (!RegistrationService::clubCanEdit($c)) {
+            throw new \App\Services\DomainError('La date limite est dépassée : contactez l\'organisation.');
+        }
+        $n = RegistrationService::validateClubList((int) $c['id'], (int) $club['id']);
+        return $this->redirect('/espace-club/competitions/' . $c['id'], "Liste validée : $n judoka(s) confirmé(s). L'organisation est prévenue.");
     }
 
     public function register(Request $r): Response
@@ -184,8 +278,14 @@ final class ClubSpaceController extends Controller
         $published = $g && $g['status'] === 'validated' && SettingsService::get((int) $c['id'], 'pools_published');
         $pools = $published ? PoolService::pools((int) $g['id']) : [];
         // Les poules publiées sont visibles ; les données privées des autres clubs (date de naissance, licence) ne sont pas affichées.
+        $q = trim((string) ($r->query['q'] ?? ''));
+        $all = ($r->query['vue'] ?? '') === 'toutes';
         $mine = array_values(array_filter($pools, fn ($p) => in_array((int) $club['id'], array_map('intval', array_column($p['athletes'], 'club_id')), true)));
-        return $this->render('pools', ['title' => 'Poules et horaires', 'c' => $c, 'published' => $published, 'pools' => $pools, 'mine' => $mine]);
+        $shown = PoolService::sheets(PoolService::matching($all ? $pools : $mine, $q));
+        return $this->render('pools', [
+            'title' => 'Poules en direct', 'c' => $c, 'published' => $published, 'pools' => $pools, 'mine' => $mine, 'shown' => $shown, 'q' => $q, 'all' => $all,
+            'scripts' => ['live-reload.js'],
+        ]);
     }
 
     public function results(Request $r): Response

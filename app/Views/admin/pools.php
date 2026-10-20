@@ -41,8 +41,11 @@ $steps = [
     <?php endif; ?>
     <?php if ($g): ?>
       <span class="flow-sep"></span>
-      <a class="btn btn-sm btn-ghost" href="<?= e($pdf) ?>" target="_blank" rel="noopener"><?= icon('download') ?>Toutes les feuilles</a>
-      <?php foreach ($tatamis as $t): ?><a class="btn btn-sm btn-soft" href="<?= e($pdf . '?tatami_id=' . (int) $t['id']) ?>" target="_blank" rel="noopener">Tapis <?= (int) $t['number'] ?></a><?php endforeach; ?>
+      <form method="get" action="<?= e($pdf) ?>" target="_blank" class="print-form">
+        <select name="tatami_id" aria-label="Tapis à imprimer"><option value="">Tous les tapis</option><?php foreach ($tatamis as $t): ?><option value="<?= (int) $t['id'] ?>">Tapis <?= (int) $t['number'] ?></option><?php endforeach; ?></select>
+        <select name="vierge" aria-label="Contenu des feuilles"><option value="">Avec résultats</option><option value="1">Vierges (à remplir)</option></select>
+        <button class="btn btn-sm btn-ghost" type="submit"><?= icon('download') ?>Imprimer les feuilles</button>
+      </form>
     <?php endif; ?>
     <?php if ($g && $canGenerate): ?><?= $post('cancel', 'Annuler la génération', 'btn-danger', [], 'Annuler la génération ? Les poules et les combats non commencés seront supprimés.') ?><?php endif; ?>
   </div>
@@ -138,7 +141,7 @@ $steps = [
     </div>
   <?php endforeach; ?>
 <?php else: ?>
-<p class="small muted">Glissez une poule vers un autre tapis, un athlète vers une autre poule, ou un athlète sur un autre athlète pour les échanger. Sur tablette, utilisez les menus « Déplacer » sous chaque poule et le formulaire en bas de page.</p>
+<p class="small muted">Cliquez-glissez un judoka (poignée ⋮⋮) vers une autre poule, ou sur un autre judoka pour les échanger ; glissez une poule vers un autre tapis. Sur tablette : appui long puis glisser. Les poules dont les combats ont commencé ou qui sont verrouillées ne se modifient plus.</p>
 <div class="pool-board" data-pool-board data-api="<?= e($api) ?>">
   <?php foreach (array_merge($tatamis, [['id' => 0, 'number' => null]]) as $t): $list = $byTatami[$t['id']] ?? []; if ($t['id'] === 0 && !$list) continue; ?>
     <section class="mat-col" data-tatami="<?= (int) $t['id'] ?>">
@@ -152,7 +155,8 @@ $steps = [
               <span class="badge"><?= (int) $p['size'] ?></span></header>
             <ol>
               <?php foreach ($p['athletes'] as $a): ?>
-                <li class="athlete<?= ($a['club_id'] && ($clubs[$a['club_id']] ?? 0) > 1) ? ' dup' : '' ?>" data-reg="<?= (int) $a['registration_id'] ?>"<?= !$started && !$locked ? ' draggable="true"' : '' ?>>
+                <li class="athlete<?= ($a['club_id'] && ($clubs[$a['club_id']] ?? 0) > 1) ? ' dup' : '' ?><?= $started || $locked ? ' fixed' : '' ?>" data-reg="<?= (int) $a['registration_id'] ?>"<?= !$started && !$locked ? ' draggable="true" title="Glisser vers une autre poule, ou sur un judoka pour les échanger"' : ' title="' . ($started ? 'Combats commencés : composition figée' : 'Poule verrouillée') . '"' ?>>
+                  <?php if (!$started && !$locked): ?><span class="grip" aria-hidden="true">⋮⋮</span><?php endif; ?>
                   <?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?php $logo = $a['club_logo']; $name = $a['club_name'] ?? '?'; $size = 16; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?> <?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span>
                 </li>
               <?php endforeach; ?>

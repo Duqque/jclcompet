@@ -32,8 +32,8 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
   .doc-head .meta { color: #71717a; font-size: 7.6pt; margin-top: .8mm; }
   .doc-head .stamp { text-align: right; color: #71717a; font-size: 7.2pt; }
 
-  .card { background: #ffffff; border: .6pt solid #e4e4e7; border-radius: 4mm; padding: 3.5mm 4mm; margin-bottom: 4mm; page-break-inside: avoid; }
-  .card-head { width: 100%; border-collapse: collapse; margin-bottom: 2.2mm; }
+  .card { background: #ffffff; border: .6pt solid #e4e4e7; border-radius: 4mm; padding: 3mm 3.6mm; margin-bottom: 3mm; page-break-inside: avoid; }
+  .card-head { width: 100%; border-collapse: collapse; margin-bottom: 1.4mm; }
   .card-head td { border: 0; padding: 0; vertical-align: bottom; }
   .pill { display: inline-block; padding: .7mm 2.4mm; border-radius: 3mm; background: #f4f4f5; font-size: 7pt; font-weight: 500; color: #3f3f46; margin-left: 1mm; }
   .pill.ink { background: #18181b; color: #fff; }
@@ -51,14 +51,14 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
   .mono { display: inline-block; width: 5mm; height: 5mm; line-height: 5mm; border-radius: 2.5mm; background: #e4e4e7; font-size: 5pt; font-weight: 700; text-align: center; vertical-align: middle; margin-right: 1.4mm; color: #3f3f46; }
 
   /* Feuille de poule */
-  table.grid { width: 100%; border-collapse: separate; border-spacing: 1mm; }
+  table.grid { width: 100%; border-collapse: separate; border-spacing: .8mm; }
   table.grid th { font-size: 6.4pt; font-weight: 500; color: #71717a; text-transform: uppercase; letter-spacing: .3pt; text-align: center; padding: 0 0 .3mm; border: 0; }
   table.grid th.l { text-align: left; padding-left: 1.6mm; }
-  table.grid td { background: #f5f5f3; border-radius: 2.2mm; height: 10mm; padding: 0 1.6mm; border: 0; vertical-align: middle; }
+  table.grid td { background: #f5f5f3; border-radius: 2mm; height: 8.2mm; padding: 0 1.6mm; border: 0; vertical-align: middle; }
   table.grid td.seed { width: 6mm; text-align: center; font-weight: 600; color: #71717a; padding: 0; }
   table.grid td.x { width: 11mm; text-align: center; background: #ececea; padding: 0; }
   table.grid td.diag { background: #18181b; }
-  table.grid td.win { background: #e7f7ec; color: #15803d; font-weight: 700; font-size: 9.5pt; }
+  table.grid td.win { background: #e7f7ec; color: #15803d; font-weight: 700; font-size: 8pt; }
   table.grid td.loss { background: #ffffff; border: .6pt solid #e4e4e7; color: #a1a1aa; font-weight: 600; }
   table.grid td.sum { width: 11mm; text-align: center; font-weight: 700; padding: 0; }
   table.grid td.place { background: #fff; border: .6pt solid #e4e4e7; }
@@ -72,6 +72,12 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
 
   .print-bar { position: fixed; top: 8px; right: 8px; }
   @media print { .print-bar { display: none; } }
+  table.t.bouts { border-spacing: 0 .6mm; }
+  table.t.bouts td { padding: 1.1mm 2mm; }
+  .lbox { display: inline-block; vertical-align: middle; margin-right: 1.4mm; background: #ffffff; border: .6pt solid #e4e4e7; border-radius: 1.6mm; text-align: center; }
+  .lbox img { display: inline-block; }
+  .lbox-img { vertical-align: middle; background: #ffffff; border: .6pt solid #e4e4e7; border-radius: 1.6mm; margin-right: 1.4mm; }
+  .lbox.mono { background: #ffffff; color: #3f3f46; font-weight: 700; }
 </style></head>
 <body>
 <?php if (!$engine): ?><div class="print-bar"><button type="button" data-print>Imprimer / enregistrer en PDF</button></div><script src="<?= e(asset('js/app.js')) ?>"></script><?php endif; ?>

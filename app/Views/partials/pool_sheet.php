@@ -12,6 +12,8 @@ $n = count($p['athletes']);
 $short = ['ippon' => 'Ippon', 'wazaari' => 'Waza-ari', 'yuko' => 'Yuko', 'decision' => 'Décision', 'hansoku_make' => 'Hansoku', 'fusen_gachi' => 'Forfait', 'kiken_gachi' => 'Abandon', 'shido' => 'Shido'];
 $q = mb_strtolower(trim($q ?? ''));
 $state = $p['bouts_done'] >= $p['bouts_total'] && $p['bouts_total'] ? ['badge-green', 'Terminée'] : ($p['bouts_started'] ? ['badge-red', 'En cours'] : ['', 'À venir']);
+// Score d'un combattant au format des feuilles officielles : IWY puis nombre de shido (ex. « 100-1 »).
+$iwy = fn (array $b, string $side) => (int) $b[$side . '_ippon'] . (int) $b[$side . '_wazaari'] . (int) $b[$side . '_yuko'] . ((int) $b[$side . '_shido'] > 0 ? '-' . (int) $b[$side . '_shido'] : '');
 $link = function (array $b, string $inner, string $cls, string $title) use ($boutHref) {
     $href = $boutHref($b);
     return $href ? '<a class="' . $cls . '" href="' . e($href) . '" title="' . e($title) . '">' . $inner . '</a>' : '<span class="' . $cls . '" title="' . e($title) . '">' . $inner . '</span>';
@@ -41,7 +43,8 @@ $link = function (array $b, string $inner, string $cls, string $title) use ($bou
       </tr></thead>
       <tbody>
       <?php foreach ($p['athletes'] as $i => $a): $row = $i + 1; $st = $p['standing'][(int) $a['registration_id']] ?? null;
-        $hit = $q !== '' && str_contains(mb_strtolower($a['last_name'] . ' ' . $a['first_name'] . ' ' . $a['first_name'] . ' ' . $a['last_name']), $q); ?>
+        $hit = ($q !== '' && str_contains(mb_strtolower($a['last_name'] . ' ' . $a['first_name'] . ' ' . $a['first_name'] . ' ' . $a['last_name']), $q))
+            || (!empty($highlightClub) && (int) $a['club_id'] === (int) $highlightClub); ?>
         <tr<?= $hit ? ' class="hit"' : '' ?>>
           <th scope="row" class="seed"><?= $row ?></th>
           <td class="who"><?= avatar($a['photo_document_id'] ? (int) $a['photo_document_id'] : null, $a['first_name'] . ' ' . $a['last_name'], 'avatar sheet-av') ?><span class="nm"><strong><?= e(mb_strtoupper($a['last_name'])) ?></strong> <?= e($a['first_name']) ?><?php if ($a['reference_weight_kg'] !== null): ?><small><?= e(kg($a['reference_weight_kg'])) ?></small><?php endif; ?></span></td>
@@ -53,7 +56,7 @@ $link = function (array $b, string $inner, string $cls, string $title) use ($bou
             $vs = $p['athletes'][$j - 1]['last_name'];
             if ($b['status'] === 'validated') {
                 $won = $b['winner_side'] === $b['side'];
-                $inner = '<strong>' . ($won ? (int) $b['points'] : 0) . '</strong><small>' . e($won ? ($short[$b['win_method']] ?? '') : '') . '</small>';
+                $inner = '<strong>' . e($iwy($b, $b['side'])) . '</strong><small>' . e($won ? ($short[$b['win_method']] ?? '') : '') . '</small>';
                 echo '<td class="x">' . $link($b, $inner, 'cell ' . ($won ? 'win' : 'loss'), 'Combat ' . $b['order_in_pool'] . ' contre ' . $vs . ' — ' . (BoutService::METHODS[$b['win_method']] ?? '') . ' · voir / corriger') . '</td>';
             } elseif (in_array($b['status'], ['in_progress', 'finished'], true)) {
                 echo '<td class="x">' . $link($b, '<small>' . ($b['status'] === 'finished' ? 'à valider' : 'en cours') . '</small>', 'cell live', 'Combat ' . $b['order_in_pool'] . ' contre ' . $vs) . '</td>';
@@ -79,7 +82,7 @@ $link = function (array $b, string $inner, string $cls, string $title) use ($bou
       $fb = $p['athletes'][($b['seed_b'] ?? 1) - 1] ?? null;
       $done = $b['status'] === 'validated';
       $live = in_array($b['status'], ['in_progress', 'finished'], true);
-      $res = $done ? '<span class="res done">' . (int) $b['points'] . ' · ' . e($short[$b['win_method']] ?? '') . '</span>' : ($live ? '<span class="res live">' . ($b['status'] === 'finished' ? 'à valider' : 'en cours') . '</span>' : '<span class="res">à venir</span>');
+      $res = $done ? '<span class="res done">' . e($iwy($b, 'a')) . ' / ' . e($iwy($b, 'b')) . ' · ' . e($short[$b['win_method']] ?? '') . '</span>' : ($live ? '<span class="res live">' . ($b['status'] === 'finished' ? 'à valider' : 'en cours') . '</span>' : '<span class="res">à venir</span>');
       $name = fn (?array $f, string $side) => $f ? '<span class="fighter' . ($done && $b['winner_side'] === $side ? ' won' : '') . '"><span class="sd">' . ($side === 'a' ? $b['seed_a'] : $b['seed_b']) . '</span><strong>' . e(mb_strtoupper($f['last_name'])) . '</strong> ' . e($f['first_name']) . '</span>' : '<span class="fighter">?</span>';
       $inner = '<span class="o">' . (int) $b['order_in_pool'] . '</span>' . belt('red') . $name($fa, 'a') . '<span class="vs">×</span>' . belt('white') . $name($fb, 'b') . ($b['phase'] === 'final' ? '<span class="badge">barrage</span>' : '') . $res;
       echo '<li>' . $link($b, $inner, 'bout-row' . ($done ? ' done' : ($live ? ' live' : '')), 'Combat ' . $b['order_in_pool'] . ' — ' . BoutService::STATUS[$b['status']]) . '</li>';

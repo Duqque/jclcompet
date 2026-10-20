@@ -49,6 +49,25 @@ final class RegistrationTest extends TestCase
         $this->assertDomainError(fn () => RegistrationService::register($cid, ['sex' => 'M', 'first_name' => 'Tom'] + $data, ['actor' => 'club', 'club_id' => $club]), "n'est pas ouverte");
     }
 
+    public function testCoachListValidationConfirmsPendingRegistrationsAndNotifiesAdmin(): void
+    {
+        $this->admin();
+        $cid = $this->competition();
+        $club = $this->club();
+        $data = ['last_name' => 'Martin', 'first_name' => 'Zoé', 'sex' => 'F', 'birth_date' => $this->birthFor(9), 'declared_weight_kg' => 28];
+        $id = RegistrationService::register($cid, $data, ['actor' => 'club', 'club_id' => $club]);
+        Database::run("UPDATE registrations SET status = 'pending', needs_validation = 1 WHERE id = ?", [$id]);
+        $coach = $this->user('coach', $club);
+        \App\Core\Auth::actAs($coach);
+        $this->assertSame(1, RegistrationService::validateClubList($cid, $club));
+        $this->assertSame('confirmed', RegistrationService::find($id)['status']);
+        $v = RegistrationService::clubListValidation($cid, $club);
+        $this->assertSame(1, (int) $v['registrations_count']);
+        $this->assertSame(0, $v['changed_since']);
+        $this->assertSame(1, (int) Database::value("SELECT COUNT(*) FROM notifications WHERE type = 'club_list' AND competition_id = ?", [$cid]));
+        $this->assertDomainError(fn () => RegistrationService::validateClubList($cid, $this->club('Vide')), 'au moins un judoka');
+    }
+
     private function expectValidation(callable $fn): void
     {
         try {
