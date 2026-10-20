@@ -308,6 +308,26 @@ final class RegistrationService
         );
     }
 
+    /**
+     * Athlète déjà placé en poule : seuls le grade, la licence et le commentaire restent modifiables
+     * (la catégorie, le poids et l'identité déterminent la poule). La photo se gère avec applyPhoto().
+     */
+    public static function updateDetails(int $id, array $data, array $ctx): void
+    {
+        $reg = self::find($id);
+        CompetitionService::assertWritable(CompetitionService::find((int) $reg['competition_id']));
+        if ($ctx['actor'] === 'club') {
+            self::assertClubOwns($reg, $ctx['club_id'] ?? null);
+        }
+        $grade = trim((string) ($data['grade'] ?? $reg['grade'] ?? ''));
+        $license = trim((string) ($data['license_number'] ?? $reg['license_number'] ?? ''));
+        Database::update('athletes', ['grade' => mb_substr($grade, 0, 40) ?: null, 'license_number' => mb_substr($license, 0, 40) ?: null], 'id = :id', ['id' => $reg['athlete_id']]);
+        if ($ctx['actor'] === 'admin' && array_key_exists('admin_comment', $data)) {
+            Database::update('registrations', ['admin_comment' => mb_substr(trim((string) $data['admin_comment']), 0, 500) ?: null], 'id = :id', ['id' => $id]);
+        }
+        AuditLogger::log('registration.details', 'registration', $id, null, ['grade' => $grade, 'license_number' => $license], null, (int) $reg['competition_id']);
+    }
+
     public static function update(int $id, array $data, array $ctx): void
     {
         $reg = self::find($id);

@@ -135,8 +135,14 @@ final class ClubSpaceController extends Controller
         $c = $this->comp($r);
         $data = $r->post;
         unset($data['admin_comment']);
-        RegistrationService::update((int) $r->param('rid'), $data, ['actor' => 'club', 'club_id' => (int) $club['id']]);
-        RegistrationService::applyPhoto((int) $r->param('rid'), $r->file('photo'), $r->bool('remove_photo'));
+        $rid = (int) $r->param('rid');
+        if (RegistrationService::inPool($rid)) {
+            RegistrationService::updateDetails($rid, $data, ['actor' => 'club', 'club_id' => (int) $club['id']]);
+            RegistrationService::applyPhoto($rid, $r->file('photo'), $r->bool('remove_photo'));
+            return $this->redirect('/espace-club/competitions/' . $c['id'], 'Photo et informations mises à jour (catégorie et poids verrouillés : le judoka est placé en poule).');
+        }
+        RegistrationService::update($rid, $data, ['actor' => 'club', 'club_id' => (int) $club['id']]);
+        RegistrationService::applyPhoto($rid, $r->file('photo'), $r->bool('remove_photo'));
         return $this->redirect('/espace-club/competitions/' . $c['id'], 'Inscription modifiée.');
     }
 

@@ -197,6 +197,9 @@ function icon(string $name, string $class = 'icon'): string
         'x' => '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
         'check' => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
         'arrow-left' => '<path d="M19 12H5"/><path d="m11 6-6 6 6 6"/>',
+        'refresh' => '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>',
+        'expand' => '<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>',
+        'shrink' => '<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>',
         'flag' => '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
         'chevron' => '<path d="m7 10 5 5 5-5"/>',
         'arrow' => '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
@@ -225,4 +228,50 @@ function avatar(?int $photoId, string $name, string $class = 'avatar'): string
         return '<img class="' . e($class) . '" src="' . e(url('/media/' . $photoId, ['mini' => 1])) . '" alt="" loading="lazy">';
     }
     return '<span class="avatar-mono ' . e($class) . '" aria-hidden="true">' . e(initials($name)) . '</span>';
+}
+
+/** Image embarquée dans un PDF (data URI) à partir d'un chemin « media/ID » ou d'un fichier public. */
+function pdf_image(?string $path): ?string
+{
+    static $cache = [];
+    if (!$path) {
+        return null;
+    }
+    if (array_key_exists($path, $cache)) {
+        return $cache[$path];
+    }
+    $file = null;
+    $mime = null;
+    if (preg_match('#^/?media/(\d+)$#', $path, $m)) {
+        $d = \App\Core\Database::one('SELECT stored_name, thumb_name, mime_type FROM documents WHERE id = ?', [(int) $m[1]]);
+        if ($d) {
+            $dir = \App\Services\DocumentService::dir();
+            $file = $d['thumb_name'] && is_file($dir . '/' . $d['thumb_name']) ? $dir . '/' . $d['thumb_name'] : $dir . '/' . $d['stored_name'];
+            $mime = $d['mime_type'];
+        }
+    } elseif (is_file(BASE_PATH . '/public/' . ltrim($path, '/'))) {
+        $file = BASE_PATH . '/public/' . ltrim($path, '/');
+        $mime = mime_content_type($file) ?: 'image/png';
+    }
+    if (!$file || !is_file($file) || !in_array($mime, ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], true)) {
+        return $cache[$path] = null;
+    }
+    if ($mime === 'image/webp') {
+        return $cache[$path] = null; // non pris en charge par le moteur PDF
+    }
+    return $cache[$path] = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file));
+}
+
+/** Dessin de ceinture : rouge (premier appelé) ou blanche (second appelé). $asImg = data URI pour les PDF. */
+function belt(string $color, bool $asImg = false): string
+{
+    [$fill, $stroke] = $color === 'red' ? ['#c21a2c', '#8f1220'] : ['#ffffff', '#a1a1aa'];
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 22" width="34" height="22">'
+        . '<g fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="1.2" stroke-linejoin="round">'
+        . '<path d="M14.5 11.5 9 20.5h4.6l3.4-6.6z"/><path d="M19.5 11.5 25 20.5h-4.6L17 13.9z"/>'
+        . '<rect x="1.5" y="5" width="31" height="6" rx="2"/><rect x="12.5" y="3.2" width="9" height="9.4" rx="2.6"/></g></svg>';
+    if ($asImg) {
+        return '<img class="belt" src="data:image/svg+xml;base64,' . base64_encode($svg) . '" alt="" width="17" height="11">';
+    }
+    return '<span class="belt belt-' . ($color === 'red' ? 'red' : 'white') . '" aria-hidden="true">' . $svg . '</span>';
 }

@@ -6,7 +6,7 @@
     <?php if ($reg['is_late']): ?><span class="badge badge-orange">tardive</span><?php endif; ?><?php if ($reg['is_onsite']): ?><span class="badge badge-yellow">sur place</span><?php endif; ?>
     <?php if ($inPool): ?><span class="badge badge-blue">placé(e) en poule</span><?php endif; ?>
   </div>
-  <?php if ($inPool): ?><div class="alert alert-info small">Athlète placé(e) dans une poule : pour modifier sa catégorie, retirez-le de sa poule depuis « Poules et tapis ».</div><?php endif; ?>
+  <?php if ($inPool): ?><div class="alert alert-info small">Athlète placé(e) en poule : la photo, le grade, la licence et le commentaire restent modifiables. Pour changer sa catégorie ou son poids, retirez-le d'abord de sa poule (page Poules).</div><?php endif; ?>
 <?php endif; ?>
 <form method="post" enctype="multipart/form-data" action="<?= e(url($reg ? $base . '/inscriptions/' . $reg['id'] : $base . '/inscriptions')) ?>">
   <?= csrf_field() ?>

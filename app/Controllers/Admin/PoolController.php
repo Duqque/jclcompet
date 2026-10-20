@@ -19,6 +19,12 @@ final class PoolController extends AdminController
         $cid = (int) $c['id'];
         $g = PoolService::activeGeneration($cid);
         $pools = $g ? PoolService::pools((int) $g['id']) : [];
+        $q = trim((string) ($r->query['q'] ?? ''));
+        $vue = in_array($r->query['vue'] ?? '', ['feuilles', 'categories', 'liste', 'tapis'], true) ? $r->query['vue'] : 'feuilles';
+        $shown = PoolService::matching($pools, $q);
+        if ($vue === 'feuilles') {
+            $shown = PoolService::sheets($shown);
+        }
         $byTatami = [];
         foreach ($pools as $p) {
             $byTatami[$p['tatami_id'] ?? 0][] = $p;
@@ -35,7 +41,7 @@ final class PoolController extends AdminController
         return $this->admin('pools', [
             'title' => 'Poules et tapis', 'competition' => $c, 'c' => $c, 'g' => $g,
             'report' => $g ? (json_decode((string) $g['report_json'], true) ?: []) : [],
-            'pools' => $pools, 'byTatami' => $byTatami, 'tatamis' => CompetitionService::tatamis($cid),
+            'pools' => $pools, 'shown' => $shown, 'q' => $q, 'vue' => $vue, 'byTatami' => $byTatami, 'tatamis' => CompetitionService::tatamis($cid),
             'loads' => $g ? PoolService::tatamiLoads((int) $g['id']) : null,
             'warnings' => $g ? PoolService::warnings($cid, (int) $g['id']) : [],
             'participants' => count(PoolService::participants($cid)), 'unplaced' => $unplaced, 'groups' => $groups,

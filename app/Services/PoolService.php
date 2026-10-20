@@ -226,7 +226,7 @@ final class PoolService
     private static function insertPool(array $competition, int $genId, array $group, int $number, array $members, ?int $indexInGroup): int
     {
         $weights = array_values(array_filter(array_column($members, 'weight'), fn ($w) => $w !== null));
-        $label = $group['label'] . ($indexInGroup ? ' · Poule ' . $indexInGroup : '');
+        $label = $group['label'] . ' · Poule ' . $number; // numéro unique de la poule dans la compétition (combats, feuilles, TV)
         $poolId = Database::insert('pools', [
             'competition_id' => (int) $competition['id'],
             'generation_id' => $genId,
@@ -297,7 +297,7 @@ final class PoolService
     /** Pools d'une génération avec leurs athlètes (pour l'aperçu et les PDF). */
     public static function pools(int $generationId, ?int $tatamiId = null): array
     {
-        $sql = 'SELECT p.*, t.number AS tatami_number, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label
+        $sql = 'SELECT p.*, t.number AS tatami_number, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, ac.sort_order AS age_sort, wc.label AS weight_label, wc.sort_order AS weight_sort
                 FROM pools p
                 LEFT JOIN tatamis t ON t.id = p.tatami_id
                 JOIN age_categories ac ON ac.id = p.age_category_id
@@ -316,7 +316,7 @@ final class PoolService
         $p = [];
         $in = Database::in($ids, $p, 'pool');
         $athletes = Database::all(
-            "SELECT pa.*, r.club_id, r.club_exception_label, r.declared_weight_kg, r.measured_weight_kg, a.last_name, a.first_name, a.sex, a.birth_date, a.grade,
+            "SELECT pa.*, r.club_id, r.club_exception_label, r.declared_weight_kg, r.measured_weight_kg, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.photo_document_id,
                     c.name AS club_name, c.short_name AS club_short, c.logo_path AS club_logo
              FROM pool_athletes pa JOIN registrations r ON r.id = pa.registration_id
              JOIN athletes a ON a.id = r.athlete_id LEFT JOIN clubs c ON c.id = r.club_id
@@ -343,6 +343,81 @@ final class PoolService
             $pool['club_conflicts'] = PoolGenerator::clubConflicts([array_map(fn ($a) => ['club_id' => $a['club_id'] === null ? null : (int) $a['club_id']], $pool['athletes'])]);
         }
         return $pools;
+    }
+
+    /**
+     * Feuilles de poule : ajoute à chaque poule ses combats (grille croisée) et son classement en direct.
+     * @param list<array> $pools résultat de pools()
+     */
+    public static function sheets(array $pools): array
+    {
+        if (!$pools) {
+            return [];
+        }
+        $p = [];
+        $in = Database::in(array_column($pools, 'id'), $p, 'sp');
+        $bouts = Database::all(
+            "SELECT id, pool_id, order_in_pool, phase, a_registration_id, b_registration_id, status, winner_side, win_method,
+                    a_ippon, a_wazaari, a_yuko, a_shido, b_ippon, b_wazaari, b_yuko, b_shido
+             FROM bouts WHERE pool_id IN $in AND status <> 'cancelled' ORDER BY pool_id, order_in_pool",
+            $p
+        );
+        $byPool = [];
+        foreach ($bouts as $b) {
+            $byPool[$b['pool_id']][] = $b;
+        }
+        $values = [];
+        foreach ($pools as &$pool) {
+            $cid = (int) $pool['competition_id'];
+            if (!isset($values[$cid])) {
+                $cfg = (array) SettingsService::get($cid, 'pool_ranking');
+                $values[$cid] = (array) ($cfg['value_points'] ?? []);
+            }
+            $seedOf = [];
+            foreach ($pool['athletes'] as $i => $a) {
+                $seedOf[(int) $a['registration_id']] = $i + 1;
+            }
+            $pool['bouts'] = [];
+            $pool['cells'] = [];
+            foreach ($byPool[$pool['id']] ?? [] as $b) {
+                $sa = $seedOf[(int) $b['a_registration_id']] ?? null;
+                $sb = $seedOf[(int) $b['b_registration_id']] ?? null;
+                $b['seed_a'] = $sa;
+                $b['seed_b'] = $sb;
+                $b['points'] = $b['status'] === 'validated' ? (int) ($values[$cid][$b['win_method']] ?? 0) : null;
+                $pool['bouts'][] = $b;
+                if ($sa && $sb) {
+                    // La dernière rencontre (barrage) fait foi dans la grille.
+                    $pool['cells'][$sa][$sb] = $b + ['side' => 'a'];
+                    $pool['cells'][$sb][$sa] = $b + ['side' => 'b'];
+                }
+            }
+            $standing = RankingService::computePool((int) $pool['id']);
+            $pool['complete'] = $standing['complete'];
+            $pool['standing'] = array_column($standing['rows'], null, 'registration_id');
+        }
+        return $pools;
+    }
+
+    /** Filtre des poules par nom d'athlète, club ou numéro de poule. */
+    public static function matching(array $pools, string $q): array
+    {
+        $q = mb_strtolower(trim($q));
+        if ($q === '') {
+            return $pools;
+        }
+        return array_values(array_filter($pools, function ($pool) use ($q) {
+            if (ctype_digit($q) && (int) $q === (int) $pool['number']) {
+                return true;
+            }
+            foreach ($pool['athletes'] as $a) {
+                $hay = mb_strtolower($a['last_name'] . ' ' . $a['first_name'] . ' ' . $a['first_name'] . ' ' . $a['last_name'] . ' ' . ($a['club_name'] ?? '') . ' ' . ($a['club_short'] ?? ''));
+                if (str_contains($hay, $q)) {
+                    return true;
+                }
+            }
+            return false;
+        }));
     }
 
     public static function pool(int $poolId): array

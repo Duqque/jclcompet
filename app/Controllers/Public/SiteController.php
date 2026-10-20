@@ -142,7 +142,8 @@ final class SiteController extends Controller
         $c = CompetitionService::findBySlug((string) $r->param('slug'));
         return Response::html(\App\Core\View::render('rankings/board', [
             'c' => $c,
-            'refresh' => (int) SettingsService::get((int) $c['id'], 'public_refresh_seconds'),
+            'refresh' => (int) SettingsService::get((int) $c['id'], 'public_refresh_seconds') ?: 120,
+            'partners' => ContentService::partners((int) $c['id']),
             'board' => self::rankingData($c),
             'clubName' => ContentService::site('club_name', 'JC Leforest'),
         ]));

@@ -1,5 +1,5 @@
 <?php use App\Services\BoutService; $s = $state; $base = '/admin/competitions/' . $c['id']; $heading = 'Combat n° ' . $s['id']; include dirname(__DIR__) . '/_head.php'; ?>
-<p><a href="<?= e(url($base . '/combats')) ?>">← Tous les combats</a></p>
+<p class="btn-group"><a class="btn btn-ghost btn-sm" href="<?= e(url($base . '/combats')) ?>">← Tous les combats</a><a class="btn btn-ghost btn-sm" href="<?= e(url($base . '/poules', ['vue' => 'feuilles', 'q' => preg_replace('/^.*Poule /u', '', $s['pool_label'])]) . '#poule-' . $s['pool_id']) ?>"><?= icon('grid') ?>Feuille de la <?= e(preg_replace('/^.*· /u', '', $s['pool_label'])) ?></a></p>
 <div class="grid grid-2">
   <section class="card">
     <h2 style="font-size:1.15rem"><?= e($s['category']) ?><?= $s['weight_label'] ? ' ' . e($s['weight_label']) . ' kg' : '' ?> — <?= e($s['pool_label']) ?></h2>

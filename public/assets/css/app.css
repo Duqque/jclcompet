@@ -111,7 +111,7 @@ small, .small { font-size: .84rem; }
 .field { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
 .field > label, .label { font-weight: 500; font-size: .86rem; color: var(--ink-2); }
 .field .hint { font-size: .8rem; color: var(--muted); }
-input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], input[type=time], input[type=datetime-local],
+input:not([type]), input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], input[type=time], input[type=datetime-local],
 input[type=search], input[type=tel], input[type=url], select, textarea {
   width: 100%; min-height: 42px; padding: .55rem .85rem; border: 1px solid transparent; border-radius: var(--radius-sm);
   background: var(--surface-2); color: var(--ink); font: .95rem/1.3 var(--font-body); transition: background .15s, border-color .15s; }
@@ -126,7 +126,7 @@ input[type=file]::file-selector-button { border: 1px solid var(--line); backgrou
 .required::after { content: " *"; color: var(--red); }
 fieldset { border: 0; border-radius: var(--radius); padding: 1.3rem 1.4rem 1.4rem; margin: 0 0 1rem; background: var(--white); box-shadow: var(--shadow); }
 legend { float: left; width: 100%; font-weight: 600; font-size: 1rem; margin: 0 0 1rem; padding: 0; letter-spacing: -.01em; }
-legend + * { clear: both; }
+fieldset > :not(legend) { clear: both; }
 
 /* --- Cartes, tableaux, badges ---------------------------------------------- */
 .card { background: var(--surface); border: 1px solid rgba(24,24,27,.03); border-radius: var(--radius); padding: 1.3rem 1.4rem; box-shadow: var(--shadow); min-width: 0; }

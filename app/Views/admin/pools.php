@@ -61,7 +61,7 @@ $allPools = $pools;
   <ul class="small" style="margin:.6rem 0 0"><?php foreach ($warnings as $w): ?><li class="<?= $w['level'] === 'error' ? 'field-error' : '' ?>"><?= e($w['message']) ?></li><?php endforeach; ?></ul></details>
 <?php endif; ?>
 
-<?php if ($loads): ?>
+<?php if ($loads && $vue === 'tapis'): ?>
 <section class="card" style="margin-bottom:1.2rem">
   <div class="card-head"><h2 style="margin:0;font-size:1.1rem">Charge des tapis</h2><span class="small muted">Écart entre le tapis le plus et le moins chargé : <strong><?= e(hours_label((int) $loads['spread_seconds'])) ?></strong> · battement <?= (int) $loads['gap_seconds'] ?> s entre combats</span></div>
   <div class="table-wrap"><table class="table-compact">
@@ -74,21 +74,52 @@ $allPools = $pools;
 </section>
 <?php endif; ?>
 
-<?php if ($g): $vue = ($_GET['vue'] ?? 'categories') === 'tapis' ? 'tapis' : 'categories'; ?>
-<div class="toolbar"><div class="segmented" role="group" aria-label="Affichage des poules">
-  <a href="?vue=categories"<?= $vue === 'categories' ? ' aria-current="page"' : '' ?>>Par catégorie et âge</a>
-  <a href="?vue=tapis"<?= $vue === 'tapis' ? ' aria-current="page"' : '' ?>>Répartition des tapis</a></div></div>
-<?php if ($vue === 'categories'):
+<?php if ($g):
+  $cid = (int) $c['id'];
+  $vq = fn (string $v) => '?' . http_build_query(array_filter(['vue' => $v, 'q' => $q]));
+  $boutHref = fn (array $b) => url('/admin/competitions/' . $cid . '/combats/' . $b['id']);
   $byCat = [];
-  foreach ($pools as $p) { $byCat[\App\Services\CategoryService::label(['name' => $p['age_name'], 'name_m' => $p['name_m'], 'name_f' => $p['name_f']], $p['sex'])][] = $p; } ?>
+  foreach ($shown as $p) { $byCat[\App\Services\CategoryService::label(['name' => $p['age_name'], 'name_m' => $p['name_m'], 'name_f' => $p['name_f']], $p['sex'])][] = $p; } ?>
+<form method="get" class="toolbar" role="search">
+  <input type="hidden" name="vue" value="<?= e($vue) ?>">
+  <label class="search"><?= icon('search') ?><span class="sr-only">Retrouver une poule</span><input type="search" name="q" value="<?= e($q) ?>" placeholder="Nom d'un judoka, club ou n° de poule…"></label>
+  <?php if ($q !== ''): ?><a class="btn btn-ghost btn-sm" href="<?= e($vq($vue) . '&q=') ?>"><?= icon('x') ?>Effacer</a><span class="small muted"><?= count($shown) ?> poule(s) trouvée(s)</span><?php endif; ?>
+  <span style="flex:1"></span>
+  <div class="segmented" role="group" aria-label="Affichage des poules">
+    <a href="<?= e($vq('feuilles')) ?>"<?= $vue === 'feuilles' ? ' aria-current="page"' : '' ?>>Feuilles de poule</a>
+    <a href="<?= e($vq('categories')) ?>"<?= $vue === 'categories' ? ' aria-current="page"' : '' ?>>Cartes</a>
+    <a href="<?= e($vq('liste')) ?>"<?= $vue === 'liste' ? ' aria-current="page"' : '' ?>>Liste</a>
+    <a href="<?= e($vq('tapis')) ?>"<?= $vue === 'tapis' ? ' aria-current="page"' : '' ?>>Répartition des tapis</a></div>
+</form>
+<?php if ($vue !== 'tapis' && !$shown): ?>
+  <div class="empty"><strong>Aucune poule trouvée</strong>Vérifiez l'orthographe du nom, ou cherchez par club ou numéro de poule.</div>
+<?php elseif ($vue === 'feuilles'): ?>
+  <?php foreach ($byCat as $label => $list): ?>
+    <div class="group-title"><h2><?= e($label) ?></h2><span class="muted small"><?= count($list) ?> poule(s) · <?= array_sum(array_column($list, 'size')) ?> judokas · <?= array_sum(array_column($list, 'bouts_total')) ?> combats</span></div>
+    <div class="sheets"><?php foreach ($list as $p): include BASE_PATH . '/app/Views/partials/pool_sheet.php'; endforeach; ?></div>
+  <?php endforeach; ?>
+  <p class="small muted">Cliquez sur une case ou sur un combat de l'ordre pour ouvrir son détail et corriger le résultat (motif obligatoire, historique conservé).</p>
+<?php elseif ($vue === 'liste'): ?>
+  <section class="card"><div class="table-wrap"><table class="table-compact">
+    <thead><tr><th>Poule</th><th>Catégorie</th><th>Tapis</th><th>Judokas</th><th class="num">Combats</th><th>État</th><th></th></tr></thead>
+    <tbody><?php foreach ($shown as $p): $done = $p['bouts_total'] && $p['bouts_done'] >= $p['bouts_total']; ?>
+      <tr><td class="nowrap"><strong>Poule <?= (int) $p['number'] ?></strong></td>
+        <td><?= e(\App\Services\CategoryService::label(['name' => $p['age_name'], 'name_m' => $p['name_m'], 'name_f' => $p['name_f']], $p['sex'])) ?><?= $p['weight_label'] ? ' · ' . e($p['weight_label']) . ' kg' : '' ?></td>
+        <td class="nowrap">Tapis <?= e($p['tatami_number'] ?? '—') ?></td>
+        <td class="small"><?php foreach ($p['athletes'] as $i => $a): ?><span class="pool-li"><span class="muted"><?= $i + 1 ?>.</span> <?php $logo = $a['club_logo']; $name = $a['club_name'] ?? '?'; $size = 18; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?> <?= e(mb_strtoupper($a['last_name']) . ' ' . $a['first_name']) ?></span><?php endforeach; ?></td>
+        <td class="num"><?= (int) $p['bouts_done'] ?>/<?= (int) $p['bouts_total'] ?></td>
+        <td><span class="badge <?= $done ? 'badge-green' : ($p['bouts_started'] ? 'badge-red' : '') ?>"><?= $done ? 'Terminée' : ($p['bouts_started'] ? 'En cours' : 'À venir') ?></span></td>
+        <td class="actions"><a class="btn btn-ghost btn-sm" href="<?= e('?' . http_build_query(['vue' => 'feuilles', 'q' => (string) $p['number']])) ?>">Feuille</a><a class="btn btn-ghost btn-sm" href="<?= e(url('/admin/competitions/' . $cid . '/combats', ['pool_id' => $p['id']])) ?>">Combats</a></td></tr>
+    <?php endforeach; ?></tbody></table></div></section>
+<?php elseif ($vue === 'categories'): ?>
   <?php foreach ($byCat as $label => $list): ?>
     <div class="group-title"><h2><?= e($label) ?></h2><span class="muted small"><?= count($list) ?> poule(s) · <?= array_sum(array_column($list, 'size')) ?> judokas · <?= array_sum(array_column($list, 'bouts_total')) ?> combats</span></div>
     <div class="pool-board">
       <?php foreach ($list as $p): ?>
         <article class="pool<?= (int) $p['is_locked'] ? ' locked' : '' ?><?= $p['bouts_started'] ? ' started' : '' ?>">
-          <header><strong><?= e($p['weight_label'] ? $p['weight_label'] . ' kg · ' : '') ?>Poule <?= (int) $p['number'] ?></strong><span class="badge badge-ink">Tapis <?= e($p['tatami_number'] ?? '—') ?></span></header>
-          <ol><?php foreach ($p['athletes'] as $a): ?><li><?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small muted">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span></li><?php endforeach; ?></ol>
-          <footer><span><?= (int) $p['size'] ?> judokas · <?= (int) $p['bouts_total'] ?> combats · <?= e(hours_label((int) $p['estimated_seconds'])) ?><?= $p['spread_pct'] > 0 ? ' · écart ' . number_format($p['spread_pct'], 1, ',', '') . ' %' : '' ?></span></footer>
+          <header><strong>Poule <?= (int) $p['number'] ?><?= $p['weight_label'] ? ' · ' . e($p['weight_label']) . ' kg' : '' ?></strong><span class="badge badge-ink">Tapis <?= e($p['tatami_number'] ?? '—') ?></span></header>
+          <ol><?php foreach ($p['athletes'] as $a): ?><li><?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small muted">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?php $logo = $a['club_logo']; $name = $a['club_name'] ?? '?'; $size = 18; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?> <?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span></li><?php endforeach; ?></ol>
+          <footer><span><?= (int) $p['size'] ?> judokas · <?= (int) $p['bouts_total'] ?> combats · <?= e(hours_label((int) $p['estimated_seconds'])) ?><?= $p['spread_pct'] > 0 ? ' · écart ' . number_format($p['spread_pct'], 1, ',', '') . ' %' : '' ?></span><a class="small" href="<?= e('?' . http_build_query(['vue' => 'feuilles', 'q' => (string) $p['number']])) ?>">Feuille</a></footer>
         </article>
       <?php endforeach; ?>
     </div>
@@ -146,7 +177,7 @@ $allPools = $pools;
     <?php $opts = ''; foreach ($allPools as $p) { foreach ($p['athletes'] as $a) { $opts .= '<option value="' . (int) $a['registration_id'] . '">' . e($a['last_name'] . ' ' . $a['first_name'] . ' — ' . $p['label']) . '</option>'; } } ?>
     <form method="post" action="<?= e($u) ?>" class="stack"><?= csrf_field() ?><input type="hidden" name="op" value="move_athlete">
       <div class="field"><label>Athlète</label><select name="registration_id"><?= $opts ?></select></div>
-      <div class="field"><label>Vers la poule</label><select name="pool_id"><?php foreach ($allPools as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['number'] . ' · ' . $p['label']) ?></option><?php endforeach; ?></select></div>
+      <div class="field"><label>Vers la poule</label><select name="pool_id"><?php foreach ($allPools as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['label']) ?></option><?php endforeach; ?></select></div>
       <label class="check"><input type="checkbox" name="allow_exception" value="1"> Exception autorisée (catégorie différente — jamais filles/garçons)</label>
       <button class="btn btn-ghost" type="submit">Déplacer l'athlète</button></form>
     <hr style="border:0;border-top:1px solid var(--line);margin:1.2rem 0">

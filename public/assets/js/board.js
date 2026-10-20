@@ -3,7 +3,7 @@
   'use strict';
   const body = document.body;
   const url = body.dataset.url;
-  const every = Math.max(30, parseInt(body.dataset.refresh || '120', 10)) * 1000;
+  const every = Math.max(30, parseInt(body.dataset.refresh || '120', 10) || 120) * 1000;
   let timer = null;
 
   function logo(c) {
@@ -30,8 +30,33 @@
     const when = d.updated_at ? new Date(d.updated_at.replace(' ', 'T')) : new Date(d.generated_at.replace(' ', 'T'));
     document.querySelector('[data-updated]').textContent = 'Mis à jour à ' + when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
+  // Compte à rebours jusqu'à la prochaine actualisation automatique
+  const cd = document.querySelector('[data-countdown]');
+  let nextAt = Date.now() + every;
+  setInterval(() => {
+    const left = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+    if (cd) cd.textContent = '· prochaine dans ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+  }, 1000);
+
+  // Plein écran (écran de salle)
+  const fs = document.querySelector('[data-fullscreen]');
+  const fsLabel = () => {
+    const on = !!document.fullscreenElement;
+    body.classList.toggle('is-fullscreen', on);
+    fs.setAttribute('aria-pressed', String(on));
+    fs.querySelector('span').textContent = on ? 'Quitter le plein écran' : 'Plein écran';
+  };
+  if (fs) {
+    if (!document.documentElement.requestFullscreen) fs.hidden = true;
+    fs.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {});
+    });
+    document.addEventListener('fullscreenchange', fsLabel);
+  }
+
   async function refresh() {
     clearTimeout(timer);
+    nextAt = Date.now() + every;
     try { render(await JCL.api(url)); document.body.classList.remove('stale'); }
     catch (e) { document.body.classList.add('stale'); document.querySelector('[data-updated]').textContent = 'Hors ligne — nouvel essai…'; }
     timer = setTimeout(refresh, every);

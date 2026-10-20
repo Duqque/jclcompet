@@ -20,7 +20,7 @@ $medal = ['gold' => 'Or', 'silver' => 'Argent', 'bronze' => 'Bronze'];
   <div class="grid grid-3">
     <?php foreach ($list as $p): $athletes = $p['athletes']; usort($athletes, fn ($x, $y) => [$x['final_rank'] ?? $x['computed_rank'] ?? 99, $x['seed']] <=> [$y['final_rank'] ?? $y['computed_rank'] ?? 99, $y['seed']]); $pct = $p['bouts_total'] ? round($p['bouts_done'] / $p['bouts_total'] * 100) : 0; ?>
       <article class="card">
-        <div class="card-head" style="margin-bottom:.6rem"><div><h3 class="card-title"><?= e($p['weight_label'] ? $p['weight_label'] . ' kg' : preg_replace('/^.*· /', '', $p['label'])) ?></h3><span class="small muted">Poule <?= (int) $p['number'] ?> · Tapis <?= e($p['tatami_number'] ?? '—') ?></span></div>
+        <div class="card-head" style="margin-bottom:.6rem"><div><h3 class="card-title">Poule <?= (int) $p['number'] ?></h3><span class="small muted"><?= $p['weight_label'] ? e($p['weight_label']) . ' kg · ' : '' ?>Tapis <?= e($p['tatami_number'] ?? '—') ?></span></div>
           <?php if ($p['ranking_complete']): ?><span class="badge badge-green"><span class="dot"></span>Terminée</span><?php elseif ((int) $p['needs_tiebreak']): ?><span class="badge badge-orange">Égalité</span><?php else: ?><span class="badge"><?= (int) $p['bouts_done'] ?>/<?= (int) $p['bouts_total'] ?></span><?php endif; ?></div>
         <?php if (!$p['ranking_complete']): ?><div class="progress" style="margin-bottom:.8rem"><span style="width:<?= $pct ?>%"></span></div><?php endif; ?>
         <ol class="podium">

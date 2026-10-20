@@ -143,7 +143,8 @@ final class CommissionerController extends Controller
         return $this->view('commissioner/history', [
             'title' => 'Historique du tapis ' . $t['number'], 't' => $t, 'c' => $c,
             'bouts' => BoutService::recent((int) $t['id'], 200),
-            'pools' => $g ? PoolService::pools((int) $g['id'], (int) $t['id']) : [],
+            'q' => $q = trim((string) ($r->query['q'] ?? '')),
+            'pools' => $g ? PoolService::sheets(PoolService::matching(PoolService::pools((int) $g['id'], (int) $t['id']), $q)) : [],
         ], 'commissioner');
     }
 

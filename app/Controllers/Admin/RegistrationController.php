@@ -88,6 +88,11 @@ final class RegistrationController extends AdminController
     {
         $c = $this->competition($r);
         $rid = (int) $r->param('rid');
+        if (RegistrationService::inPool($rid)) {
+            RegistrationService::updateDetails($rid, $r->post, ['actor' => 'admin']);
+            RegistrationService::applyPhoto($rid, $r->file('photo'), $r->bool('remove_photo'));
+            return $this->redirect('/admin/competitions/' . $c['id'] . '/inscriptions/' . $rid, 'Photo et informations mises à jour (catégorie, poids et identité restent verrouillés tant que l\'athlète est en poule).');
+        }
         RegistrationService::update($rid, $r->post, ['actor' => 'admin', 'club_id' => $r->int('club_id')]);
         RegistrationService::applyPhoto($rid, $r->file('photo'), $r->bool('remove_photo'));
         return $this->redirect('/admin/competitions/' . $c['id'] . '/inscriptions/' . $rid, 'Inscription mise à jour.');

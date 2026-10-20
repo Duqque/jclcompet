@@ -228,7 +228,7 @@ final class PoolGenerator
     }
 
     /**
-     * Ordre des combats d'une poule toutes rondes (indices 1..n), choisi pour laisser du repos entre deux combats.
+     * Ordre des combats d'une poule toutes rondes (indices 1..n) : ordre officiel des feuilles de poule de 3, 4 et 5.
      * @return list<array{0:int,1:int}>
      */
     public static function roundRobinOrder(int $n): array
@@ -238,7 +238,7 @@ final class PoolGenerator
             2 => [[1, 2]],
             3 => [[1, 2], [2, 3], [1, 3]],
             4 => [[1, 2], [3, 4], [1, 3], [2, 4], [1, 4], [2, 3]],
-            5 => [[1, 2], [3, 4], [1, 5], [2, 3], [4, 5], [1, 3], [2, 5], [1, 4], [3, 5], [2, 4]],
+            5 => [[1, 2], [3, 4], [1, 5], [2, 4], [3, 5], [1, 4], [2, 3], [4, 5], [1, 3], [2, 5]],
             default => self::circleMethod($n),
         };
     }

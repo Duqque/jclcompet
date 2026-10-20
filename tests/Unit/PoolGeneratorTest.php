@@ -108,4 +108,11 @@ final class PoolGeneratorTest extends TestCase
         $this->assertSame(array_column($x, 'id'), array_column($y, 'id'));
         $this->assertCount(6, $x);
     }
+
+    public function testRoundRobinFollowsOfficialPoolSheetOrder(): void
+    {
+        $this->assertSame([[1, 2], [2, 3], [1, 3]], PoolGenerator::roundRobinOrder(3));
+        $this->assertSame([[1, 2], [3, 4], [1, 3], [2, 4], [1, 4], [2, 3]], PoolGenerator::roundRobinOrder(4));
+        $this->assertSame([[1, 2], [3, 4], [1, 5], [2, 4], [3, 5], [1, 4], [2, 3], [4, 5], [1, 3], [2, 5]], PoolGenerator::roundRobinOrder(5));
+    }
 }
