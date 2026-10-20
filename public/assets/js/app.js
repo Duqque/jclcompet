@@ -74,6 +74,32 @@
       });
     },
 
+    /** Saisie dans une fenêtre interne (remplace prompt()). options : { title, label, value, placeholder, inputmode, hint, confirmLabel, required } → Promise<null|string> */
+    ask(options = {}) {
+      return new Promise((resolve) => {
+        const d = document.createElement('dialog');
+        d.innerHTML = '<form method="dialog"><div class="dialog-body"><h3></h3><p class="msg muted"></p><div class="field"><label for="dlg-ask"></label><input id="dlg-ask" type="text" autocomplete="off"></div></div>' +
+          '<div class="dialog-actions"><button class="btn btn-ghost" type="button" data-cancel>Annuler</button><button class="btn btn-ink" data-ok></button></div></form>';
+        d.querySelector('h3').textContent = options.title || 'Saisie';
+        const msg = d.querySelector('.msg');
+        if (options.hint) msg.textContent = options.hint; else msg.remove();
+        d.querySelector('label').textContent = options.label || '';
+        const input = d.querySelector('input');
+        input.value = options.value || '';
+        if (options.placeholder) input.placeholder = options.placeholder;
+        if (options.inputmode) input.inputMode = options.inputmode;
+        if (options.required) input.required = true;
+        d.querySelector('[data-ok]').textContent = options.confirmLabel || 'Valider';
+        document.body.appendChild(d);
+        const close = (v) => { d.close(); d.remove(); resolve(v); };
+        d.querySelector('[data-cancel]').addEventListener('click', () => close(null));
+        d.addEventListener('cancel', (e) => { e.preventDefault(); close(null); });
+        d.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); close(input.value.trim()); });
+        d.showModal();
+        input.focus();
+      });
+    },
+
     clock(ms) {
       const neg = ms < 0; ms = Math.abs(ms);
       const total = Math.floor(ms / 1000);
@@ -115,6 +141,32 @@
     const btn = e.submitter;
     if (btn && btn.name) { const h = document.createElement('input'); h.type = 'hidden'; h.name = btn.name; h.value = btn.value; form.appendChild(h); }
     form.submit();
+  });
+
+  // Validation des formulaires : messages affichés dans la page, jamais de bulle du navigateur.
+  const fieldMsg = (el) => {
+    const box = el.closest('.field') || el.parentElement;
+    let m = box.querySelector(':scope > .field-error[data-live]');
+    if (!m) { m = document.createElement('p'); m.className = 'field-error'; m.setAttribute('data-live', ''); m.id = (el.id || el.name || 'champ') + '-erreur'; box.appendChild(m); }
+    return m;
+  };
+  document.addEventListener('invalid', (e) => {
+    const el = e.target;
+    e.preventDefault();
+    el.setAttribute('aria-invalid', 'true');
+    const m = fieldMsg(el);
+    m.textContent = el.validationMessage;
+    el.setAttribute('aria-describedby', m.id);
+    const form = el.form;
+    if (form && !form.dataset.focused) { form.dataset.focused = '1'; el.focus(); setTimeout(() => { delete form.dataset.focused; }, 0); }
+  }, true);
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.getAttribute && el.getAttribute('aria-invalid') === 'true' && el.checkValidity && el.validity.valid) {
+      el.removeAttribute('aria-invalid');
+      const m = (el.closest('.field') || el.parentElement).querySelector(':scope > .field-error[data-live]');
+      if (m) m.remove();
+    }
   });
 
   // Empêche la double soumission des formulaires classiques

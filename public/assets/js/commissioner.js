@@ -17,7 +17,10 @@
 
   let data = null;          // état du tapis (courant + restants)
   let offset = 0;           // décalage horloge serveur
-  const queue = [];         // actions en attente d'envoi
+  const queue = [];         // actions en attente d'envoi (copie de secours dans l'onglet, renvoi idempotent)
+  const outboxKey = 'jcl-outbox-' + cfg.stateUrl;
+  const persist = () => { try { queue.length ? sessionStorage.setItem(outboxKey, JSON.stringify(queue)) : sessionStorage.removeItem(outboxKey); } catch (e) { /* stockage indisponible */ } };
+  try { const saved = JSON.parse(sessionStorage.getItem(outboxKey) || '[]'); if (Array.isArray(saved)) queue.push(...saved); } catch (e) { /* rien à reprendre */ }
   let sending = false;
   let retryDelay = 1000;
   let autoToketaSent = null;
@@ -62,7 +65,8 @@
   function act(action, extra = {}) {
     const c = cur();
     if (!c) return;
-    queue.push({ boutId: c.id, body: Object.assign({ action, client_event_id: JCL.uid(), at_ms: Math.round(now()) }, extra) });
+    queue.push({ boutId: c.id, body: Object.assign({ action, client_event_id: JCL.uid(), at_ms: Math.round(now()), version: c.version }, extra) });
+    persist();
     flush();
   }
 
@@ -78,6 +82,7 @@
       const res = await JCL.api(cfg.actionUrl.replace('__ID__', item.boutId), { method: 'POST', body: item.body });
       offset = res.state.server_now_ms + (Date.now() - t0) / 2 - Date.now();
       queue.shift();
+      persist();
       retryDelay = 1000;
       applyState(res.state);
       if (item.body.action === 'validate') { JCL.toast('Résultat validé : classements et écran TV mis à jour.', 'success'); }
@@ -92,9 +97,11 @@
         return;
       }
       queue.shift();
+      persist();
       if (e.status === 409 && e.data && e.data.state) {
         applyState(e.data.state);
         queue.length = 0;
+        persist();
         JCL.toast(e.message, 'error', 6000);
       } else if (e.status === 422 && e.data && e.data.needs_decision) {
         decision();
@@ -347,8 +354,7 @@
   $('[data-back]').addEventListener('click', (e) => {
     if (queue.length) { e.preventDefault(); JCL.toast('Des actions sont en cours d\'envoi : patientez avant de quitter.', 'error'); }
   });
-  window.addEventListener('beforeunload', (e) => { if (queue.length) { e.preventDefault(); e.returnValue = ''; } });
   window.addEventListener('online', () => { retryDelay = 500; flush(); load(); });
 
-  load().then(() => { requestAnimationFrame(tick); schedulePoll(); });
+  load().then(() => { requestAnimationFrame(tick); schedulePoll(); if (queue.length) flush(); });
 })();

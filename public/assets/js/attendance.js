@@ -55,11 +55,15 @@
     const status = b.dataset.mark;
     const body = { status };
     if (status === 'present' && cfg.weighIn) {
-      const w = prompt('Poids mesuré (kg) — laisser vide si pas de pesée :', '');
+      const w = await JCL.ask({ title: 'Pesée', label: 'Poids mesuré (kg)', hint: 'Laisser vide s\'il n\'y a pas de pesée.', placeholder: 'ex. 32,4', inputmode: 'decimal', confirmLabel: 'Marquer présent' });
       if (w === null) return;
-      if (w.trim()) body.measured_weight_kg = w.trim();
+      if (w) body.measured_weight_kg = w;
     }
-    if (status === 'to_check') { const n = prompt('Point à vérifier (facultatif) :', ''); if (n === null) return; body.note = n; }
+    if (status === 'to_check') {
+      const n = await JCL.ask({ title: 'À vérifier', label: 'Point à vérifier (facultatif)', placeholder: 'ex. licence manquante', confirmLabel: 'Marquer à vérifier' });
+      if (n === null) return;
+      body.note = n;
+    }
     li.classList.add('loading');
     try {
       const res = await JCL.api(cfg.markUrl.replace('__ID__', id), { method: 'POST', body });
