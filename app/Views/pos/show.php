@@ -1,16 +1,32 @@
-<header class="att-head"><div class="row"><a class="btn btn-sm btn-outline-white" href="<?= e(url(\App\Core\Auth::hasRole('admin') ? '/admin/competitions/' . $c['id'] . '/ventes' : '/')) ?>" aria-label="Retour">←</a><h1>Buvette · <?= e($c['name']) ?></h1>
-  <span class="small" data-today>Aujourd'hui : <?= e(money((int) $today['net'])) ?> net</span>
-  <?php if (!\App\Core\Auth::hasRole('admin')): ?><form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-outline-white" type="submit">Déconnexion</button></form><?php endif; ?></div></header>
-<main style="padding:16px">
+<?php $isAdmin = \App\Core\Auth::hasRole('admin'); ?>
+<header class="att-bar">
+  <a class="icon-btn" href="<?= e(url($isAdmin ? '/admin/competitions/' . $c['id'] . '/ventes' : '/')) ?>" aria-label="Retour"><?= icon('arrow-left') ?></a>
+  <img src="<?= e(asset('img/logo-jcl.png')) ?>" alt="" width="42" height="28">
+  <span class="att-comp"><?= e($c['name']) ?></span>
+  <span class="att-sync pos-today" title="Total net encaissé aujourd'hui"><span class="dot"></span><span data-today>Aujourd'hui : <?= e(money((int) $today['net'])) ?></span></span>
+  <?php if (!$isAdmin): ?><form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button class="icon-btn" type="submit" title="Déconnexion" aria-label="Déconnexion"><?= icon('logout') ?></button></form><?php endif; ?>
+</header>
+<main class="att-page pos-page" id="contenu">
   <div class="pos">
-    <div class="pos-products" data-products></div>
+    <section class="pos-catalog" aria-label="Produits">
+      <div class="att-title"><p class="eyebrow">Buvette &amp; boutique</p><h1>Caisse</h1></div>
+      <div class="segmented pos-cats" role="tablist" data-cats></div>
+      <div class="pos-products" data-products></div>
+    </section>
     <aside class="pos-cart" aria-label="Vente en cours">
-      <h2 style="font-size:1.1rem">Vente en cours</h2>
-      <ul data-cart><li class="muted small">Touchez un produit pour l'ajouter.</li></ul>
-      <div class="pos-total" data-total>0,00 €</div>
-      <div class="field"><label for="pay">Paiement</label><select id="pay" data-payment><option value="cash">Espèces</option><option value="card">Carte bancaire</option><option value="check">Chèque</option><option value="other">Autre</option></select></div>
-      <div class="btn-group" style="margin-top:.8rem"><button class="btn btn-green btn-lg btn-block btn-display" type="button" data-pay>Encaisser</button><button class="btn btn-ghost btn-block" type="button" data-clear>Vider</button></div>
-      <p class="small muted" style="margin-top:.8rem">Registre des ventes : aucun paiement n'est traité par l'application.</p>
+      <header><h2>Vente en cours</h2><span class="badge" data-count>0 article</span></header>
+      <ul data-cart></ul>
+      <div class="pos-sum"><span>Total</span><strong data-total>0,00 €</strong></div>
+      <p class="pos-lbl">Paiement</p>
+      <div class="pos-pay" role="radiogroup" aria-label="Moyen de paiement" data-payment>
+        <button type="button" role="radio" aria-checked="true" data-pm="cash"><?= icon('bag') ?>Espèces</button>
+        <button type="button" role="radio" aria-checked="false" data-pm="card"><?= icon('id') ?>Carte</button>
+        <button type="button" role="radio" aria-checked="false" data-pm="check"><?= icon('clipboard') ?>Chèque</button>
+        <button type="button" role="radio" aria-checked="false" data-pm="other"><?= icon('sliders') ?>Autre</button>
+      </div>
+      <button class="btn btn-lg pos-go" type="button" data-pay disabled><?= icon('check') ?><span>Encaisser</span></button>
+      <button class="btn btn-ghost pos-clear" type="button" data-clear>Vider la vente</button>
+      <p class="small muted" style="margin:.8rem 0 0">Registre des ventes : aucun paiement n'est traité par l'application.</p>
     </aside>
   </div>
 </main>

@@ -73,6 +73,10 @@ Classement des clubs par points (somme du barème) et, indépendamment, par méd
 
 ### Documents PDF
 
+Tous les PDF reprennent le style du site (police Inter, cartes arrondies, logos des clubs dans une carte blanche).
+**Résultats par poule** (feuilles complètes dans l'ordre des âges, puis des poids) et **Résultats par club** (catégorie par
+catégorie, ordre des âges, des poids et du classement) s'ajoutent aux listes, poules, planning et classements.
+
 Participants, listes par catégorie, poules (A4 portrait/paysage, 1/2/4/6 par page, options d'affichage, cases de saisie
 manuelle), feuilles de résultats, planning des tapis, classement final, classement des clubs.
 
@@ -85,13 +89,21 @@ Le journal n'est pas modifiable depuis l'interface ; « Vérifier l'intégrité 
 
 ## 2. Club / entraîneur
 
-1. Se connecter sur **/connexion** avec le compte fourni par l'organisation (changer le mot de passe provisoire).
-2. **Mes compétitions** › « Inscrire mes judokas » : nom, prénom, sexe, date de naissance, **catégorie de poids** (la catégorie
-   d'âge s'affiche automatiquement), grade et licence facultatifs. Un judoka déjà inscrit à une édition précédente se
-   réinscrit en un clic.
-3. Modifier ou retirer une inscription jusqu'à la date limite ; télécharger la liste (CSV) ; importer un fichier CSV.
-4. Le jour J : **Poules et horaires** (poules publiées, tapis, ordre de passage) et **Résultats du club** (places, médailles,
-   rang du club, combats de vos judokas).
+Le menu de l'espace club affiche en permanence la compétition en cours et toutes ses rubriques :
+
+- **Mes combattants** : cartes des judokas (photo facultative, catégorie, poids, statut). Bouton **Ajouter un combattant** :
+  nouveau judoka, judoka déjà venu à une édition précédente, ou import d'un fichier CSV. Modification et retrait jusqu'à la
+  date limite.
+- **Valider ma liste** : une fois la liste complète, le coach la valide ; toutes ses inscriptions sont **confirmées
+  automatiquement** et l'organisation est prévenue (notification + compteur « listes validées » sur la page Inscrits).
+  Toute modification ultérieure demande une nouvelle validation.
+- **Le jour J** : le coach pointe lui-même **Présent / Absent** et saisit le **poids mesuré** de ses judokas (tant qu'ils ne
+  sont pas placés en poule).
+- **Poules en direct** : feuilles de poule de ses judokas (surlignés) ou de toutes les poules, recherche par nom, mise à jour
+  automatique dès qu'un commissaire valide un résultat.
+- **Résultats du club**, **Résultats en PDF** (catégorie par catégorie), **Classement en direct**, **Programme**.
+- **Photos** : consulter l'album de la compétition et **ajouter ses propres photos** (l'organisation est prévenue).
+- **Informations du club** (coordonnées, logo) et **Mot de passe**.
 
 Un club ne voit jamais les données privées des autres clubs et ne peut pas modifier un résultat sportif.
 
@@ -104,6 +116,7 @@ Interface mobile **/accueil** (compte « Accueil » ou administrateur) :
 - Recherche instantanée par nom ou prénom ; filtres club, catégorie, sexe, présence (mémorisés sur l'appareil).
 - Boutons **Présent**, **Absent / forfait**, **À vérifier** (avec note) ; l'heure et la personne ayant pointé sont enregistrées.
 - En mode « pesée » (poids indiqué par le club), le poids mesuré peut être saisi au pointage ; il redétermine la catégorie de poids.
+- Sélecteur de club en fenêtre (cartes aux couleurs de chaque club, logo et nom) ; cartes des judokas avec photo.
 - **+ Inscription sur place** : club (ou exception autorisée), identité, catégorie de poids ; l'athlète est pointé présent
   immédiatement (validation administrateur requise si le réglage l'exige).
 
@@ -113,19 +126,35 @@ Seuls les athlètes **présents et confirmés** sont utilisés pour composer les
 
 ## 4. Poules et tapis
 
-1. **Générer les poules** : le système regroupe les présents par catégorie d'âge × sexe (× catégorie de poids selon le réglage),
-   trie par poids, choisit la meilleure combinaison de tailles autorisées (3, 4, 5) en minimisant les écarts de poids et les
-   poules déséquilibrées, sépare les combattants d'un même club quand c'est possible, calcule les combats
-   (n × (n − 1) / 2) et répartit les poules sur les tapis en équilibrant la charge.
-2. **Aperçu** : charge et temps estimé de chaque tapis, écart entre le tapis le plus et le moins chargé, alertes (écart de poids,
-   même club, taille hors règlement, durées manquantes).
-3. **Groupes sans solution** (ex. 2 athlètes alors que les poules de 2 ne sont pas autorisées) : rien n'est supprimé ;
-   choisir une solution proposée (poule de 2, regroupement avec la catégorie voisine — exception explicite —, ou laisser hors poule).
-4. **Ajuster** : glisser une poule vers un autre tapis, un athlète vers une autre poule, un athlète sur un autre pour les échanger
-   (sur tablette : menus « Déplacer » et formulaire en bas de page). Verrouiller une poule la protège des régénérations.
-5. **Valider la composition** : les combats sont créés avec la durée applicable (figée) et apparaissent chez les commissaires.
-6. Après validation : une poule dont un combat a commencé n'est plus modifiable. Un athlète arrivé en retard apparaît dans
-   « non placés » avec des suggestions (poule compatible non commencée, recalcul du groupe) — aucun résultat existant n'est écrasé.
+La page **Poules** suit 5 étapes, affichées en haut de page :
+
+1. **Générer / Mettre à jour les poules** : recalcule les poules à chaque clic tant qu'aucun combat n'a commencé (les poules
+   verrouillées sont conservées). Âges et sexes ne sont jamais mélangés ; les poids sont rapprochés, les clubs séparés.
+2. **Répartir sur les tapis** : équilibre la durée entre les tapis.
+3. **Ajuster par glisser-déposer** (vue « Répartition des tapis ») : cliquer-glisser un judoka (poignée ⋮⋮) vers une autre
+   poule, ou sur un autre judoka pour les échanger ; glisser une poule vers un autre tapis. Sur tablette : appui long puis
+   glisser. Une poule commencée ou verrouillée ne se modifie plus (cadenas).
+4. **Valider les poules** : les combats sont créés avec la configuration de leur catégorie et apparaissent chez les commissaires.
+5. **Imprimer les feuilles** : par tapis ou toutes, **avec résultats** ou **vierges** ; plusieurs poules d'un même tapis par page
+   quand elles tiennent entièrement, nouvelle page à chaque tapis. Chaque feuille a aussi son bouton PDF.
+
+Affichages : **Feuilles de poule** (grille 1 à 5, cases noires en diagonale, scores au format **IWY-shido** — ex. « 100-1 » —,
+victoires, points, place ; ordre des combats avec le premier appelé en ceinture rouge et le second en ceinture blanche),
+**Cartes**, **Liste**, **Répartition des tapis**. La recherche retrouve une poule par nom de judoka, club ou numéro.
+Chaque case de résultat ouvre le combat pour le corriger (motif obligatoire, historique conservé).
+
+Un seul numéro de poule est utilisé partout (feuilles, combats, TV). Ordre des combats : poules de 3 « 1×2 / 2×3 / 1×3 »,
+de 4 « 1×2 / 3×4 / 1×3 / 2×4 / 1×4 / 2×3 », de 5 « 1×2 / 3×4 / 1×5 / 2×4 / 3×5 / 1×4 / 2×3 / 4×5 / 1×3 / 2×5 ».
+Sur un tapis, les poules d'une même catégorie d'âge s'enchaînent **par blocs de 2 combats** (A, B, C, puis A, B, C…) pour la
+récupération des judokas (réglable dans Paramètres : taille des blocs, poules d'une même catégorie ou de tout le tapis).
+
+### Configurations de combat (Administration › Combats)
+
+Une configuration par catégorie (âge, sexe, phase) : durée, golden score (illimité, limité, aucun), premier avantage au golden
+score, récupération, **temps d'immobilisation** yuko / waza-ari / ippon, yuko compté ou non, nombre de waza-ari pour un ippon,
+nombre de shido pour hansoku-make et **règles particulières** (rappelées au commissaire pendant le combat). Un champ vide reprend
+les paramètres sportifs. Chaque combat garde sa configuration au moment de sa création ; « Réappliquer » met à jour les combats
+à venir.
 
 ---
 
@@ -184,9 +213,11 @@ l'indique et l'affichage se met à jour.
 
 ## 7. Classement public
 
-`/classement/{compétition}` (lien depuis la page Résultats ou la vue d'ensemble) : écran distinct, à afficher en salle.
-Classements des clubs par points et par médailles, totaux, combats validés, heure de mise à jour, actualisation automatique
-toutes les 120 s (réglable) et bouton « Actualiser ». Seuls les résultats validés sont comptés.
+`/classement/{compétition}` : écran de salle au style du site, tous les clubs engagés (même à 0 point), par points et par
+médailles. **Mise à jour en direct** : dès qu'un commissaire valide un résultat, le classement se met à jour en quelques secondes.
+Quand une poule est terminée, une **annonce des podiums** apparaît (photo du judoka si l'organisation l'autorise dans les
+Paramètres — avec l'accord des familles —, sinon logo du club, nom, catégorie d'âge et de poids, place et médaille).
+Bouton **Plein écran**, défilement automatique lent pour voir tout le classement, carrousel des partenaires en bas d'écran.
 
 ---
 
