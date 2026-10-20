@@ -1,4 +1,4 @@
-<header class="att-head"><div class="row"><h1>Accueil — choisir la compétition</h1><a class="btn btn-ghost btn-sm" style="--fg:#fff" href="<?= e(url(\App\Core\Auth::homePath())) ?>">Retour</a></div></header>
+<header class="att-head"><div class="row"><h1>Accueil — choisir la compétition</h1><?php if (\App\Core\Auth::hasRole('admin')): ?><a class="btn btn-outline-white btn-sm" href="<?= e(url('/admin')) ?>">Administration</a><?php else: ?><form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button class="btn btn-outline-white btn-sm" type="submit">Déconnexion</button></form><?php endif; ?></div></header>
 <main style="padding:16px">
 <?php include BASE_PATH . '/app/Views/partials/flash.php'; ?>
 <?php if (!$competitions): ?><div class="empty"><strong>Aucune compétition active</strong></div><?php endif; ?>

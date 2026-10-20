@@ -254,7 +254,7 @@ final class RegistrationService
     {
         $r = Database::one(
             'SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number, a.club_id AS athlete_club_id,
-                    c.name AS club_name, ac.name AS age_name, ac.code AS age_code, wc.label AS weight_label
+                    c.name AS club_name, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label
              FROM registrations r JOIN athletes a ON a.id = r.athlete_id
              LEFT JOIN clubs c ON c.id = r.club_id
              JOIN age_categories ac ON ac.id = r.age_category_id
@@ -387,7 +387,7 @@ final class RegistrationService
         [$where, $p] = self::filterSql($competitionId, $f, $clubId);
         return Database::all(
             "SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number,
-                    c.name AS club_name, c.short_name AS club_short, ac.name AS age_name, ac.code AS age_code, wc.label AS weight_label,
+                    c.name AS club_name, c.short_name AS club_short, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label,
                     u.display_name AS attendance_by_name
              FROM registrations r JOIN athletes a ON a.id = r.athlete_id
              LEFT JOIN clubs c ON c.id = r.club_id

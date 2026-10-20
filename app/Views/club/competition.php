@@ -11,7 +11,7 @@
     <thead><tr><th>Judoka</th><th>Né(e) le</th><th>Catégorie</th><th>Poids</th><th>Statut</th><th>Présence</th><th></th></tr></thead>
     <tbody><?php foreach ($rows as $r): ?><tr<?= in_array($r['status'], ['withdrawn', 'rejected'], true) ? ' style="opacity:.55"' : '' ?>>
       <td><strong><?= e($r['last_name']) ?></strong> <?= e($r['first_name']) ?></td><td><?= e(date('d/m/Y', strtotime($r['birth_date']))) ?></td>
-      <td><?= e(CategoryService::label(['name' => $r['age_name'], 'name_m' => null, 'name_f' => null], $r['sex'])) ?></td><td><?= $r['weight_label'] ? e($r['weight_label']) . ' kg' : ($r['declared_weight_kg'] ? e(kg($r['declared_weight_kg'])) : '—') ?></td>
+      <td><?= e(CategoryService::label(['name' => $r['age_name'], 'name_m' => $r['name_m'], 'name_f' => $r['name_f']], $r['sex'])) ?></td><td><?= $r['weight_label'] ? e($r['weight_label']) . ' kg' : ($r['declared_weight_kg'] ? e(kg($r['declared_weight_kg'])) : '—') ?></td>
       <td><span class="badge <?= $r['status'] === 'confirmed' ? 'badge-green' : ($r['status'] === 'pending' ? 'badge-orange' : '') ?>"><?= e(RegistrationService::STATUS[$r['status']]) ?></span></td>
       <td class="small"><?= e(RegistrationService::ATTENDANCE[$r['attendance_status']]) ?></td>
       <td class="actions"><?php if ($canEdit && in_array($r['status'], ['pending', 'confirmed'], true)): ?><a class="btn btn-ghost btn-sm" href="<?= e(url($b . '/inscriptions/' . $r['id'])) ?>">Modifier</a>

@@ -56,7 +56,7 @@ final class AttendanceController extends Controller
             'counts' => array_map('intval', $counts),
             'rows' => array_map(fn ($x) => [
                 'id' => (int) $x['id'], 'last_name' => $x['last_name'], 'first_name' => $x['first_name'], 'sex' => $x['sex'],
-                'club' => $x['club_name'] ?? $x['club_exception_label'], 'category' => CategoryService::label(['name' => $x['age_name'], 'name_m' => null, 'name_f' => null], $x['sex']),
+                'club' => $x['club_name'] ?? $x['club_exception_label'], 'category' => CategoryService::label(['name' => $x['age_name'], 'name_m' => $x['name_m'], 'name_f' => $x['name_f']], $x['sex']),
                 'weight' => $x['weight_label'], 'measured' => $x['measured_weight_kg'] === null ? null : (float) $x['measured_weight_kg'],
                 'attendance' => $x['attendance_status'], 'at' => $x['attendance_at'] ? substr($x['attendance_at'], 11, 5) : null, 'by' => $x['attendance_by_name'],
                 'late' => (bool) $x['is_late'], 'onsite' => (bool) $x['is_onsite'], 'pending' => (bool) $x['needs_validation'],
