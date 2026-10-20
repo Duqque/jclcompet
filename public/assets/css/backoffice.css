@@ -139,25 +139,6 @@
 .auth-card code { font-size: .82em; }
 
 /* --- Accueil (présences) — mobile d'abord ---------------------------------- */
-.att-shell { background: var(--canvas); min-height: 100vh; }
-.att-head { position: sticky; top: 0; z-index: 30; background: rgba(245,245,243,.92); backdrop-filter: blur(10px); padding: .7rem 16px; border-bottom: 1px solid var(--line); }
-.att-head .row { display: flex; gap: .6rem; align-items: center; }
-.att-head h1 { font-size: 1rem; margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.att-head input[type=search] { min-height: 48px; font-size: 1.05rem; margin-top: .6rem; background: var(--white); border-radius: 999px; box-shadow: var(--shadow); padding-left: 1.1rem; }
-.att-head .btn-outline-white { --fg: var(--ink); --bd: var(--line); --bg: var(--white); }
-.att-filters { display: flex; gap: .4rem; overflow-x: auto; padding: .6rem 16px; }
-.att-filters select { min-height: 38px; width: auto; flex: none; font-size: .88rem; background: var(--white); border-radius: 999px; box-shadow: var(--shadow); }
-.att-counts { display: flex; gap: .4rem; padding: 0 16px .6rem; flex-wrap: wrap; }
-.att-list { list-style: none; margin: 0; padding: 0 16px 120px; display: grid; gap: .55rem; }
-.att-item { background: var(--white); border-radius: 18px; padding: .8rem .9rem; box-shadow: var(--shadow); }
-.att-item .who { display: flex; justify-content: space-between; gap: .5rem; align-items: center; }
-.att-item .who strong { font-size: 1.02rem; font-weight: 600; }
-.att-item .meta { font-size: .84rem; color: var(--muted); margin-top: .1rem; }
-.att-actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: .4rem; margin-top: .65rem; }
-.att-actions .btn { min-height: 50px; font-size: .95rem; }
-.att-actions .btn:not(.on) { --bg: var(--surface-2); --bd: var(--surface-2); --fg: var(--ink-2); }
-.att-actions .btn.on { box-shadow: 0 0 0 2px var(--white), 0 0 0 4px currentColor; }
-.att-fab { position: fixed; right: 16px; bottom: 16px; z-index: 40; box-shadow: var(--shadow-lg); }
 
 /* --- Caisse --------------------------------------------------------------- */
 .pos { display: grid; grid-template-columns: 1fr 360px; gap: 1rem; }
@@ -178,3 +159,50 @@
 .bo-user .who a { display: block; color: var(--muted); font-size: .78rem; white-space: nowrap; }
 .bo-nav .comp-context { display: grid; gap: .1rem; margin: .4rem .4rem .3rem; padding: .7rem .8rem; border-radius: 14px; background: var(--white); font-size: .85rem; }
 .bo-nav .comp-context span { color: var(--muted); font-size: .76rem; }
+
+/* Accueil jour J : même langage que la page Inscrits */
+.att-shell { background: var(--canvas); min-height: 100vh; }
+.att-bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .7rem; padding: .7rem 16px; background: rgba(236,235,232,.88); backdrop-filter: blur(12px); }
+.att-bar .att-comp { flex: 1; min-width: 0; font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.att-sync { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--muted); padding: .3rem .7rem; border-radius: 999px; background: var(--white); box-shadow: var(--shadow); }
+.att-sync .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.att-sync.off .dot { background: var(--red); }
+.att-page { max-width: 1320px; margin: 0 auto; padding: .4rem 16px 120px; }
+.att-title { margin: .6rem 0 1.1rem; }
+.att-title h1 { font-size: clamp(1.7rem, 3vw, 2.2rem); letter-spacing: -.035em; margin: 0 0 .2rem; }
+.att-title p { margin: 0; }
+.att-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.att-stats .stat { border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: box-shadow .15s, transform .15s; }
+.att-stats .stat:hover { box-shadow: var(--shadow-lg); }
+.att-stats .stat[aria-pressed=true] { outline: 2px solid var(--ink); outline-offset: 2px; }
+.att-stats [data-att=absent] strong { color: var(--red); }
+.att-stats [data-att=to_check] strong { color: var(--orange); }
+.chips button.chip { border: 0; font: inherit; font-size: .84rem; font-weight: 500; cursor: pointer; }
+.att-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.att-card { cursor: default; }
+.att-card:hover { transform: none; }
+.att-card.loading { opacity: .55; pointer-events: none; }
+.att-card.is-present { box-shadow: var(--shadow), inset 0 0 0 1.5px rgba(22,128,61,.25); }
+.att-card.is-absent { box-shadow: var(--shadow), inset 0 0 0 1.5px rgba(194,26,44,.22); }
+.att-card.is-to_check { box-shadow: var(--shadow), inset 0 0 0 1.5px rgba(234,88,12,.28); }
+.att-actions { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: .3rem; padding: .3rem; background: var(--surface-2); border-radius: 999px; }
+.att-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font: 500 .84rem var(--font-body); cursor: pointer; padding: 0 .4rem; white-space: nowrap; }
+.att-actions button .icon { width: 16px; height: 16px; flex: none; }
+.att-actions button:hover { background: var(--white); }
+.att-actions button.present[aria-pressed=true] { background: var(--green); color: var(--white); }
+.att-actions button.absent[aria-pressed=true] { background: var(--red); color: var(--white); }
+.att-actions button.to_check[aria-pressed=true] { background: var(--orange); color: var(--white); }
+.att-note { margin: -.2rem 0 0; font-size: .76rem; color: var(--muted); }
+.att-note .warn { color: var(--orange); font-weight: 500; }
+.att-fab { position: fixed; right: 16px; bottom: 16px; z-index: 40; box-shadow: var(--shadow-lg); }
+@media (max-width: 720px) {
+  .att-title { margin: .2rem 0 .8rem; }
+  .att-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; margin-bottom: .9rem; }
+  .att-stats .stat { padding: .6rem .55rem; border-radius: 16px; }
+  .att-stats .stat strong { font-size: 1.3rem; }
+  .att-stats .stat span { font-size: .7rem; line-height: 1.2; display: block; }
+  .att-page .toolbar { gap: .4rem; }
+  .att-page .toolbar .search { flex-basis: 100%; max-width: none; }
+  .att-page .toolbar select { flex: 1 1 0; min-width: 0; }
+  .att-grid { grid-template-columns: 1fr; }
+}

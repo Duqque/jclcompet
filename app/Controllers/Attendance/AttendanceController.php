@@ -33,7 +33,11 @@ final class AttendanceController extends Controller
         $cid = (int) $c['id'];
         return $this->view('attendance/show', [
             'title' => 'Présences', 'c' => $c,
-            'clubs' => Database::all("SELECT DISTINCT c.id, c.name FROM registrations r JOIN clubs c ON c.id = r.club_id WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') ORDER BY c.name", [$cid]),
+            'clubs' => Database::all(
+                "SELECT c.id, c.name, c.short_name, c.logo_path, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
+                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY n DESC, c.name",
+                [$cid]
+            ),
             'ages' => CategoryService::ageCategories($cid),
             'lateAllowed' => (bool) SettingsService::get($cid, 'late_registration_allowed'),
             'weighIn' => SettingsService::get($cid, 'weight_input') === 'weight',
@@ -56,7 +60,12 @@ final class AttendanceController extends Controller
             'counts' => array_map('intval', $counts),
             'rows' => array_map(fn ($x) => [
                 'id' => (int) $x['id'], 'last_name' => $x['last_name'], 'first_name' => $x['first_name'], 'sex' => $x['sex'],
-                'club' => $x['club_name'] ?? $x['club_exception_label'], 'category' => CategoryService::label(['name' => $x['age_name'], 'name_m' => $x['name_m'], 'name_f' => $x['name_f']], $x['sex']),
+                'club' => $x['club_name'] ?? $x['club_exception_label'], 'club_short' => $x['club_short'] ?: ($x['club_name'] ?? $x['club_exception_label']),
+                'logo' => $x['club_logo'] ? url('/' . ltrim($x['club_logo'], '/')) : null,
+                'photo' => $x['photo_document_id'] ? url('/media/' . $x['photo_document_id'], ['mini' => 1]) : null,
+                'year' => substr((string) $x['birth_date'], 0, 4), 'grade' => $x['grade'],
+                'declared' => $x['declared_weight_kg'] === null ? null : (float) $x['declared_weight_kg'],
+                'category' => CategoryService::label(['name' => $x['age_name'], 'name_m' => $x['name_m'], 'name_f' => $x['name_f']], $x['sex']),
                 'weight' => $x['weight_label'], 'measured' => $x['measured_weight_kg'] === null ? null : (float) $x['measured_weight_kg'],
                 'attendance' => $x['attendance_status'], 'at' => $x['attendance_at'] ? substr($x['attendance_at'], 11, 5) : null, 'by' => $x['attendance_by_name'],
                 'late' => (bool) $x['is_late'], 'onsite' => (bool) $x['is_onsite'], 'pending' => (bool) $x['needs_validation'],

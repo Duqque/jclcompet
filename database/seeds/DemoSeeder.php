@@ -16,7 +16,7 @@ use App\Services\SettingsService;
 use App\Services\TvTokenService;
 
 /**
- * DONNÉES DE DÉMONSTRATION ENTIÈREMENT FICTIVES (is_demo = 1, noms suffixés « (démo) »).
+ * DONNÉES DE DÉMONSTRATION FICTIVES (is_demo = 1) : judokas, résultats et ventes inventés, rattachés aux vrais clubs de l'édition.
  * Refusé en production. Comptes de démonstration documentés dans docs/INSTALLATION.md, à supprimer avant usage réel.
  */
 final class DemoSeeder
@@ -25,8 +25,8 @@ final class DemoSeeder
         ['admin@demo-judo.test', 'AdminDemo2026!', 'Admin Démo', 'admin'],
         ['commissaire1@demo-judo.test', 'CommissaireDemo2026!', 'Commissaire Tapis 1 (démo)', 'commissioner'],
         ['commissaire2@demo-judo.test', 'CommissaireDemo2026!', 'Commissaire Tapis 2 (démo)', 'commissioner'],
-        ['coach@demo-judo.test', 'CoachDemo2026!', 'Entraîneur JC des Tilleuls (démo)', 'coach'],
-        ['coach2@demo-judo.test', 'CoachDemo2026!', 'Entraîneure Dojo des Trois Rivières (démo)', 'coach'],
+        ['coach@demo-judo.test', 'CoachDemo2026!', 'Entraîneur JC Lensois (démo)', 'coach'],
+        ['coach2@demo-judo.test', 'CoachDemo2026!', 'Entraîneure Hénin Judo (démo)', 'coach'],
         ['accueil@demo-judo.test', 'AccueilDemo2026!', 'Accueil (démo)', 'reception'],
         ['buvette@demo-judo.test', 'VendeurDemo2026!', 'Buvette (démo)', 'seller'],
     ];
@@ -70,25 +70,24 @@ final class DemoSeeder
         return $ids;
     }
 
+    /**
+     * Clubs de la démo : les vrais clubs de l'édition de l'année (avec leurs logos), les judokas restent fictifs.
+     * Les deux comptes entraîneurs de démonstration sont rattachés aux deux premiers.
+     */
+    private const DEMO_CLUBS = ['Judo Club Leforest', 'Judo Club Lensois', 'Hénin Judo Ju-Jitsu', 'Judo Club Harnésien', 'USA Liévin Judo Ju-Jitsu', 'Noyelles-sous-Lens Judo Ju-Jitsu', 'Méricourt Judo', 'Judo Club Sallauminois'];
+
     private function clubs(array $users): array
     {
-        $clubs = [
-            ['Judo Club des Tilleuls (démo)', 'JC Tilleuls', 'Villeneuve-des-Tilleuls', 'Camille Démo', 'contact@tilleuls.demo-judo.test', 'coach@demo-judo.test'],
-            ['Dojo des Trois Rivières (démo)', 'Trois Rivières', 'Trois-Rivières-sur-Démo', 'Alex Exemple', 'contact@3rivieres.demo-judo.test', 'coach2@demo-judo.test'],
-            ['Arts Martiaux du Val Fleuri (démo)', 'Val Fleuri', 'Val-Fleuri', 'Dominique Fictif', 'contact@valfleuri.demo-judo.test', null],
-            ['Judo Club Horizon (démo)', 'JC Horizon', 'Horizon-les-Bains', 'Sam Essai', 'contact@horizon.demo-judo.test', null],
-        ];
         $ids = [];
-        foreach ($clubs as [$name, $short, $city, $contact, $email, $coach]) {
-            $id = Database::insert('clubs', [
-                'name' => $name, 'short_name' => $short, 'city' => $city, 'department' => '00', 'country' => 'FR',
-                'contact_name' => $contact, 'email' => $email, 'phone' => '00 00 00 00 00', 'is_demo' => 1,
-            ]);
-            if ($coach) {
-                Database::insert('club_users', ['club_id' => $id, 'user_id' => $users[$coach]]);
+        foreach (self::DEMO_CLUBS as $name) {
+            $id = Database::value('SELECT id FROM clubs WHERE name = ?', [$name]);
+            if (!$id) {
+                throw new \RuntimeException("Club « $name » introuvable : chargez d'abord le contenu du programme (php bin/seed.php --content).");
             }
-            $ids[] = $id;
+            $ids[] = (int) $id;
         }
+        Database::insert('club_users', ['club_id' => $ids[1], 'user_id' => $users['coach@demo-judo.test']]);
+        Database::insert('club_users', ['club_id' => $ids[2], 'user_id' => $users['coach2@demo-judo.test']]);
         return $ids;
     }
 
@@ -146,6 +145,7 @@ final class DemoSeeder
                 ], ['actor' => 'club', 'club_id' => $club]);
             }
         }
+        Database::run('UPDATE athletes SET is_demo = 1 WHERE id IN (SELECT athlete_id FROM registrations WHERE competition_id = ?)', [$cid]);
         Database::run("UPDATE competitions SET status = 'attendance' WHERE id = ?", [$cid]);
         $regs = Database::all('SELECT id, declared_weight_kg FROM registrations WHERE competition_id = ? ORDER BY id', [$cid]);
         foreach ($regs as $k => $r) {

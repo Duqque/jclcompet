@@ -276,6 +276,11 @@ final class SiteController extends Controller
             && !($d['type'] === 'gallery' && $d['competition_id'] && \App\Services\GalleryService::hasAccess((int) $d['competition_id']))) {
             throw new HttpException(404, 'Document introuvable.');
         }
+        // Photo d'un judoka : un entraîneur ne voit que celles de son club.
+        if ($d['type'] === 'athlete_photo' && Auth::hasRole('coach')
+            && (int) Database::value('SELECT club_id FROM athletes WHERE photo_document_id = ?', [$d['id']]) !== (int) Auth::clubId()) {
+            throw new HttpException(404, 'Document introuvable.');
+        }
         $mini = isset($r->query['mini']) && $d['thumb_name'];
         $path = DocumentService::dir() . '/' . ($mini ? $d['thumb_name'] : $d['stored_name']);
         if (!is_file($path)) {

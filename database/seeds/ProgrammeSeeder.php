@@ -437,6 +437,43 @@ final class ProgrammeSeeder
         }
     }
 
+    /** Noms courts des clubs (pastilles, cartes des judokas). */
+    private const CLUB_SHORT = [
+        'Judo Club Lensois' => 'JC Lensois',
+        'Judo Club Sallauminois' => 'JC Sallauminois',
+        'Judo Club de Loison-sous-Lens' => 'JC Loison',
+        'Judo Club d\'Évin-Malmaison' => 'JC Évin-Malmaison',
+        'Judo Club Fouquièrois' => 'JC Fouquièrois',
+        'Judo Club d\'Hulluch' => 'JC Hulluch',
+        'Lille Université Club Judo' => 'LUC Judo',
+        'Judo Club de Roncq' => 'JC Roncq',
+        'Judo Club de Bois-Bernard' => 'JC Bois-Bernard',
+        'USA Liévin Judo Ju-Jitsu' => 'USA Liévin',
+        'Judo Club d\'Aix-Noulette' => 'JC Aix-Noulette',
+        'Judo Club Léo Lagrange Hellemmes' => 'Léo Lagrange Hellemmes',
+        'Ippon Club Rouvroysien' => 'Ippon Club Rouvroy',
+        'Noyelles-sous-Lens Judo Ju-Jitsu' => 'Noyelles-sous-Lens',
+        'Hénin Judo Ju-Jitsu' => 'Hénin Judo',
+        'Éleu Judo Club' => 'Éleu JC',
+        'Judo Ju-Jitsu Taïso UDAS Beaurains-Achicourt' => 'UDAS Beaurains',
+        'Marck Judo' => 'Marck Judo',
+        'Judo Club de Drocourt' => 'JC Drocourt',
+        'Judo Club Lewardois' => 'JC Lewardois',
+        'Judo Club Vermellois' => 'JC Vermellois',
+        'Judo Club Harnésien' => 'JC Harnésien',
+        'Judo Club de Givenchy-en-Gohelle' => 'JC Givenchy',
+        'Dourges Association Judo' => 'Dourges Judo',
+        'Vallée de l\'Oise et des Impressionnistes Judo' => 'VOI Judo',
+        'Judo Club Vitry-en-Artois' => 'JC Vitry-en-Artois',
+        'Club des Arts Martiaux d\'Oignies' => 'CAM Oignies',
+        'Judo Club Roost-Warendin' => 'JC Roost-Warendin',
+        'Flixecourt Judo' => 'Flixecourt Judo',
+        'ACAMA' => 'ACAMA',
+        'Méricourt Judo' => 'Méricourt Judo',
+        'Union Sportive des Cheminots d\'Avion — Judo' => 'USC Avion',
+        'Judo Club Leforest' => 'JC Leforest',
+    ];
+
     private function clubs(int $cid): void
     {
         $clubs = [
@@ -484,8 +521,11 @@ final class ProgrammeSeeder
                 $logoPath = 'media/' . $this->doc('clubs/' . $logo, 'club_logo', $name);
             }
             $existing = Database::value('SELECT id FROM clubs WHERE name = ?', [$name]);
+            if ($existing) {
+                Database::run('UPDATE clubs SET short_name = ? WHERE id = ? AND short_name IS NULL', [self::CLUB_SHORT[$name] ?? null, $existing]);
+            }
             $clubId = $existing ? (int) $existing : Database::insert('clubs', [
-                'name' => $name, 'city' => $city, 'department' => $dept, 'country' => 'FR', 'contact_name' => '', 'email' => '',
+                'name' => $name, 'short_name' => self::CLUB_SHORT[$name] ?? null, 'city' => $city, 'department' => $dept, 'country' => 'FR', 'contact_name' => '', 'email' => '',
                 'logo_path' => $logoPath, 'facebook_url' => $fb, 'website_url' => $website,
             ]);
             Database::insert('competition_clubs', ['competition_id' => $cid, 'club_id' => $clubId, 'is_host' => $logo === '__host__' ? 1 : 0, 'sort_order' => ($i + 1) * 10]);

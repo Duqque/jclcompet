@@ -196,6 +196,8 @@ function icon(string $name, string $class = 'icon'): string
         'plus' => '<path d="M12 5v14"/><path d="M5 12h14"/>',
         'x' => '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
         'check' => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+        'arrow-left' => '<path d="M19 12H5"/><path d="m11 6-6 6 6 6"/>',
+        'flag' => '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
         'chevron' => '<path d="m7 10 5 5 5-5"/>',
         'arrow' => '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
         'download' => '<path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 20h14"/>',

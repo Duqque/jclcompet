@@ -43,13 +43,16 @@ Réinitialisation complète en développement : `php bin/reset-dev.php` (refusé
 | Administrateur | admin@demo-judo.test | AdminDemo2026! |
 | Commissaire tapis 1 | commissaire1@demo-judo.test | CommissaireDemo2026! |
 | Commissaire tapis 2 (et 3) | commissaire2@demo-judo.test | CommissaireDemo2026! |
-| Entraîneur (JC des Tilleuls, démo) | coach@demo-judo.test | CoachDemo2026! |
-| Entraîneure (Dojo des Trois Rivières, démo) | coach2@demo-judo.test | CoachDemo2026! |
+| Entraîneur (JC Lensois, démo) | coach@demo-judo.test | CoachDemo2026! |
+| Entraîneure (Hénin Judo, démo) | coach2@demo-judo.test | CoachDemo2026! |
 | Accueil | accueil@demo-judo.test | AccueilDemo2026! |
 | Buvette | buvette@demo-judo.test | VendeurDemo2026! |
 
 Ces comptes sont marqués « démo » : ils sont **refusés à la connexion quand `APP_ENV=production`**, et le seed de démonstration
 refuse de s'exécuter en production. Désactivez-les (Administration › Comptes) avant toute utilisation réelle.
+
+La compétition de démonstration utilise les vrais clubs de l'édition 2026 (avec leurs logos) ; les judokas, résultats et
+ventes sont inventés et marqués « démo ».
 
 ## Documentation
 

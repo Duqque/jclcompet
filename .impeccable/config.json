@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-20T21:40:55.501Z",
+        "reason": "Claude decided: Inter chosen deliberately to match the six reference dashboards the user supplied for the redesign (soft, minimal sans UI); TV keeps Poppins italic"
+      }
+    ]
+  }
+}
