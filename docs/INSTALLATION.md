@@ -56,11 +56,21 @@ Le fichier `.env` est placé à la racine du projet (hors du dossier public, jam
 5. **Créer les tables** : `php bin/migrate.php` (SSH) — ou importer `database/schema.sql` dans **phpMyAdmin**.
 6. **Contenu du club et du programme** : `php bin/seed.php --content` (club, Taïso, édition 2026, clubs, partenaires…).
    Ne **pas** lancer `--demo` sur le site public.
-7. **Premier administrateur** : `php bin/create-admin.php presidente@exemple.fr "Marie-Paule Kowalski"` (mot de passe saisi
-   de façon masquée, 12 caractères minimum).
+7. **Comptes** : `php bin/create-user.php --fichier=config/comptes.json` crée les comptes listés dans `config/comptes.json`
+   (rôle, identifiant, nom, club, tapis — **aucun mot de passe dans ce fichier**, le dépôt étant public) et affiche une seule
+   fois le mot de passe généré de chacun. Un compte isolé :
+   `php bin/create-user.php --role=admin|commissioner|reception|seller|coach --email=… --name="…" [--club="…"] [--tatami=N] [--changer]`
+   (`--changer` impose un nouveau mot de passe à la première connexion).
 8. **HTTPS** : hPanel › Sécurité › SSL (Let's Encrypt gratuit), puis `FORCE_SECURE_COOKIES=true`.
 9. **Droits d'écriture** : `storage/` (logs, documents, cache) doit être accessible en écriture par PHP (`chmod -R 775 storage`).
 10. Se connecter sur `/connexion`, puis vérifier : Administration › Compétitions, Site vitrine, Comptes (aucun compte « démo » actif).
+
+### Sans SSH : paquet prêt à installer
+
+Un paquet complet peut être préparé en local (code + `vendor/` + images du programme, et une base initiale sans démonstration
+avec les comptes) : décompresser le zip dans le dossier du domaine ou du sous-domaine via le **Gestionnaire de fichiers**,
+importer le fichier `.sql` dans **phpMyAdmin**, renommer `.env.hostinger` en `.env` et y renseigner `APP_URL` et la base.
+Le pas-à-pas est dans `LISEZ-MOI-HOSTINGER.md`, livré avec le paquet (non versionné : il contient la clé du journal).
 
 ### Mise à jour
 

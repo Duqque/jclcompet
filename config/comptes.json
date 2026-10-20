@@ -1,0 +1,9 @@
+{
+  "_commentaire": "Comptes à créer sur le serveur : php bin/create-user.php --fichier=config/comptes.json. Aucun mot de passe ici (dépôt public) : ils sont générés et affichés une seule fois à la création. Rôles : admin, commissioner, reception, seller, coach.",
+  "comptes": [
+    { "role": "admin", "email": "tony.ivascot@jcleforest.fr", "nom": "Tony IVASCOT", "changer_mot_de_passe": true },
+    { "role": "commissioner", "email": "table1@jcleforest.fr", "nom": "Table 1", "tapis": 1 },
+    { "role": "seller", "email": "buvette@jcleforest.fr", "nom": "Buvette" },
+    { "role": "coach", "email": "club@jcleforest.fr", "nom": "Club - JC Leforest", "club": "Judo Club Leforest" }
+  ]
+}
