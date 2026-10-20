@@ -15,7 +15,7 @@ use App\Services\DomainError;
 /** Gestion de tous les contenus éditables : site vitrine (club, Taïso, accueil) et programme de chaque compétition. */
 final class ContentController extends AdminController
 {
-    public const TABS = ['reglages' => 'Coordonnées et textes', 'pages' => 'Pages (club, Taïso, accueil)', 'listes' => 'Listes', 'partenaires' => 'Partenaires', 'historique' => 'Historique', 'documents' => 'Documents et images'];
+    public const TABS = ['reglages' => 'Coordonnées et textes', 'pages' => 'Pages (club, Taïso, accueil)', 'listes' => 'Listes', 'partenaires' => 'Partenaires', 'photos' => 'Photos', 'historique' => 'Historique', 'documents' => 'Documents et images'];
 
     public function index(Request $r): Response
     {
@@ -37,6 +37,13 @@ final class ContentController extends AdminController
         if ($tab === 'historique') {
             $data['history'] = ContentService::history();
             $data['competitions'] = Database::all("SELECT id, name, edition_label FROM competitions WHERE status IN ('finished','archived','in_progress') ORDER BY event_date DESC");
+        }
+        if ($tab === 'photos') {
+            $data['competitions'] = Database::all('SELECT id, name, edition_label, slug, status FROM competitions ORDER BY event_date DESC');
+            $album = (int) ($r->query['album'] ?? 0) ?: (int) (\App\Controllers\Admin\AdminController::current()['id'] ?? 0);
+            $data['album'] = $album ? \App\Services\CompetitionService::find($album) : null;
+            $data['photos'] = $album ? \App\Services\GalleryService::photos($album) : [];
+            $data['hasPassword'] = $album && \App\Services\GalleryService::passwordHash($album) !== null;
         }
         if ($tab === 'documents') {
             $data['documents'] = Database::all('SELECT d.*, c.name AS competition_name FROM documents d LEFT JOIN competitions c ON c.id = d.competition_id ORDER BY d.id DESC LIMIT 300');
@@ -193,6 +200,27 @@ final class ContentController extends AdminController
                 );
                 AuditLogger::log('content.history.from_competition', 'competition', (int) $comp['id'], null, $stats);
                 return $this->back($r, "Saison $season ajoutée à l'historique depuis les données de la compétition.");
+            case 'gallery_upload':
+                $cidG = (int) $r->int('album_id');
+                $ids = \App\Services\GalleryService::upload($cidG, (array) ($r->files['photos'] ?? []), $r->str('caption'));
+                AuditLogger::log('gallery.upload', 'competition', $cidG, null, ['count' => count($ids)], null, $cidG);
+                return $this->back($r, count($ids) . ' photo(s) ajoutée(s) à l\'album.');
+            case 'gallery_password':
+                \App\Services\GalleryService::setPassword((int) $r->int('album_id'), (string) $r->input('password', ''));
+                return $this->back($r, 'Mot de passe de l\'album enregistré : les accès précédents sont révoqués.');
+            case 'gallery_close':
+                \App\Services\GalleryService::disable((int) $r->int('album_id'));
+                return $this->back($r, 'Album fermé au public.');
+            case 'gallery_caption':
+                Database::run("UPDATE documents SET title = ? WHERE id = ? AND type = 'gallery'", [mb_substr($r->str('title'), 0, 190), (int) $r->int('document_id')]);
+                return $this->back($r, 'Légende enregistrée.');
+            case 'gallery_delete':
+                $doc = DocumentService::find((int) $r->int('document_id'));
+                if ($doc['type'] !== 'gallery') {
+                    throw new DomainError('Photo introuvable.');
+                }
+                DocumentService::delete((int) $doc['id']);
+                return $this->back($r, 'Photo supprimée.');
             case 'document_upload':
                 $f = $r->file('file') ?? throw new DomainError('Choisissez un fichier.');
                 DocumentService::storeUpload($f, $r->str('type') ?: 'other', $r->str('title') ?: (string) $f['name'], $r->int('doc_competition_id'), !$r->bool('private'));

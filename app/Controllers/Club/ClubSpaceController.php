@@ -115,6 +115,7 @@ final class ClubSpaceController extends Controller
         }
         unset($data['admin_comment']);
         $id = RegistrationService::register((int) $c['id'], $data, ['actor' => 'club', 'club_id' => (int) $club['id']]);
+        RegistrationService::applyPhoto($id, $r->file('photo'));
         $reg = RegistrationService::find($id);
         return $this->redirect('/espace-club/competitions/' . $c['id'], "{$reg['first_name']} {$reg['last_name']} est inscrit(e) en {$reg['age_name']}" . ($reg['weight_label'] ? " {$reg['weight_label']} kg" : '') . '.');
     }
@@ -135,6 +136,7 @@ final class ClubSpaceController extends Controller
         $data = $r->post;
         unset($data['admin_comment']);
         RegistrationService::update((int) $r->param('rid'), $data, ['actor' => 'club', 'club_id' => (int) $club['id']]);
+        RegistrationService::applyPhoto((int) $r->param('rid'), $r->file('photo'), $r->bool('remove_photo'));
         return $this->redirect('/espace-club/competitions/' . $c['id'], 'Inscription modifiée.');
     }
 

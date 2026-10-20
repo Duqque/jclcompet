@@ -8,7 +8,7 @@
   </div>
   <?php if ($inPool): ?><div class="alert alert-info small">Athlète placé(e) dans une poule : pour modifier sa catégorie, retirez-le de sa poule depuis « Poules et tapis ».</div><?php endif; ?>
 <?php endif; ?>
-<form method="post" action="<?= e(url($reg ? $base . '/inscriptions/' . $reg['id'] : $base . '/inscriptions')) ?>">
+<form method="post" enctype="multipart/form-data" action="<?= e(url($reg ? $base . '/inscriptions/' . $reg['id'] : $base . '/inscriptions')) ?>">
   <?= csrf_field() ?>
   <fieldset><legend>Club</legend><div class="form-grid">
     <div class="field"><label for="club_id">Club</label><select id="club_id" name="club_id"><option value="">— Sans club enregistré (exception) —</option><?php foreach ($clubs as $cl): ?><option value="<?= (int) $cl['id'] ?>"<?= selected(old('club_id', $reg['club_id'] ?? ''), $cl['id']) ?>><?= e($cl['name']) ?></option><?php endforeach; ?></select></div>

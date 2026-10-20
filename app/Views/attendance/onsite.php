@@ -3,7 +3,7 @@
 <?php include BASE_PATH . '/app/Views/partials/flash.php'; ?>
 <?php if (!$lateAllowed): ?><div class="alert alert-warning">Les inscriptions tardives ne sont pas autorisées pour cette compétition (réservé à l'administration).</div><?php endif; ?>
 <?php if ($needsValidation): ?><div class="alert alert-info small">L'inscription sera enregistrée et la présence validée ; elle devra être confirmée par l'administration avant la génération des poules.</div><?php endif; ?>
-<form method="post" action="<?= e(url('/accueil/' . $c['id'] . '/sur-place')) ?>" class="card"><?= csrf_field() ?>
+<form method="post" enctype="multipart/form-data" action="<?= e(url('/accueil/' . $c['id'] . '/sur-place')) ?>" class="card"><?= csrf_field() ?>
   <div class="form-grid">
     <div class="field"><label for="club_id">Club</label><select id="club_id" name="club_id"><option value="">— Club non enregistré —</option><?php foreach ($clubs as $cl): ?><option value="<?= (int) $cl['id'] ?>"<?= selected(old('club_id'), $cl['id']) ?>><?= e($cl['name']) ?></option><?php endforeach; ?></select></div>
     <div class="field"><label for="club_exception_label">ou exception autorisée</label><input id="club_exception_label" name="club_exception_label" maxlength="150" value="<?= e(old('club_exception_label')) ?>" placeholder="Nom du club"></div>

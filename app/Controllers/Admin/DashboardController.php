@@ -13,7 +13,26 @@ use App\Services\TvTokenService;
 
 final class DashboardController extends AdminController
 {
+    /** L'administration s'ouvre sur les inscrits de la compétition courante. */
     public function index(Request $r): Response
+    {
+        $c = AdminController::current();
+        return Response::redirect($c ? '/admin/competitions/' . $c['id'] . '/inscriptions' : '/admin/competitions');
+    }
+
+    public function switch(Request $r): Response
+    {
+        $id = (int) ($r->query['id'] ?? 0);
+        if ($id === 0) {
+            return Response::redirect('/admin/competitions');
+        }
+        $c = CompetitionService::find($id);
+        \App\Core\Session::put('admin_competition_id', (int) $c['id']);
+        $to = (string) ($r->query['vers'] ?? 'inscriptions');
+        return Response::redirect('/admin/competitions/' . $c['id'] . (in_array($to, ['inscriptions', 'poules', 'combats', 'resultats', 'classements', 'ventes'], true) ? '/' . $to : ''));
+    }
+
+    public function legacyDashboard(Request $r): Response
     {
         $current = Database::one("SELECT * FROM competitions WHERE status IN ('in_progress','pool_preparation','attendance') ORDER BY event_date LIMIT 1")
             ?? Database::one("SELECT * FROM competitions WHERE status NOT IN ('archived') AND event_date >= CURDATE() ORDER BY event_date LIMIT 1")

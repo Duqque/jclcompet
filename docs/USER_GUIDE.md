@@ -7,6 +7,25 @@
 
 ---
 
+## Connexion et navigation
+
+La page **Connexion** propose quatre profils en bas à gauche (Club, Commissaire, Accueil & buvette, Organisation) et le
+formulaire à droite. Le profil choisi n'accorde aucun droit : ce sont les rôles du compte, vérifiés côté serveur, qui décident.
+
+Menu de l'administration (la compétition se choisit en haut du menu) :
+
+| Rubrique | Contenu |
+|---|---|
+| **Inscrits** | cartes des judokas (photo facultative) ou liste, filtres par club, catégorie, sexe, présence |
+| **Poules** | bouton de génération, poules par catégorie et âge, onglet « Répartition des tapis » |
+| **Combats** | archive de tous les combats, filtres, détail et corrections |
+| **Résultats** | podiums par catégorie |
+| **Classements** | clubs par points et par médailles, classement individuel, recalcul |
+| **Administration** | statut, informations, paramètres, catégories, durées, barème, tapis & TV, programme, clubs présents, PDF, journal |
+| **Profils** | comptes (commissaires, accueil, buvette, entraîneurs…) et clubs |
+| **Boutique** | produits et ventes |
+| **Site & photos** | contenu du site vitrine et albums photos |
+
 ## 1. Administrateur
 
 ### Préparer une compétition (liste de contrôle)
@@ -205,6 +224,14 @@ toutes les 120 s (réglable) et bouton « Actualiser ». Seuls les résultats va
 
 Le programme de chaque compétition se modifie depuis la compétition : **Programme (contenus)** (sections et listes : horaires,
 déroulement, accès au plateau, lots de la loterie…), **Clubs présents**, **Buvette**, **Catégories**, **Durées**.
+
+### Photos de la compétition
+
+**Site & photos › Photos** : choisir la compétition, définir le **mot de passe de l'album** (6 caractères minimum), puis
+téléverser les photos (JPEG, PNG, WebP ; orientation corrigée, miniatures générées). Les photos sont des fichiers privés :
+elles ne sont servies qu'après saisie du mot de passe sur la page **Photos** du site (essais limités), ou à un compte
+connecté de l'organisation. « Fermer l'album » retire l'accès public sans supprimer les photos. Changer le mot de passe
+déconnecte les appareils déjà déverrouillés. En démonstration, l'album fictif s'ouvre avec `photos2026`.
 
 Mise en forme des textes : `**gras**`, `*italique*`, `- ` en début de ligne pour une liste, `[texte](https://lien)`,
 `^e^` pour un exposant, une ligne vide pour un nouveau paragraphe.

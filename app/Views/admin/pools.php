@@ -2,7 +2,7 @@
 use App\Services\PoolGenerator;
 $u = url('/admin/competitions/' . $c['id'] . '/poules');
 $api = url('/api/admin/competitions/' . $c['id'] . '/poules');
-$heading = 'Poules et tapis'; include __DIR__ . '/_head.php';
+$heading = 'Poules'; include __DIR__ . '/_head.php';
 $draft = $g && $g['status'] === 'draft';
 $validated = $g && $g['status'] === 'validated';
 $post = fn (string $op, string $label, string $cls = 'btn-ghost', array $hidden = [], ?string $confirm = null) =>
@@ -43,7 +43,7 @@ $allPools = $pools;
     <p class="small"><?= e($grp['issue']['reason']) ?> Aucun athlète n'a été écarté : choisissez une solution.</p>
     <div class="btn-group">
       <?php foreach ($grp['issue']['alternatives'] as $alt): ?>
-        <?php if ($alt['type'] === 'sizes'): ?><?= $post('decide', 'Accepter : ' . e($alt['label']), 'btn-yellow', ['group_key' => $grp['key'], 'type' => 'sizes', 'sizes' => implode(',', $alt['sizes'])]) ?>
+        <?php if ($alt['type'] === 'sizes'): ?><?= $post('decide', 'Accepter : ' . e($alt['label']), 'btn-soft', ['group_key' => $grp['key'], 'type' => 'sizes', 'sizes' => implode(',', $alt['sizes'])]) ?>
         <?php elseif ($alt['type'] === 'unplaced'): ?><?= $post('decide', e($alt['label']), 'btn-ghost', ['group_key' => $grp['key'], 'type' => 'unplaced'], 'Laisser ces athlètes hors poule ? La décision est consignée au journal.') ?>
         <?php elseif ($alt['type'] === 'merge'): ?>
           <form method="post" action="<?= e($u) ?>" class="btn-group"><?= csrf_field() ?><input type="hidden" name="op" value="decide"><input type="hidden" name="type" value="merge"><input type="hidden" name="group_key" value="<?= e($grp['key']) ?>">
@@ -74,7 +74,26 @@ $allPools = $pools;
 </section>
 <?php endif; ?>
 
-<?php if ($g): ?>
+<?php if ($g): $vue = ($_GET['vue'] ?? 'categories') === 'tapis' ? 'tapis' : 'categories'; ?>
+<div class="toolbar"><div class="segmented" role="group" aria-label="Affichage des poules">
+  <a href="?vue=categories"<?= $vue === 'categories' ? ' aria-current="page"' : '' ?>>Par catégorie et âge</a>
+  <a href="?vue=tapis"<?= $vue === 'tapis' ? ' aria-current="page"' : '' ?>>Répartition des tapis</a></div></div>
+<?php if ($vue === 'categories'):
+  $byCat = [];
+  foreach ($pools as $p) { $byCat[\App\Services\CategoryService::label(['name' => $p['age_name'], 'name_m' => $p['name_m'], 'name_f' => $p['name_f']], $p['sex'])][] = $p; } ?>
+  <?php foreach ($byCat as $label => $list): ?>
+    <div class="group-title"><h2><?= e($label) ?></h2><span class="muted small"><?= count($list) ?> poule(s) · <?= array_sum(array_column($list, 'size')) ?> judokas · <?= array_sum(array_column($list, 'bouts_total')) ?> combats</span></div>
+    <div class="pool-board">
+      <?php foreach ($list as $p): ?>
+        <article class="pool<?= (int) $p['is_locked'] ? ' locked' : '' ?><?= $p['bouts_started'] ? ' started' : '' ?>">
+          <header><strong><?= e($p['weight_label'] ? $p['weight_label'] . ' kg · ' : '') ?>Poule <?= (int) $p['number'] ?></strong><span class="badge badge-ink">Tapis <?= e($p['tatami_number'] ?? '—') ?></span></header>
+          <ol><?php foreach ($p['athletes'] as $a): ?><li><?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small muted">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span></li><?php endforeach; ?></ol>
+          <footer><span><?= (int) $p['size'] ?> judokas · <?= (int) $p['bouts_total'] ?> combats · <?= e(hours_label((int) $p['estimated_seconds'])) ?><?= $p['spread_pct'] > 0 ? ' · écart ' . number_format($p['spread_pct'], 1, ',', '') . ' %' : '' ?></span></footer>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  <?php endforeach; ?>
+<?php else: ?>
 <p class="small muted">Glissez une poule vers un autre tapis, un athlète vers une autre poule, ou un athlète sur un autre athlète pour les échanger. Sur tablette, utilisez les menus « Déplacer » sous chaque poule et le formulaire en bas de page.</p>
 <div class="pool-board" data-pool-board data-api="<?= e($api) ?>">
   <?php foreach (array_merge($tatamis, [['id' => 0, 'number' => null]]) as $t): $list = $byTatami[$t['id']] ?? []; if ($t['id'] === 0 && !$list) continue; ?>
@@ -120,6 +139,7 @@ $allPools = $pools;
   <?php endforeach; ?>
 </div>
 
+<?php endif; ?>
 <div class="grid grid-2" style="margin-top:1.4rem">
   <section class="card">
     <h2 style="font-size:1.1rem">Déplacer ou échanger (sans glisser-déposer)</h2>
@@ -143,7 +163,7 @@ $allPools = $pools;
       <ul style="list-style:none;padding:0;margin:0"><?php foreach ($unplaced as $up): ?>
         <li style="padding:.6rem 0;border-bottom:1px solid var(--line)"><strong><?= e($up['last_name'] . ' ' . $up['first_name']) ?></strong> <span class="small muted"><?= e($up['group_label']) ?><?= $up['ref_weight'] ? ' · ' . e(kg($up['ref_weight'])) : '' ?></span>
           <div class="btn-group" style="margin-top:.35rem">
-            <?php foreach ($up['suggestions'] as $sg): ?><?= $post('move_athlete', 'Ajouter à ' . e($sg['pool']['label']) . ' (' . $sg['size'] . ($sg['full'] ? ', complète' : '') . ')', $sg['full'] ? 'btn-ghost' : 'btn-yellow', ['registration_id' => $up['id'], 'pool_id' => $sg['pool']['id']]) ?><?php endforeach; ?>
+            <?php foreach ($up['suggestions'] as $sg): ?><?= $post('move_athlete', 'Ajouter à ' . e($sg['pool']['label']) . ' (' . $sg['size'] . ($sg['full'] ? ', complète' : '') . ')', $sg['full'] ? 'btn-ghost' : 'btn-soft', ['registration_id' => $up['id'], 'pool_id' => $sg['pool']['id']]) ?><?php endforeach; ?>
             <?= $post('regroup', 'Recalculer le groupe', 'btn-ghost', ['group_key' => $up['group_key']], 'Recalculer les poules non commencées de ce groupe en intégrant cet athlète ?') ?>
           </div></li>
       <?php endforeach; ?></ul>

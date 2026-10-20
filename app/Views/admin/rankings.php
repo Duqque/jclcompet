@@ -1,6 +1,6 @@
 <?php use App\Services\CategoryService; $heading = 'Classements'; $actions = '<a class="btn btn-ghost" href="' . e(url('/classement/' . $c['slug'])) . '" target="_blank">Écran public ↗</a><a class="btn btn-ghost" href="' . e(url('/admin/competitions/' . $c['id'] . '/bareme')) . '">Barème</a>'; include __DIR__ . '/_head.php'; $u = url('/admin/competitions/' . $c['id'] . '/classements'); ?>
 <div class="btn-group" style="margin-bottom:1rem">
-  <form method="post" action="<?= e($u) ?>"><?= csrf_field() ?><input type="hidden" name="op" value="recompute"><button class="btn btn-yellow" type="submit">Recalculer tous les classements</button></form>
+  <form method="post" action="<?= e($u) ?>"><?= csrf_field() ?><input type="hidden" name="op" value="recompute"><button class="btn" type="submit">Recalculer tous les classements</button></form>
   <span class="small muted">Dernier calcul : <?= e($lastUpdate ? short_datetime($lastUpdate) : '—') ?> · <?= (int) $incomplete ?> poule(s) non terminée(s) (aucune médaille attribuée tant qu'une poule est incomplète)</span>
 </div>
 <?php foreach ($tiebreaks as $p): ?>

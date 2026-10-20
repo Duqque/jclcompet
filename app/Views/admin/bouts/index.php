@@ -1,4 +1,4 @@
-<?php use App\Services\BoutService; $base = '/admin/competitions/' . $c['id']; $heading = 'Combats et résultats'; include dirname(__DIR__) . '/_head.php'; ?>
+<?php use App\Services\BoutService; $base = '/admin/competitions/' . $c['id']; $heading = 'Combats'; $sub = 'Archive de tous les combats de la compétition'; include dirname(__DIR__) . '/_head.php'; ?>
 <form method="get" class="filters card" style="padding:.8rem 1rem">
   <div class="field"><label>Recherche</label><input type="search" name="q" value="<?= e($f['q'] ?? '') ?>" placeholder="Nom d'un combattant"></div>
   <div class="field"><label>Tapis</label><select name="tatami_id" data-autosubmit><option value="">Tous</option><?php foreach ($tatamis as $t): ?><option value="<?= (int) $t['id'] ?>"<?= selected($f['tatami_id'] ?? '', $t['id']) ?>>Tapis <?= (int) $t['number'] ?></option><?php endforeach; ?></select></div>

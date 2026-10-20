@@ -24,5 +24,10 @@ $byCategory = ($weightInput ?? 'weight') === 'category';
   <div class="field"><label<?= $byCategory ? '' : ' class="required"' ?> for="declared_weight_kg">Poids déclaré (kg)</label><input id="declared_weight_kg" name="declared_weight_kg" type="number" step="0.1" min="10" max="250" inputmode="decimal" value="<?= e($v('declared_weight_kg')) ?>" data-kg><span class="hint"><?= $byCategory ? 'Facultatif : la catégorie de poids suffit (pas de pesée).' : 'Sert à déterminer la catégorie de poids et à composer les poules.' ?></span></div>
   <div class="field"><label for="grade">Grade</label><input id="grade" name="grade" maxlength="40" list="grades" value="<?= e($v('grade')) ?>"><datalist id="grades"><?php foreach (['Blanche', 'Blanche-jaune', 'Jaune', 'Jaune-orange', 'Orange', 'Orange-verte', 'Verte', 'Bleue', 'Marron', 'Noire'] as $g): ?><option value="<?= e($g) ?>"><?php endforeach; ?></datalist></div>
   <div class="field"><label for="license_number">N° de licence</label><input id="license_number" name="license_number" maxlength="40" value="<?= e($v('license_number')) ?>"></div>
+  <div class="field"><label for="photo">Photo (facultative)</label>
+    <div style="display:flex;gap:.7rem;align-items:center"><?= avatar(!empty($r['photo_document_id']) ? (int) $r['photo_document_id'] : null, trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? '')) ?: '?') ?>
+      <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="user"></div>
+    <?php if (!empty($r['photo_document_id'])): ?><label class="check"><input type="checkbox" name="remove_photo" value="1"> Retirer la photo</label><?php endif; ?>
+    <span class="hint">Visible uniquement dans les espaces privés (jamais sur le site public).</span></div>
   <p class="span-all small muted" data-reg-summary aria-live="polite"></p>
 </div>

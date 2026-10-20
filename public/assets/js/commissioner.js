@@ -198,7 +198,9 @@
       $('[data-hajime]').disabled = true; $('[data-finish-top]').disabled = true;
       return;
     }
-    head.innerHTML = '<div><h1>' + esc(c.category) + (c.weight_label ? ' ' + esc(c.weight_label) + ' kg' : '') + ' — ' + esc(c.pool_label) + '</h1><p class="meta">' +
+    const catLabel = c.category + (c.weight_label ? ' ' + c.weight_label + ' kg' : '');
+    const title = c.pool_label && c.pool_label.indexOf(c.category) === 0 ? c.pool_label : catLabel + ' — ' + c.pool_label;
+    head.innerHTML = '<div><h1>' + esc(title) + '</h1><p class="meta">' +
       (c.phase === 'final' ? 'Barrage' : 'Combat ' + c.pool_position + '/' + c.pool_bouts) + ' · ordre ' + c.order_on_tatami + ' sur le tapis · durée ' + fmt(c.clock.duration_ms) +
       (c.clock.golden_score ? ' · <strong style="color:var(--red)">Golden score</strong>' : '') + '</p></div><span class="badge ' +
       ({ validated: 'badge-green', finished: 'badge-orange', in_progress: 'badge-red' }[c.status] || '') + '">' + esc(c.status_label) + '</span>';

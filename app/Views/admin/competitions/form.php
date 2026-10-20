@@ -4,8 +4,7 @@ $dt = fn (?string $s) => $s ? str_replace(' ', 'T', substr($s, 0, 16)) : '';
 $sizes = explode(',', (string) old('pool_sizes_str', $c['pool_sizes'] ?? '3,4,5'));
 $archived = $c && $c['status'] === 'archived';
 ?>
-<div class="page-head"><div><p class="eyebrow"><?= $c ? '<a href="' . e(url('/admin/competitions/' . $c['id'])) . '">' . e($c['name']) . '</a>' : 'Compétitions' ?></p><h1><?= $c ? 'Informations de la compétition' : 'Nouvelle compétition' ?></h1></div></div>
-<?php if ($archived): ?><div class="alert alert-warning">Compétition archivée : lecture seule. Rouvrez-la depuis la vue d'ensemble pour la modifier.</div><?php endif; ?>
+<?php if ($c): $heading = 'Informations'; include dirname(__DIR__) . '/_head.php'; else: ?><div class="page-head"><div><p class="eyebrow">Compétitions</p><h1>Nouvelle compétition</h1></div></div><?php endif; ?>
 <form method="post" enctype="multipart/form-data" action="<?= e(url($c ? '/admin/competitions/' . $c['id'] . '/modifier' : '/admin/competitions')) ?>">
   <?= csrf_field() ?>
   <fieldset><legend>Présentation</legend>

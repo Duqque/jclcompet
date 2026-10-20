@@ -17,7 +17,14 @@ final class UserController extends AdminController
     {
         return $this->admin('users', [
             'title' => 'Comptes',
-            'rows' => Database::all('SELECT u.*, r.name AS role_name, r.code AS role_code, c.name AS club_name FROM users u JOIN roles r ON r.id = u.role_id LEFT JOIN club_users cu ON cu.user_id = u.id LEFT JOIN clubs c ON c.id = cu.club_id ORDER BY r.id, u.display_name'),
+            'rows' => Database::all(
+                'SELECT u.*, r.name AS role_name, r.code AS role_code, c.name AS club_name,
+                        (SELECT GROUP_CONCAT(t.number ORDER BY t.number) FROM commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id WHERE ct.user_id = u.id) AS tatamis
+                 FROM users u JOIN roles r ON r.id = u.role_id LEFT JOIN club_users cu ON cu.user_id = u.id LEFT JOIN clubs c ON c.id = cu.club_id
+                 WHERE (? = "" OR r.code = ?) ORDER BY r.id, u.display_name',
+                [(string) ($r->query['role'] ?? ''), (string) ($r->query['role'] ?? '')]
+            ),
+            'role' => (string) ($r->query['role'] ?? ''),
             'roles' => Database::all('SELECT * FROM roles ORDER BY id'),
             'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'),
         ]);

@@ -22,6 +22,9 @@ $router->get('/classement/{slug}', [SiteController::class, 'rankingBoard']);
 $router->get('/club', [SiteController::class, 'club']);
 $router->get('/taiso', [SiteController::class, 'taiso']);
 $router->get('/partenaires', [SiteController::class, 'partners']);
+$router->get('/photos', [SiteController::class, 'photos']);
+$router->get('/photos/{slug}', [SiteController::class, 'album']);
+$router->post('/photos/{slug}', [SiteController::class, 'unlockAlbum']);
 $router->get('/mentions-legales', [SiteController::class, 'legal']);
 $router->get('/confidentialite', [SiteController::class, 'privacy']);
 $router->get('/media/{id:\d+}', [SiteController::class, 'media']);
@@ -39,6 +42,8 @@ $router->get('/tv/tapis/{number:\d+}', [TvController::class, 'show']);
 // --- Administration -----------------------------------------------------------
 $router->group('/admin', ['auth', 'role:admin'], function ($r) {
     $r->get('', [Admin\DashboardController::class, 'index']);
+    $r->get('/basculer', [Admin\DashboardController::class, 'switch']);
+    $r->get('/tableau-de-bord', [Admin\DashboardController::class, 'legacyDashboard']);
     $r->get('/competitions', [Admin\CompetitionController::class, 'index']);
     $r->get('/competitions/nouvelle', [Admin\CompetitionController::class, 'create'], ['can:competitions.manage']);
     $r->post('/competitions', [Admin\CompetitionController::class, 'store'], ['can:competitions.manage']);
@@ -75,6 +80,7 @@ $router->group('/admin', ['auth', 'role:admin'], function ($r) {
         $r->get('/combats', [Admin\BoutController::class, 'index']);
         $r->get('/combats/{bid:\d+}', [Admin\BoutController::class, 'show']);
         $r->post('/combats/{bid:\d+}', [Admin\BoutController::class, 'action'], ['can:results.correct']);
+        $r->get('/resultats', [Admin\ResultController::class, 'index']);
         $r->get('/classements', [Admin\RankingController::class, 'index']);
         $r->post('/classements', [Admin\RankingController::class, 'action'], ['can:rankings.manage']);
         $r->get('/ventes', [Admin\SalesController::class, 'index'], ['can:sales.manage']);

@@ -22,35 +22,10 @@ $tabs = array_filter([
 ]);
 $tierLabels = ContentService::PARTNER_TIERS;
 ?>
-<section class="scoreboard" aria-labelledby="comp-title">
-  <div class="wrap">
-    <div class="sb-row sb-top">
-      <img class="sb-logo" src="<?= e(asset('img/logo-jcl.png')) ?>" alt="" width="80" height="53">
-      <div>
-        <p class="sb-label"><?= e($c['edition_label'] ?: CompetitionService::statusLabel($c['status'])) ?></p>
-        <p class="sb-sub"><?= e(fr_date($c['event_date'], true)) ?> | <?= (int) $mats ?> tapis</p>
-      </div>
-      <div class="sb-clock"><?= e(date('G:i', strtotime($c['start_time']))) ?></div>
-    </div>
-    <div class="sb-row sb-red">
-      <img class="sb-logo" src="<?= e(asset('img/logo-jcl.png')) ?>" alt="" width="120" height="80">
-      <div>
-        <h1 class="sb-name" id="comp-title"><?= e($c['name']) ?></h1>
-        <p class="sb-club"><?= e(CompetitionService::statusLabel($c['status'])) ?></p>
-        <div class="sb-actions">
-          <?php if ($regOpen): ?><a class="btn btn-yellow btn-lg btn-display" href="<?= e(url('/connexion')) ?>">Inscrire mon club</a><?php endif; ?>
-          <?php if ($live): ?><a class="btn btn-yellow btn-lg btn-display" href="<?= e(url('/competitions/' . $c['slug'] . '/direct')) ?>">Résultats en direct</a><?php endif; ?>
-          <?php if ($hasResults || $live): ?><a class="btn btn-outline-white btn-lg" href="<?= e(url('/competitions/' . $c['slug'] . '/resultats')) ?>">Résultats et classements</a><?php endif; ?>
-          <?php if ($regulation): ?><a class="btn btn-outline-white btn-lg" href="<?= e(url('/media/' . $regulation['id'], ['telecharger' => 1])) ?>">Télécharger le <?= $regulation['type'] === 'program' ? 'programme' : 'règlement' ?> (PDF)</a><?php endif; ?>
-        </div>
-      </div>
-      <div class="sb-figure"><strong><?= (int) $clubsCount ?: '—' ?></strong><span>clubs</span></div>
-    </div>
-  </div>
-</section>
+<div class="wrap" style="padding-top:.6rem"><?php $hc = $c; include __DIR__ . '/_hero.php'; ?></div>
 
 <nav class="tabs no-print" aria-label="Sections du programme">
-  <div class="wrap"><?php foreach ($tabs as $id => $label): ?><a href="#<?= $id ?>"><?= e($label) ?></a><?php endforeach; ?><a href="<?= e(url('/competitions/' . $c['slug'] . '/resultats')) ?>">Résultats</a></div>
+  <div class="wrap"><div class="segmented"><?php foreach ($tabs as $id => $label): ?><a href="#<?= $id ?>"><?= e($label) ?></a><?php endforeach; ?><?php if ($hasAlbum): ?><a href="<?= e(url('/photos/' . $c['slug'])) ?>"><?= icon('lock') ?>Photos</a><?php endif; ?><a href="<?= e(url('/competitions/' . $c['slug'] . '/resultats')) ?>">Résultats</a></div></div>
 </nav>
 
 <section class="section anchor" id="presentation">
@@ -69,17 +44,17 @@ $tierLabels = ContentService::PARTNER_TIERS;
       <?php if ($c['practical_info']): ?><h3>Informations pratiques</h3><div class="prose"><?= Markdown::render($c['practical_info']) ?></div><?php endif; ?>
     </div>
     <div class="stack">
-      <?php if ($cover): ?><img src="<?= e($cover) ?>" alt="Affiche de la <?= e($c['name']) ?>" loading="lazy" style="box-shadow:var(--shadow)"><?php endif; ?>
+      <?php if ($cover): ?><img src="<?= e($cover) ?>" alt="Affiche de la <?= e($c['name']) ?>" loading="lazy" style="border-radius:24px;box-shadow:var(--shadow)"><?php endif; ?>
       <?php if ($c['coach_info']): ?>
-        <div class="card" style="border-top:6px solid var(--yellow)"><p class="eyebrow">Pour les entraîneurs et responsables de clubs</p><div class="prose"><?= Markdown::render($c['coach_info']) ?></div>
-        <a class="btn btn-red" href="<?= e(url('/connexion')) ?>">Accéder à l'espace clubs</a></div>
+        <div class="s-card"><p class="eyebrow">Pour les entraîneurs et responsables de clubs</p><div class="prose"><?= Markdown::render($c['coach_info']) ?></div>
+        <a class="btn" href="<?= e(url('/connexion', ['profil' => 'club'])) ?>">Accéder à l'espace clubs</a></div>
       <?php endif; ?>
     </div>
   </div>
 </section>
 
 <?php if ($schedule): ?>
-<section class="section section-floor anchor" id="horaires">
+<section class="section anchor" id="horaires">
   <div class="wrap">
     <h2><?= e($sec('schedule_intro')['title'] ?? 'Horaires prévisionnels') ?> <span class="muted" style="font-size:.7em;text-transform:none;font-style:normal">du <?= e(fr_date($c['event_date'], true)) ?></span></h2>
     <div class="prose"><?= $md('schedule_intro') ?></div>
@@ -111,21 +86,21 @@ $tierLabels = ContentService::PARTNER_TIERS;
     <?php endif; ?>
     <?php if ($p = $sec('plan')): ?>
       <div class="media-split" style="margin-top:2.5rem">
-        <?php if ($p['image_document_id']): ?><img src="<?= e(url('/media/' . $p['image_document_id'])) ?>" alt="Plan de la salle : plateau de compétition et tapis" loading="lazy" style="border:1px solid var(--line)"><?php endif; ?>
+        <?php if ($p['image_document_id']): ?><img src="<?= e(url('/media/' . $p['image_document_id'])) ?>" alt="Plan de la salle : plateau de compétition et tapis" loading="lazy" style="background:#fff;padding:12px;box-shadow:var(--shadow)"><?php endif; ?>
         <div>
-          <h3 style="font-size:1.3rem;font-style:italic;text-transform:uppercase"><?= e($p['title']) ?></h3>
+          <h3 style="font-size:1.3rem"><?= e($p['title']) ?></h3>
           <div class="prose"><?= Markdown::render($p['body']) ?></div>
           <?php if ($access): ?><ul class="prose"><?php foreach ($access as $a): ?><li><?= e($a['title']) ?></li><?php endforeach; ?></ul><?php endif; ?>
         </div>
       </div>
     <?php endif; ?>
-    <?php if ($r = $sec('respect')): ?><div class="card" style="margin-top:2rem"><h3><?= e($r['title']) ?></h3><div class="prose"><?= Markdown::render($r['body']) ?></div></div><?php endif; ?>
+    <?php if ($r = $sec('respect')): ?><div class="s-card" style="margin-top:2rem"><h3><?= e($r['title']) ?></h3><div class="prose"><?= Markdown::render($r['body']) ?></div></div><?php endif; ?>
   </div>
 </section>
 <?php endif; ?>
 
 <?php if ($poolAges): ?>
-<section class="section section-floor anchor" id="categories">
+<section class="section anchor" id="categories">
   <div class="wrap">
     <h2><?= e($sec('categories')['title'] ?? 'Catégories d\'âge et de poids') ?></h2>
     <div class="prose"><?= $md('categories') ?></div>
@@ -170,7 +145,7 @@ $tierLabels = ContentService::PARTNER_TIERS;
     <h2>Le règlement d'arbitrage</h2>
     <div class="grid grid-3">
       <?php foreach (['rules_format', 'rules_refereeing', 'rules_durations'] as $k): if (!$sec($k)) continue; ?>
-        <div class="card"><h3><?= e($s[$k]['title']) ?></h3><div class="prose"><?= $md($k) ?></div></div>
+        <div class="s-card"><h3><?= e($s[$k]['title']) ?></h3><div class="prose"><?= $md($k) ?></div></div>
       <?php endforeach; ?>
       <?php if (!$sec('rules_durations') && $rules): ?>
         <div class="card"><h3>Temps de combat</h3><ul class="prose"><?php foreach ($rules as $rl): ?><li><?= e($rl['age_name'] ?? 'Par défaut') ?> : <?= e(duration_label((int) $rl['duration_seconds'])) ?></li><?php endforeach; ?></ul></div>
@@ -181,9 +156,9 @@ $tierLabels = ContentService::PARTNER_TIERS;
 </section>
 
 <?php if ($menu): ?>
-<section class="section section-floor anchor" id="buvette">
+<section class="section anchor" id="buvette">
   <div class="wrap">
-    <div class="section-title"><h2><?= e($sec('buvette')['title'] ?? 'Buvette') ?></h2><?php if ($cardOk): ?><span class="card-ok">CB autorisée</span><?php endif; ?></div>
+    <div class="section-title"><h2><?= e($sec('buvette')['title'] ?? 'Buvette') ?></h2><?php if ($cardOk): ?><span class="card-ok"><?= icon('check') ?> CB autorisée</span><?php endif; ?></div>
     <div class="prose"><?= $md('buvette') ?></div>
     <div class="menu">
       <?php foreach ($menu as $cat => $items): ?>
@@ -217,12 +192,12 @@ $tierLabels = ContentService::PARTNER_TIERS;
 <?php endif; ?>
 
 <?php if ($partners): ?>
-<section class="section section-floor anchor" id="partenaires">
+<section class="section anchor" id="partenaires">
   <div class="wrap">
     <h2><?= e($sec('partners')['title'] ?? 'Nos partenaires') ?></h2>
     <p class="muted"><?= e($sec('partners')['body'] ?? '') ?></p>
     <?php include BASE_PATH . '/app/Views/public/_partners.php'; ?>
-    <?php if ($a = $sec('adage')): ?><blockquote class="card" style="margin:2rem 0 0;border-left:6px solid var(--red)"><h3><?= e($a['title']) ?></h3><div class="prose"><?= Markdown::render($a['body']) ?></div></blockquote><?php endif; ?>
+    <?php if ($a = $sec('adage')): ?><blockquote class="s-card" style="margin:2rem 0 0"><h3><?= e($a['title']) ?></h3><div class="prose"><?= Markdown::render($a['body']) ?></div></blockquote><?php endif; ?>
   </div>
 </section>
 <?php endif; ?>
@@ -234,7 +209,7 @@ $tierLabels = ContentService::PARTNER_TIERS;
       <h2><?= e($sec('lottery')['title'] ?? 'Loterie') ?></h2>
       <div class="prose"><?= $md('lottery') ?></div>
     </div>
-    <div class="card" style="border-top:6px solid var(--yellow)">
+    <div class="s-card">
       <h3>De nombreux lots à gagner</h3>
       <ul class="prose"><?php foreach ($prizes as $p): ?><li><?= e($p['title']) ?></li><?php endforeach; ?></ul>
       <div class="prose"><?= $md('lottery_outro') ?></div>
@@ -244,8 +219,8 @@ $tierLabels = ContentService::PARTNER_TIERS;
 <?php endif; ?>
 
 <?php if ($v = $sec('volunteers')): ?>
-<section class="section section-ink">
-  <div class="wrap-narrow" style="text-align:center"><h2><?= e($v['title']) ?></h2><div class="prose" style="margin-inline:auto"><?= Markdown::render($v['body']) ?></div></div>
+<section class="section">
+  <div class="wrap-narrow s-card" style="text-align:center;background:var(--glow)"><h2><?= e($v['title']) ?></h2><div class="prose" style="margin-inline:auto"><?= Markdown::render($v['body']) ?></div></div>
 </section>
 <?php endif; ?>
 
@@ -254,11 +229,11 @@ $tierLabels = ContentService::PARTNER_TIERS;
   <div class="wrap">
     <h2><?= e($sec('history')['title'] ?? 'Historique') ?></h2>
     <?php include BASE_PATH . '/app/Views/public/_history.php'; ?>
-    <p style="font:800 italic 1.3rem var(--font-display);margin-top:1.2rem"><?= e($sec('history')['body'] ?? '') ?></p>
+    <p style="font-weight:600;font-size:1.2rem;margin-top:1.2rem"><?= e($sec('history')['body'] ?? '') ?></p>
   </div>
 </section>
 <?php endif; ?>
 
 <?php if ($t = $sec('thanks')): ?>
-<section class="section section-floor"><div class="wrap-narrow" style="text-align:center"><h2><?= e($t['title']) ?></h2><p><?= e($t['body']) ?></p></div></section>
+<section class="section"><div class="wrap-narrow" style="text-align:center"><h2><?= e($t['title']) ?></h2><p><?= e($t['body']) ?></p></div></section>
 <?php endif; ?>

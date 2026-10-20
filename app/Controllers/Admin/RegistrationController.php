@@ -39,12 +39,19 @@ final class RegistrationController extends AdminController
         if (($r->query['filter'] ?? '') === 'pending') {
             $f['status'] = 'pending';
         }
-        [$page, $per, $offset] = $this->page($r, 50);
+        $mode = ($r->query['vue'] ?? 'cartes') === 'liste' ? 'liste' : 'cartes';
+        [$page, $per, $offset] = $this->page($r, $mode === 'liste' ? 60 : 48);
         $total = RegistrationService::count($cid, $f);
         return $this->admin('registrations/index', [
-            'title' => 'Inscriptions', 'competition' => $c, 'c' => $c, 'f' => $f,
+            'title' => 'Inscrits', 'competition' => $c, 'c' => $c, 'f' => $f, 'mode' => $mode,
             'rows' => RegistrationService::list($cid, $f, null, $per, $offset), 'total' => $total, 'page' => $page, 'pages' => (int) ceil($total / $per),
             'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'), 'ages' => CategoryService::ageCategories($cid),
+            'clubChips' => Database::all(
+                "SELECT c.id, c.name, c.short_name, c.logo_path, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
+                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY n DESC, c.name",
+                [$cid]
+            ),
+            'stats' => \App\Services\CompetitionService::stats($cid),
         ]);
     }
 
@@ -60,6 +67,7 @@ final class RegistrationController extends AdminController
         $c = $this->competition($r);
         $clubId = $r->int('club_id');
         $id = RegistrationService::register((int) $c['id'], $r->post, ['actor' => 'admin', 'club_id' => $clubId, 'club_exception_label' => $r->str('club_exception_label')]);
+        RegistrationService::applyPhoto($id, $r->file('photo'));
         $reg = RegistrationService::find($id);
         return $this->redirect('/admin/competitions/' . $c['id'] . '/inscriptions' . ($r->bool('again') ? '/nouvelle' : ''), "Inscription enregistrée : {$reg['first_name']} {$reg['last_name']} — {$reg['age_name']}" . ($reg['weight_label'] ? " {$reg['weight_label']} kg" : '') . ($reg['is_late'] ? ' (tardive)' : '') . '.');
     }
@@ -81,6 +89,7 @@ final class RegistrationController extends AdminController
         $c = $this->competition($r);
         $rid = (int) $r->param('rid');
         RegistrationService::update($rid, $r->post, ['actor' => 'admin', 'club_id' => $r->int('club_id')]);
+        RegistrationService::applyPhoto($rid, $r->file('photo'), $r->bool('remove_photo'));
         return $this->redirect('/admin/competitions/' . $c['id'] . '/inscriptions/' . $rid, 'Inscription mise à jour.');
     }
 

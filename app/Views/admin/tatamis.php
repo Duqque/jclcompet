@@ -32,7 +32,7 @@ $labels = ['online' => ['badge-green', 'Connecté'], 'idle' => ['badge-orange', 
     <div class="btn-group" style="margin-top:.6rem">
       <form method="post" action="<?= e($u) ?>" class="btn-group"><?= csrf_field() ?><input type="hidden" name="op" value="tv_create"><input type="hidden" name="tatami_id" value="<?= (int) $t['id'] ?>">
         <label class="small" for="d<?= $t['id'] ?>">Validité</label><select id="d<?= $t['id'] ?>" name="days" style="width:auto;min-height:34px"><option value="1">1 jour</option><option value="2">2 jours</option><option value="7" selected>7 jours</option><option value="30">30 jours</option></select>
-        <button class="btn btn-yellow btn-sm" type="submit">Créer un lien d'affichage</button></form>
+        <button class="btn btn-sm" type="submit">Créer un lien d'affichage</button></form>
       <form method="post" action="<?= e($u) ?>" data-confirm="Réinitialiser l'affichage du tapis <?= (int) $t['number'] ?> ? Les liens actuels cesseront de fonctionner."><?= csrf_field() ?><input type="hidden" name="op" value="tv_reset"><input type="hidden" name="tatami_id" value="<?= (int) $t['id'] ?>"><button class="btn btn-ghost btn-sm" type="submit">Réinitialiser l'affichage</button></form>
     </div>
   </section>

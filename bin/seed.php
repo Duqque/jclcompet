@@ -26,6 +26,7 @@ try {
         foreach (DemoSeeder::ACCOUNTS as [$email, $password, $name, $role]) {
             printf("  %-32s %-22s %s\n", $email, $password, $role);
         }
+        echo "\nAlbum photos de démonstration : mot de passe « " . DemoSeeder::GALLERY_PASSWORD . " »\n";
         echo "\nÉcrans TV (liens valables 30 jours) :\n";
         foreach (DemoSeeder::tvLinks($cid) as $n => $url) {
             echo "  Tapis $n : $url\n";

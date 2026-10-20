@@ -236,6 +236,25 @@ final class RegistrationService
         return [null, false];
     }
 
+    /** Photo de profil facultative (document privé, visible uniquement des utilisateurs connectés). */
+    public static function applyPhoto(int $registrationId, ?array $file, bool $remove = false): void
+    {
+        $reg = self::find($registrationId);
+        if ($remove && $reg['photo_document_id']) {
+            Database::run('UPDATE athletes SET photo_document_id = NULL WHERE id = ?', [$reg['athlete_id']]);
+            DocumentService::delete((int) $reg['photo_document_id']);
+        }
+        if ($file) {
+            $doc = DocumentService::storeUpload($file, 'athlete_photo', 'Photo ' . $reg['first_name'] . ' ' . $reg['last_name'], null, false);
+            $old = Database::value('SELECT photo_document_id FROM athletes WHERE id = ?', [$reg['athlete_id']]);
+            Database::run('UPDATE athletes SET photo_document_id = ? WHERE id = ?', [$doc, $reg['athlete_id']]);
+            if ($old) {
+                DocumentService::delete((int) $old);
+            }
+            AuditLogger::log('registration.photo', 'registration', $registrationId, null, null, null, (int) $reg['competition_id']);
+        }
+    }
+
     /** « -28 », « -28 kg », « +44 » → identifiant de la catégorie de poids (import CSV). */
     public static function weightIdFromLabel(int $ageId, string $sex, string $label): int
     {
@@ -253,7 +272,7 @@ final class RegistrationService
     public static function find(int $id): array
     {
         $r = Database::one(
-            'SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number, a.club_id AS athlete_club_id,
+            'SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number, a.photo_document_id, a.club_id AS athlete_club_id,
                     c.name AS club_name, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label
              FROM registrations r JOIN athletes a ON a.id = r.athlete_id
              LEFT JOIN clubs c ON c.id = r.club_id
@@ -386,8 +405,8 @@ final class RegistrationService
     {
         [$where, $p] = self::filterSql($competitionId, $f, $clubId);
         return Database::all(
-            "SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number,
-                    c.name AS club_name, c.short_name AS club_short, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label,
+            "SELECT r.*, a.last_name, a.first_name, a.sex, a.birth_date, a.grade, a.license_number, a.photo_document_id,
+                    c.name AS club_name, c.short_name AS club_short, c.logo_path AS club_logo, ac.name AS age_name, ac.name_m, ac.name_f, ac.code AS age_code, wc.label AS weight_label,
                     u.display_name AS attendance_by_name
              FROM registrations r JOIN athletes a ON a.id = r.athlete_id
              LEFT JOIN clubs c ON c.id = r.club_id

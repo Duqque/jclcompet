@@ -1,5 +1,6 @@
 <?php $v = fn ($k, $d = '') => old($k, $club[$k] ?? $d); ?>
-<div class="page-head"><div><p class="eyebrow"><a href="<?= e(url('/admin/clubs')) ?>">Clubs</a></p><h1><?= $club ? e($club['name']) : 'Nouveau club' ?></h1></div></div>
+<?php include dirname(__DIR__) . '/_profiles_tabs.php'; ?>
+<h2 style="margin-bottom:1rem"><?= $club ? e($club['name']) : 'Nouveau club' ?></h2>
 <div class="grid grid-2">
 <form method="post" enctype="multipart/form-data" action="<?= e(url($club ? '/admin/clubs/' . $club['id'] : '/admin/clubs')) ?>" class="card"><?= csrf_field() ?>
   <div class="form-grid">

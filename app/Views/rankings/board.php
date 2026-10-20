@@ -24,7 +24,7 @@
   <section aria-labelledby="by-medals"><h2 id="by-medals">Par médailles</h2><ol class="board-list" data-list="medals"></ol></section>
 </main>
 <footer class="board-foot"><span>Seuls les résultats validés sont comptés · actualisation toutes les <?= (int) $refresh ?> s</span><a href="<?= e(url('/competitions/' . $c['slug'] . '/resultats')) ?>">Tous les résultats</a></footer>
-<?= json_script('board-data', $data) ?>
+<?= json_script('board-data', $board) ?>
 <script src="<?= e(asset('js/app.js')) ?>"></script>
 <script src="<?= e(asset('js/board.js')) ?>"></script>
 </body>

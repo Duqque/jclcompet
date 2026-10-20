@@ -1,12 +1,5 @@
 <?php use App\Services\CategoryService; use App\Services\CompetitionService; $s = $stats; $base = '/admin/competitions/' . $c['id']; $archived = $c['status'] === 'archived'; ?>
-<div class="page-head">
-  <div><p class="eyebrow"><?= e(fr_date($c['event_date'], true)) ?> · <?= e($c['city']) ?></p><h1><?= e($c['name']) ?></h1></div>
-  <div class="btn-group">
-    <?php if ($c['status'] !== 'draft'): ?><a class="btn btn-ghost" href="<?= e(url('/competitions/' . $c['slug'])) ?>" target="_blank">Page publique ↗</a><?php endif; ?>
-    <a class="btn btn-ghost" href="<?= e(url('/classement/' . $c['slug'])) ?>" target="_blank">Classement public ↗</a>
-  </div>
-</div>
-<?php if ($archived): ?><div class="alert alert-warning"><strong>Compétition archivée</strong> le <?= e(short_datetime($c['archived_at'])) ?> : toutes les données sont en lecture seule.</div><?php endif; ?>
+<?php $heading = 'Administration'; $actions = ($c['status'] !== 'draft' ? '<a class="btn btn-ghost" href="' . e(url('/competitions/' . $c['slug'])) . '" target="_blank">Page publique ' . icon('arrow') . '</a>' : '') . '<a class="btn btn-ghost" href="' . e(url('/classement/' . $c['slug'])) . '" target="_blank">Classement public ' . icon('arrow') . '</a>'; include dirname(__DIR__) . '/_head.php'; ?>
 <?php foreach ($issues as $i): ?><div class="alert alert-<?= $i['level'] === 'error' ? 'error' : 'warning' ?> small"><?= e($i['message']) ?> <a href="<?= e(url($base . '/durees')) ?>">Durées de combat</a></div><?php endforeach; ?>
 
 <section class="card" style="margin-bottom:1.2rem">
@@ -21,7 +14,7 @@
   <?php endif; ?>
   <div class="btn-group" style="margin-top:.8rem">
     <?php if ($archived): ?>
-      <form method="post" action="<?= e(url($base . '/rouvrir')) ?>" data-confirm="Rouvrir la compétition archivée ? Elle redeviendra modifiable." data-reason data-reason-label="Motif de la réouverture"><?= csrf_field() ?><button class="btn btn-yellow btn-sm" type="submit">Rouvrir la compétition</button></form>
+      <form method="post" action="<?= e(url($base . '/rouvrir')) ?>" data-confirm="Rouvrir la compétition archivée ? Elle redeviendra modifiable." data-reason data-reason-label="Motif de la réouverture"><?= csrf_field() ?><button class="btn btn-sm" type="submit">Rouvrir la compétition</button></form>
     <?php else: ?>
       <form method="post" action="<?= e(url($base . '/archiver')) ?>" data-confirm="Archiver la compétition ? Résultats, poules et journal sont conservés ; tout passe en lecture seule et les écrans TV sont désactivés." data-danger><?= csrf_field() ?><button class="btn btn-danger btn-sm" type="submit">Archiver</button></form>
     <?php endif; ?>

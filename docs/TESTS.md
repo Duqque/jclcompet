@@ -11,7 +11,7 @@ TEST_BASE_URL=http://localhost:8095 vendor/bin/phpunit --testsuite Http   # test
 La base `jclcompet_test` doit exister et être accessible par l'utilisateur du `.env` ; elle est entièrement recréée au
 démarrage, chaque test s'exécute dans une transaction annulée.
 
-Dernier résultat (20/10/2026, PHP 8.5.11, MySQL 8.4.11, Apache 2.4.69) : **65 tests, 332 vérifications, tous réussis**
+Dernier résultat (20/10/2026, PHP 8.5.11, MySQL 8.4.11, Apache 2.4.69) : **65 tests unitaires et d'intégration + 7 tests HTTP, tous réussis**
 (59 unitaires/intégration + 6 HTTP).
 
 ## Couverture fonctionnelle
@@ -34,7 +34,7 @@ Dernier résultat (20/10/2026, PHP 8.5.11, MySQL 8.4.11, Apache 2.4.69) : **65 t
 | Archivage | lecture seule (inscriptions, informations, poules → 423) ; réouverture avec motif obligatoire |
 | Ventes | enregistrement, renvoi sans doublon, prix figé, remboursement unique, brut / remboursements / net, export |
 | Journal | chaîne intègre ; altération directe détectée |
-| HTTP | en-têtes de sécurité, CSP, cookie HttpOnly ; `.env`, `app/`, `config/`, `storage/`, migrations non servis ; CSRF obligatoire ; API sans session → 401 ; TV sans jeton → 403 ; entraîneur refusé en administration et saisie ; API de classement publique sans données privées |
+| HTTP | en-têtes de sécurité, CSP, cookie HttpOnly ; `.env`, `app/`, `config/`, `storage/`, migrations non servis ; CSRF obligatoire ; API sans session → 401 ; TV sans jeton → 403 ; entraîneur refusé en administration et saisie ; API de classement publique sans données privées ; photos d'album servies uniquement après le mot de passe (404 sinon, miniatures comprises) |
 
 ## Vérifications manuelles effectuées (navigateur intégré)
 

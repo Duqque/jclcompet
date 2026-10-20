@@ -30,7 +30,7 @@
       <button class="btn btn-ghost" type="submit">Inscrire</button>
     </form>
   <?php endif; ?>
-  <form method="post" action="<?= e(url($b . '/inscriptions')) ?>"><?= csrf_field() ?>
+  <form method="post" enctype="multipart/form-data" action="<?= e(url($b . '/inscriptions')) ?>"><?= csrf_field() ?>
     <?php include BASE_PATH . '/app/Views/partials/registration_form.php'; ?>
     <button class="btn btn-red btn-lg" type="submit" style="margin-top:1rem">Inscrire ce judoka</button>
   </form>

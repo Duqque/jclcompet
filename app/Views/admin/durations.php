@@ -18,6 +18,6 @@ $gs = ['none' => 'Pas de golden score', 'limited' => 'Golden score limité', 'un
   <section class="card"><h2 style="font-size:1.15rem">Ajouter une règle</h2><?php $rule = null; include __DIR__ . '/_duration_form.php'; ?></section>
   <section class="card"><h2 style="font-size:1.15rem">Combats déjà créés</h2>
     <p><?= (int) $scheduled ?> combat(s) à venir. Après une modification des règles, vous pouvez leur appliquer explicitement les nouvelles durées (les combats commencés ne sont jamais modifiés).</p>
-    <form method="post" action="<?= e($u) ?>" data-confirm="Appliquer les règles actuelles aux <?= (int) $scheduled ?> combats à venir ?"><?= csrf_field() ?><input type="hidden" name="op" value="reapply"><button class="btn btn-yellow" type="submit"<?= $scheduled ? '' : ' disabled' ?>>Réappliquer aux combats à venir</button></form>
+    <form method="post" action="<?= e($u) ?>" data-confirm="Appliquer les règles actuelles aux <?= (int) $scheduled ?> combats à venir ?"><?= csrf_field() ?><input type="hidden" name="op" value="reapply"><button class="btn" type="submit"<?= $scheduled ? '' : ' disabled' ?>>Réappliquer aux combats à venir</button></form>
   </section>
 </div>

@@ -53,6 +53,7 @@ final class DemoSeeder
         $this->pools($cid);
         $this->bouts($cid);
         $this->sales($cid);
+        $this->gallery($cid);
         return $cid;
     }
 
@@ -254,6 +255,37 @@ final class DemoSeeder
             $first ??= $id;
         }
         SalesService::refund($first, 'Erreur de saisie (démo)');
+    }
+
+    public const GALLERY_PASSWORD = 'photos2026';
+
+    /** Album de démonstration : images abstraites générées (aucune vraie photo), mot de passe « photos2026 ». */
+    private function gallery(int $cid): void
+    {
+        if (!function_exists('imagecreatetruecolor')) {
+            return;
+        }
+        $palettes = [[255, 214, 120], [255, 170, 120], [245, 120, 130], [190, 200, 255], [170, 230, 190], [255, 235, 170], [230, 190, 255], [255, 200, 160], [200, 235, 245]];
+        $tmp = sys_get_temp_dir() . '/jcl-demo-' . bin2hex(random_bytes(4));
+        mkdir($tmp);
+        foreach ($palettes as $i => [$r, $g, $b]) {
+            $w = 1200;
+            $h = $i % 3 === 1 ? 1500 : 800;
+            $im = imagecreatetruecolor($w, $h);
+            for ($y = 0; $y < $h; $y++) {
+                $t = $y / $h;
+                imageline($im, 0, $y, $w, $y, imagecolorallocate($im, (int) ($r + (250 - $r) * $t), (int) ($g + (246 - $g) * $t), (int) ($b + (240 - $b) * $t)));
+            }
+            imagefilledellipse($im, (int) ($w * .7), (int) ($h * .35), (int) ($w * .6), (int) ($w * .6), imagecolorallocatealpha($im, 255, 255, 255, 80));
+            imagestring($im, 5, 40, $h - 60, 'Photo de demonstration ' . ($i + 1) . ' - donnees fictives', imagecolorallocate($im, 60, 60, 60));
+            $file = "$tmp/demo-$i.jpg";
+            imagejpeg($im, $file, 85);
+            $id = \App\Services\DocumentService::storePath($file, "demo-$i.jpg", 'gallery', 'Photo de démonstration ' . ($i + 1), $cid, false);
+            Database::run('UPDATE documents SET sort_order = ? WHERE id = ?', [$i + 1, $id]);
+            unlink($file);
+        }
+        rmdir($tmp);
+        \App\Services\GalleryService::setPassword($cid, self::GALLERY_PASSWORD);
     }
 
     /** Liens d'affichage TV (un par tapis) — à afficher à la fin du seed. */

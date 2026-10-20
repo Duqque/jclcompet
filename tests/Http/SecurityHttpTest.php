@@ -127,4 +127,25 @@ final class SecurityHttpTest extends TestCase
         $this->assertArrayHasKey('medals', $d);
         $this->assertArrayNotHasKey('email', $d['points'][0] ?? []);
     }
+
+    public function testCompetitionPhotosRequireTheAlbumPassword(): void
+    {
+        $album = '/photos/tournoi-de-demonstration-jcl-donnees-fictives-2026';
+        $locked = $this->req('GET', $album);
+        $this->assertSame(200, $locked['status']);
+        $this->assertStringContainsString('Mot de passe de l', $locked['body']);
+        $this->assertDoesNotMatchRegularExpression('#/media/\d+#', $locked['body']);
+
+        $this->req('POST', $album, ['_csrf' => $this->csrf($album), 'password' => 'mauvais-mot-de-passe']);
+        $this->assertDoesNotMatchRegularExpression('#/media/\d+#', $this->req('GET', $album)['body']);
+
+        $this->req('POST', $album, ['_csrf' => $this->csrf($album), 'password' => 'photos2026']);
+        $open = $this->req('GET', $album)['body'];
+        $this->assertSame(1, preg_match('#/media/(\d+)#', $open, $m), 'Album déverrouillé : photos attendues');
+        $this->assertSame(200, $this->req('GET', '/media/' . $m[1])['status']);
+
+        file_put_contents($this->jar, '');
+        $this->assertSame(404, $this->req('GET', '/media/' . $m[1])['status'], 'Photo servie sans mot de passe');
+        $this->assertSame(404, $this->req('GET', '/media/' . $m[1] . '?mini=1')['status']);
+    }
 }

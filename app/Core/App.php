@@ -20,6 +20,8 @@ final class App
             $request->params = $match['params'];
             $this->runMiddleware($match['route']['middleware'], $request);
             $response = $this->invoke($match['route']['handler'], $request);
+        } catch (RedirectSignal $r) {
+            $response = Response::redirect($r->to);
         } catch (ValidationException $e) {
             $response = $this->validationResponse($e, $request);
         } catch (HttpException $e) {

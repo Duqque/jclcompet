@@ -1,5 +1,5 @@
-<div class="page-head"><div><p class="eyebrow">CRM</p><h1>Clubs</h1></div><a class="btn btn-red" href="<?= e(url('/admin/clubs/nouveau')) ?>">Créer un club</a></div>
-<form method="get" class="filters"><div class="field wide"><label for="q">Recherche</label><input id="q" type="search" name="q" value="<?= e($q) ?>" placeholder="Nom ou ville"></div><button class="btn btn-ghost" type="submit">Rechercher</button></form>
+<?php $profileActions = '<a class="btn" href="' . e(url('/admin/clubs/nouveau')) . '">' . icon('plus') . 'Créer un club</a>'; include dirname(__DIR__) . '/_profiles_tabs.php'; ?>
+<form method="get" class="toolbar"><label class="search"><?= icon('search') ?><span class="sr-only">Rechercher</span><input type="search" name="q" value="<?= e($q) ?>" placeholder="Rechercher un club ou une ville…"></label></form>
 <div class="table-wrap"><table>
   <thead><tr><th></th><th>Club</th><th>Ville</th><th>Contact</th><th>Comptes</th><th>Athlètes</th><th></th></tr></thead>
   <tbody><?php foreach ($rows as $cl): ?>

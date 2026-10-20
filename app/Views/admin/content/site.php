@@ -1,5 +1,5 @@
 <?php use App\Controllers\Admin\ContentController; use App\Services\ContentService; use App\Services\DocumentService; ?>
-<div class="page-head"><div><p class="eyebrow">Organisation</p><h1>Site vitrine</h1></div><a class="btn btn-ghost" href="<?= e(url('/')) ?>" target="_blank">Voir le site ↗</a></div>
+<div class="page-head"><div><p class="eyebrow">Gestion</p><h1>Site & photos</h1><p class="sub">Tous les textes, listes, partenaires et photos du site public.</p></div><a class="btn btn-ghost" href="<?= e(url('/')) ?>" target="_blank">Voir le site <?= icon('arrow') ?></a></div>
 <nav class="subnav" aria-label="Rubriques"><?php foreach (ContentController::TABS as $k => $label): ?><a href="?onglet=<?= $k ?>"<?= $tab === $k ? ' aria-current="page"' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav>
 <p class="small muted">Le programme de chaque compétition (horaires, déroulement, loterie…) se modifie depuis la compétition : <em>Programme (contenus)</em>.</p>
 
@@ -72,6 +72,46 @@
   <?php if ($competitions): ?><form method="post" action="<?= e(url('/admin/site')) ?>" class="btn-group" style="margin-top:1rem"><?= csrf_field() ?><input type="hidden" name="op" value="history_from_competition">
     <label for="src">Calculer depuis une compétition gérée ici</label><select id="src" name="source_competition_id" style="width:auto"><?php foreach ($competitions as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e($c['name'] . ' ' . $c['edition_label']) ?></option><?php endforeach; ?></select><button class="btn btn-ghost btn-sm" type="submit">Ajouter à l'historique</button></form><?php endif; ?>
 </section>
+
+<?php elseif ($tab === 'photos'): ?>
+<form method="get" class="toolbar"><input type="hidden" name="onglet" value="photos">
+  <label class="sr-only" for="album">Album</label>
+  <select id="album" name="album" data-autosubmit><?php foreach ($competitions as $co): ?><option value="<?= (int) $co['id'] ?>"<?= $album && (int) $album['id'] === (int) $co['id'] ? ' selected' : '' ?>><?= e($co['name'] . ' ' . $co['edition_label']) ?></option><?php endforeach; ?></select>
+  <?php if ($album && $hasPassword && $album['status'] !== 'draft'): ?><a class="btn btn-ghost btn-sm" href="<?= e(url('/photos/' . $album['slug'])) ?>" target="_blank">Voir l'album public <?= icon('arrow') ?></a><?php endif; ?>
+</form>
+<?php if ($album): ?>
+<div class="grid grid-2" style="margin-bottom:1rem">
+  <section class="card">
+    <h2 class="card-title" style="margin-bottom:.4rem"><?= icon('camera') ?> Ajouter des photos</h2>
+    <p class="small muted">Sélectionnez plusieurs photos à la fois (JPEG, PNG, WebP). Elles sont redimensionnées et une vignette est créée.</p>
+    <form method="post" enctype="multipart/form-data" action="<?= e(url('/admin/site')) ?>" class="stack"><?= csrf_field() ?><input type="hidden" name="op" value="gallery_upload"><input type="hidden" name="album_id" value="<?= (int) $album['id'] ?>">
+      <input type="file" name="photos[]" multiple required accept="image/jpeg,image/png,image/webp">
+      <div class="field"><label for="caption">Légende commune (facultative)</label><input id="caption" name="caption" maxlength="190" placeholder="ex. Podium des Poussines"></div>
+      <button class="btn" type="submit"><?= icon('upload') ?> Envoyer les photos</button></form>
+  </section>
+  <section class="card">
+    <h2 class="card-title" style="margin-bottom:.4rem"><?= icon('lock') ?> Accès par mot de passe</h2>
+    <p class="small muted"><?= $hasPassword ? 'L\'album est publié : visible uniquement avec le mot de passe. Le changer révoque les accès déjà ouverts.' : 'Album non publié : définissez un mot de passe à transmettre aux familles et aux clubs.' ?></p>
+    <form method="post" action="<?= e(url('/admin/site')) ?>" class="stack"><?= csrf_field() ?><input type="hidden" name="op" value="gallery_password"><input type="hidden" name="album_id" value="<?= (int) $album['id'] ?>">
+      <div class="field"><label for="gpw"><?= $hasPassword ? 'Nouveau mot de passe' : 'Mot de passe de l\'album' ?></label><input id="gpw" name="password" type="text" minlength="6" required autocomplete="off" placeholder="6 caractères minimum"></div>
+      <div class="btn-group"><button class="btn" type="submit"><?= $hasPassword ? 'Changer le mot de passe' : 'Publier l\'album' ?></button></div></form>
+    <?php if ($hasPassword): ?><form method="post" action="<?= e(url('/admin/site')) ?>" data-confirm="Fermer l'album au public ? Les photos restent enregistrées." style="margin-top:.6rem"><?= csrf_field() ?><input type="hidden" name="op" value="gallery_close"><input type="hidden" name="album_id" value="<?= (int) $album['id'] ?>"><button class="btn-link small" type="submit">Fermer l'album</button></form><?php endif; ?>
+  </section>
+</div>
+<?php if (!$photos): ?><div class="empty"><strong>Aucune photo</strong>Ajoutez les photos prises pendant la compétition.</div><?php else: ?>
+<p class="small muted"><?= count($photos) ?> photo(s)</p>
+<div class="admin-gallery">
+  <?php foreach ($photos as $ph): ?>
+    <figure class="card" style="padding:.5rem">
+      <img src="<?= e(url('/media/' . $ph['id'], ['mini' => 1])) ?>" alt="" loading="lazy">
+      <form method="post" action="<?= e(url('/admin/site')) ?>" class="btn-group" style="margin-top:.4rem"><?= csrf_field() ?><input type="hidden" name="op" value="gallery_caption"><input type="hidden" name="document_id" value="<?= (int) $ph['id'] ?>">
+        <input name="title" value="<?= e($ph['title']) ?>" aria-label="Légende" style="min-height:32px;flex:1;font-size:.82rem"><button class="icon-btn" type="submit" aria-label="Enregistrer la légende"><?= icon('check') ?></button></form>
+      <form method="post" action="<?= e(url('/admin/site')) ?>" data-confirm="Supprimer cette photo ?" data-danger><?= csrf_field() ?><input type="hidden" name="op" value="gallery_delete"><input type="hidden" name="document_id" value="<?= (int) $ph['id'] ?>"><button class="btn-link small" type="submit">Supprimer</button></form>
+    </figure>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+<?php endif; ?>
 
 <?php else: ?>
 <section class="card" style="margin-bottom:1rem"><h2 style="font-size:1.1rem">Ajouter un document ou une image</h2>

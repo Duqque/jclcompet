@@ -1,5 +1,5 @@
 <?php use App\Services\SalesService; $t = $summary['totals']; $base = '/admin/competitions/' . $c['id'];
-$heading = 'Buvette et boutique'; $actions = '<a class="btn btn-red" href="' . e(url('/caisse/' . $c['id'])) . '">Ouvrir la caisse</a><a class="btn btn-ghost" href="' . e(url($base . '/ventes/export.csv')) . '">Exporter (CSV)</a>'; include __DIR__ . '/_head.php'; $u = url($base . '/ventes'); ?>
+$heading = 'Boutique'; $actions = '<a class="btn btn-red" href="' . e(url('/caisse/' . $c['id'])) . '">Ouvrir la caisse</a><a class="btn btn-ghost" href="' . e(url($base . '/ventes/export.csv')) . '">Exporter (CSV)</a>'; include __DIR__ . '/_head.php'; $u = url($base . '/ventes'); ?>
 <p class="small muted">Registre des ventes, sans encaissement bancaire. Le chiffre d'affaires n'est pas un bénéfice : les coûts d'achat ne sont pas connus de l'application.</p>
 <form method="get" class="btn-group" style="margin-bottom:1rem"><label for="jour">Journée</label><select id="jour" name="jour" data-autosubmit style="width:auto"><option value="">Toute la compétition</option><?php foreach ($summary['by_day'] as $d): ?><option value="<?= e($d['day']) ?>"<?= selected($day, $d['day']) ?>><?= e(fr_date($d['day'], true)) ?></option><?php endforeach; ?></select></form>
 <div class="stats">

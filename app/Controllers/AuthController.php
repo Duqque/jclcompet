@@ -18,7 +18,7 @@ final class AuthController extends Controller
         if (Auth::check()) {
             return Response::redirect(Auth::homePath());
         }
-        return $this->view('auth/login', ['title' => 'Connexion'], 'auth');
+        return $this->view('auth/login', ['title' => 'Connexion', 'split' => true], 'auth');
     }
 
     public function login(Request $r): Response

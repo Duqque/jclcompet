@@ -28,8 +28,9 @@ final class SiteController extends Controller
             $data += $this->competitionFigures($featured);
         }
         $data['upcoming'] = Database::all("SELECT * FROM competitions WHERE status NOT IN ('draft','archived') AND event_date >= CURDATE() ORDER BY event_date LIMIT 4");
-        $data['partners'] = ContentService::partners(null, null);
+        $data['partners'] = array_merge(ContentService::partners(null, 'institutional'), ContentService::partners(null, 'federal')) ?: ContentService::partners(null, null);
         $data['history'] = ContentService::history();
+        $data['albums'] = \App\Services\GalleryService::albums();
         return $this->view('public/home', $data);
     }
 
@@ -102,6 +103,7 @@ final class SiteController extends Controller
             'cover' => $c['cover_document_id'] ? DocumentService::url((int) $c['cover_document_id']) : null,
             'hasResults' => (bool) Database::value('SELECT 1 FROM bouts WHERE competition_id = ? AND status = "validated" LIMIT 1', [$cid]),
             'regOpen' => CompetitionService::registrationWindowOpen($c),
+            'hasAlbum' => \App\Services\GalleryService::passwordHash($cid) !== null && \App\Services\GalleryService::photos($cid),
         ] + $this->competitionFigures($c));
     }
 
@@ -141,7 +143,7 @@ final class SiteController extends Controller
         return Response::html(\App\Core\View::render('rankings/board', [
             'c' => $c,
             'refresh' => (int) SettingsService::get((int) $c['id'], 'public_refresh_seconds'),
-            'data' => self::rankingData($c),
+            'board' => self::rankingData($c),
             'clubName' => ContentService::site('club_name', 'JC Leforest'),
         ]));
     }
@@ -227,6 +229,35 @@ final class SiteController extends Controller
         return $this->view('public/partners', ['title' => 'Partenaires et mécènes', 'partners' => ContentService::partnersByTier(null)]);
     }
 
+    public function photos(Request $r): Response
+    {
+        return $this->view('public/photos', ['title' => 'Photos', 'albums' => \App\Services\GalleryService::albums()]);
+    }
+
+    public function album(Request $r): Response
+    {
+        $c = CompetitionService::findBySlug((string) $r->param('slug'));
+        $cid = (int) $c['id'];
+        $open = \App\Services\GalleryService::passwordHash($cid) !== null;
+        $access = $open && \App\Services\GalleryService::hasAccess($cid);
+        return $this->view('public/album', [
+            'title' => 'Photos — ' . $c['name'], 'c' => $c, 'open' => $open, 'access' => $access,
+            'photos' => $access ? \App\Services\GalleryService::photos($cid) : [], 'count' => count(\App\Services\GalleryService::photos($cid)),
+            'scripts' => $access ? ['gallery.js'] : [],
+        ]);
+    }
+
+    public function unlockAlbum(Request $r): Response
+    {
+        $c = CompetitionService::findBySlug((string) $r->param('slug'));
+        if ($r->str('op') === 'lock') {
+            \App\Services\GalleryService::lock((int) $c['id']);
+            return $this->redirect('/photos/' . $c['slug'], 'Album verrouillé sur cet appareil.');
+        }
+        $res = \App\Services\GalleryService::unlock((int) $c['id'], (string) $r->input('password', ''), $r);
+        return $res === true ? $this->redirect('/photos/' . $c['slug']) : $this->redirect('/photos/' . $c['slug'], $res, 'error');
+    }
+
     public function legal(Request $r): Response
     {
         return $this->view('public/text', ['title' => 'Mentions légales', 'body' => ContentService::site('legal_notice')]);
@@ -241,15 +272,17 @@ final class SiteController extends Controller
     public function media(Request $r): Response
     {
         $d = DocumentService::find((int) $r->param('id'));
-        if (!(int) $d['is_public'] && !Auth::check()) {
+        if (!(int) $d['is_public'] && !Auth::check()
+            && !($d['type'] === 'gallery' && $d['competition_id'] && \App\Services\GalleryService::hasAccess((int) $d['competition_id']))) {
             throw new HttpException(404, 'Document introuvable.');
         }
-        $path = DocumentService::dir() . '/' . $d['stored_name'];
+        $mini = isset($r->query['mini']) && $d['thumb_name'];
+        $path = DocumentService::dir() . '/' . ($mini ? $d['thumb_name'] : $d['stored_name']);
         if (!is_file($path)) {
             throw new HttpException(404, 'Document introuvable.');
         }
         $download = isset($r->query['telecharger']);
         $resp = Response::file($path, $d['mime_type'], $d['original_name'], !$download);
-        return $resp->header('Cache-Control', (int) $d['is_public'] ? 'public, max-age=86400' : 'private, no-store');
+        return $resp->header('Cache-Control', (int) $d['is_public'] ? 'public, max-age=604800' : 'private, max-age=600');
     }
 }

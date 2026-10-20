@@ -95,6 +95,7 @@ final class AttendanceController extends Controller
             'actor' => 'onsite', 'club_id' => $clubId, 'club_exception_label' => $r->str('club_exception_label'),
             'present' => true, 'measured_weight_kg' => $measured,
         ]);
+        RegistrationService::applyPhoto($id, $r->file('photo'));
         $reg = RegistrationService::find($id);
         return $this->redirect('/accueil/' . $c['id'], "{$reg['first_name']} {$reg['last_name']} inscrit(e) sur place et pointé(e) présent(e)" . ($reg['needs_validation'] ? ' — en attente de validation par l\'administration.' : '.'));
     }
