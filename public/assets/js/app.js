@@ -143,6 +143,45 @@
     form.submit();
   });
 
+  // Fenêtres internes (sélecteur de club…) : ouverture, fermeture, recherche, choix.
+  document.addEventListener('click', (e) => {
+    const open = e.target.closest('[data-dialog-open]');
+    if (open) {
+      const d = document.getElementById(open.dataset.dialogOpen);
+      if (d) { d.showModal(); const f = d.querySelector('[data-dialog-filter]'); if (f) { f.value = ''; f.dispatchEvent(new Event('input')); f.focus(); } }
+      return;
+    }
+    if (e.target.closest('[data-dialog-close]')) { e.target.closest('dialog').close(); return; }
+    if (e.target instanceof HTMLDialogElement && e.target.classList.contains('club-dialog')) { e.target.close(); return; }
+    const pick = e.target.closest('[data-pick]');
+    if (pick) {
+      const picker = pick.closest('[data-picker]');
+      picker.querySelectorAll('[data-pick]').forEach((b) => b.removeAttribute('aria-current'));
+      pick.setAttribute('aria-current', 'true');
+      picker.querySelector('[data-picker-label]').textContent = pick.dataset.pickLabel;
+      const crest = pick.querySelector('.crest');
+      picker.querySelector('[data-picker-logo]').innerHTML = crest ? crest.innerHTML : '';
+      const btn = picker.querySelector('.club-picker-btn');
+      btn.style.setProperty('--club', pick.style.getPropertyValue('--club') || '');
+      const input = picker.querySelector('[data-picker-input]');
+      if (input) { input.value = pick.dataset.pick; input.dispatchEvent(new Event('change', { bubbles: true })); }
+      pick.closest('dialog').close();
+      picker.dispatchEvent(new CustomEvent('clubpick', { bubbles: true, detail: { id: pick.dataset.pick } }));
+    }
+  });
+  document.addEventListener('input', (e) => {
+    if (!e.target.matches('[data-dialog-filter]')) return;
+    const d = e.target.closest('dialog');
+    const q = e.target.value.trim().toLowerCase();
+    let shown = 0;
+    d.querySelectorAll('.club-pick').forEach((c) => {
+      const vis = c.classList.contains('all') ? !q : (!q || c.dataset.name.includes(q));
+      c.hidden = !vis;
+      if (vis) shown++;
+    });
+    const empty = d.querySelector('.cd-empty'); if (empty) empty.hidden = shown > 0;
+  });
+
   // Validation des formulaires : messages affichés dans la page, jamais de bulle du navigateur.
   const fieldMsg = (el) => {
     const box = el.closest('.field') || el.parentElement;

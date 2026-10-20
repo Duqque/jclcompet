@@ -43,7 +43,6 @@
   }
 
   function syncControls() {
-    document.querySelectorAll('[data-club]').forEach((b) => b.setAttribute('aria-current', String(b.dataset.club === String(state.club_id))));
     document.querySelectorAll('[data-att]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.att === state.attendance)));
   }
 
@@ -83,9 +82,8 @@
 
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 220); });
   document.querySelectorAll('[data-f]').forEach((s) => s.addEventListener('change', load));
+  document.addEventListener('clubpick', (e) => { state.club_id = e.detail.id || ''; load(); });
   document.addEventListener('click', (e) => {
-    const club = e.target.closest('[data-club]');
-    if (club) { state.club_id = club.dataset.club; load(); return; }
     const att = e.target.closest('[data-att]');
     if (att) { state.attendance = state.attendance === att.dataset.att ? '' : att.dataset.att; load(); }
   });
@@ -118,6 +116,8 @@
   });
 
   syncControls();
-  load();
+  // Club mémorisé : on rétablit l'affichage du sélecteur (le clic déclenche aussi le chargement)
+  const savedPick = state.club_id ? document.querySelector('[data-picker="att-clubs"] [data-pick="' + state.club_id + '"]') : null;
+  if (savedPick) savedPick.click(); else load();
   setInterval(() => { if (!document.hidden && !q.matches(':focus') && !document.querySelector('dialog[open]')) load(); }, 15000);
 })();

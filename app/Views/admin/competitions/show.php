@@ -1,6 +1,6 @@
 <?php use App\Services\CategoryService; use App\Services\CompetitionService; $s = $stats; $base = '/admin/competitions/' . $c['id']; $archived = $c['status'] === 'archived'; ?>
 <?php $heading = 'Administration'; $actions = ($c['status'] !== 'draft' ? '<a class="btn btn-ghost" href="' . e(url('/competitions/' . $c['slug'])) . '" target="_blank">Page publique ' . icon('arrow') . '</a>' : '') . '<a class="btn btn-ghost" href="' . e(url('/classement/' . $c['slug'])) . '" target="_blank">Classement public ' . icon('arrow') . '</a>'; include dirname(__DIR__) . '/_head.php'; ?>
-<?php foreach ($issues as $i): ?><div class="alert alert-<?= $i['level'] === 'error' ? 'error' : 'warning' ?> small"><?= e($i['message']) ?> <a href="<?= e(url($base . '/durees')) ?>">Durées de combat</a></div><?php endforeach; ?>
+<?php foreach ($issues as $i): ?><div class="alert alert-<?= $i['level'] === 'error' ? 'error' : 'warning' ?> small"><?= e($i['message']) ?> <a href="<?= e(url($base . '/durees')) ?>">Configurations de combat</a></div><?php endforeach; ?>
 
 <section class="card" style="margin-bottom:1.2rem">
   <div class="card-head"><h2 style="margin:0;font-size:1.2rem">Statut : <?= e(CompetitionService::statusLabel($c['status'])) ?></h2></div>

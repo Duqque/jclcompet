@@ -11,7 +11,7 @@
 <form method="post" enctype="multipart/form-data" action="<?= e(url($reg ? $base . '/inscriptions/' . $reg['id'] : $base . '/inscriptions')) ?>">
   <?= csrf_field() ?>
   <fieldset><legend>Club</legend><div class="form-grid">
-    <div class="field"><label for="club_id">Club</label><select id="club_id" name="club_id"><option value="">— Sans club enregistré (exception) —</option><?php foreach ($clubs as $cl): ?><option value="<?= (int) $cl['id'] ?>"<?= selected(old('club_id', $reg['club_id'] ?? ''), $cl['id']) ?>><?= e($cl['name']) ?></option><?php endforeach; ?></select></div>
+    <div class="field"><span class="label">Club</span><?php $pickerClubs = $clubs; $pickerCurrent = (int) old('club_id', $reg['club_id'] ?? 0) ?: null; $pickerId = 'reg-club'; $pickerMode = 'field'; $pickerName = 'club_id'; $pickerAllLabel = 'Choisir un club'; $pickerTotal = null; include BASE_PATH . '/app/Views/partials/club_picker.php'; ?></div>
     <?php if (!$reg): ?><div class="field"><label for="club_exception_label">Exception autorisée (club non enregistré)</label><input id="club_exception_label" name="club_exception_label" maxlength="150" value="<?= e(old('club_exception_label')) ?>" placeholder="Nom du club ou « individuel »"></div><?php endif; ?>
   </div></fieldset>
   <fieldset><legend>Athlète</legend><?php include BASE_PATH . '/app/Views/partials/registration_form.php'; ?>

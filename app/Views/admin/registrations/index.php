@@ -18,17 +18,10 @@ $attLabel = ['expected' => ['', 'Attendu'], 'present' => ['badge-green', 'Prése
   <?php if ($stats['pending_validation']): ?><a class="stat warn" style="text-decoration:none;color:inherit" href="<?= e($q(['status' => 'pending', 'page' => null])) ?>"><strong><?= (int) $stats['pending_validation'] ?></strong><span>à valider</span></a><?php endif; ?>
 </div>
 
-<?php if ($clubChips): ?>
-<nav class="chips" aria-label="Filtrer par club">
-  <a class="chip plain" href="<?= e($q(['club_id' => null, 'page' => null])) ?>"<?= empty($f['club_id']) ? ' aria-current="true"' : '' ?>>Tous les clubs <span class="n"><?= (int) $stats['registered'] ?></span></a>
-  <?php foreach ($clubChips as $cl): ?>
-    <a class="chip" href="<?= e($q(['club_id' => $cl['id'], 'page' => null])) ?>"<?= (string) ($f['club_id'] ?? '') === (string) $cl['id'] ? ' aria-current="true"' : '' ?>>
-      <?php $logo = $cl['logo_path']; $name = $cl['name']; $size = 24; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?><?= e($cl['short_name'] ?: $cl['name']) ?> <span class="n"><?= (int) $cl['n'] ?></span></a>
-  <?php endforeach; ?>
-</nav>
-<?php endif; ?>
 
 <form method="get" class="toolbar">
+  <?php if ($clubChips): $pickerClubs = $clubChips; $pickerCurrent = !empty($f['club_id']) ? (int) $f['club_id'] : null; $pickerId = 'reg-clubs'; $pickerMode = 'filter-link'; $pickerTotal = (int) $stats['registered'];
+    $pickerHref = fn (?int $id) => $q(['club_id' => $id, 'page' => null]); include BASE_PATH . '/app/Views/partials/club_picker.php'; endif; ?>
   <input type="hidden" name="vue" value="<?= e($mode) ?>"><?php if (!empty($f['club_id'])): ?><input type="hidden" name="club_id" value="<?= (int) $f['club_id'] ?>"><?php endif; ?>
   <label class="search"><?= icon('search') ?><span class="sr-only">Rechercher</span><input type="search" name="q" value="<?= e($f['q'] ?? '') ?>" placeholder="Rechercher un judoka ou un club…"></label>
   <select name="age_category_id" data-autosubmit aria-label="Catégorie"><option value="">Toutes catégories</option><?php foreach ($ages as $a): ?><option value="<?= (int) $a['id'] ?>"<?= selected($f['age_category_id'] ?? '', $a['id']) ?>><?= e($a['name']) ?></option><?php endforeach; ?></select>

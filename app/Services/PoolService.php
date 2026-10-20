@@ -952,7 +952,7 @@ final class PoolService
                 'order_in_pool' => $order, 'phase' => 'pool', 'a_registration_id' => $a, 'b_registration_id' => $b,
                 'duration_rule_id' => $rule['id'], 'duration_seconds' => $rule['duration_seconds'],
                 'golden_score_mode' => $rule['golden_score_mode'], 'golden_score_seconds' => $rule['golden_score_seconds'],
-                'recovery_seconds' => $rule['recovery_seconds'],
+                'recovery_seconds' => $rule['recovery_seconds'], 'rules_json' => DurationRuleService::snapshot($rule),
             ]);
             $created++;
         }
@@ -976,7 +976,7 @@ final class PoolService
             'order_in_pool' => $order, 'phase' => 'final', 'a_registration_id' => $regA, 'b_registration_id' => $regB,
             'duration_rule_id' => $rule['id'] ?? null, 'duration_seconds' => $rule['duration_seconds'] ?? 120,
             'golden_score_mode' => $rule['golden_score_mode'] ?? 'unlimited', 'golden_score_seconds' => $rule['golden_score_seconds'] ?? null,
-            'recovery_seconds' => $rule['recovery_seconds'] ?? 0,
+            'recovery_seconds' => $rule['recovery_seconds'] ?? 0, 'rules_json' => DurationRuleService::snapshot($rule),
         ]);
         if ($pool['status'] === 'finished') {
             Database::run("UPDATE pools SET status = 'in_progress', ranking_complete = 0 WHERE id = ?", [$poolId]);

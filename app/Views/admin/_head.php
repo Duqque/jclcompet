@@ -4,7 +4,7 @@ use App\Services\CompetitionService;
 $base = '/admin/competitions/' . $c['id'];
 $path = '/' . trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
 $adminTabs = [
-    '' => 'Général', '/modifier' => 'Informations', '/parametres' => 'Paramètres', '/categories' => 'Catégories', '/durees' => 'Durées',
+    '' => 'Général', '/modifier' => 'Informations', '/parametres' => 'Paramètres', '/categories' => 'Catégories', '/durees' => 'Combats',
     '/bareme' => 'Barème', '/tapis' => 'Tapis & TV', '/contenu' => 'Programme', '/clubs-presents' => 'Clubs présents', '/documents-pdf' => 'PDF', '/journal' => 'Journal',
 ];
 $inAdmin = isset($adminTabs[substr($path, strlen($base))]) && str_starts_with($path, $base);

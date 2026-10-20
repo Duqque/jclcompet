@@ -149,9 +149,9 @@ final class TvTokenService
             'display' => [
                 'fighter_color' => SettingsService::get($cid, 'fighter_color'),
                 'refresh_ms' => max(500, (int) SettingsService::get($cid, 'tv_refresh_ms')),
-                'use_yuko' => (bool) (SettingsService::get($cid, 'score_model')['use_yuko'] ?? true),
-                'shido_max' => (int) (SettingsService::get($cid, 'score_model')['shido_for_hansoku'] ?? 3),
-                'osaekomi' => SettingsService::get($cid, 'score_model')['osaekomi'] ?? null,
+                'use_yuko' => (bool) ($current['model']['use_yuko'] ?? SettingsService::get($cid, 'score_model')['use_yuko'] ?? true),
+                'shido_max' => (int) ($current['model']['shido_for_hansoku'] ?? SettingsService::get($cid, 'score_model')['shido_for_hansoku'] ?? 3),
+                'osaekomi' => $current['model']['osaekomi'] ?? SettingsService::get($cid, 'score_model')['osaekomi'] ?? null,
             ],
             'current' => $current,
             'next' => $next,

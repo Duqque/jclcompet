@@ -20,7 +20,7 @@ final class PoolController extends AdminController
         $g = PoolService::activeGeneration($cid);
         $pools = $g ? PoolService::pools((int) $g['id']) : [];
         $q = trim((string) ($r->query['q'] ?? ''));
-        $vue = in_array($r->query['vue'] ?? '', ['feuilles', 'categories', 'liste', 'tapis'], true) ? $r->query['vue'] : 'feuilles';
+        $vue = in_array($r->query['vue'] ?? '', ['feuilles', 'categories', 'liste', 'tapis'], true) ? $r->query['vue'] : ($g && $g['status'] === 'draft' ? 'tapis' : 'feuilles');
         $shown = PoolService::matching($pools, $q);
         if ($vue === 'feuilles') {
             $shown = PoolService::sheets($shown);

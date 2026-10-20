@@ -18,14 +18,9 @@
     <button type="button" class="stat" data-att="to_check"><strong data-n="to_check">—</strong><span>à vérifier</span></button>
   </div>
 
-  <nav class="chips" aria-label="Filtrer par club" data-clubs>
-    <button type="button" class="chip plain" data-club="" aria-current="true">Tous les clubs <span class="n" data-n="total">—</span></button>
-    <?php foreach ($clubs as $cl): ?>
-      <button type="button" class="chip" data-club="<?= (int) $cl['id'] ?>" title="<?= e($cl['name']) ?>"><?php $logo = $cl['logo_path']; $name = $cl['name']; $size = 24; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?><?= e($cl['short_name'] ?: $cl['name']) ?> <span class="n"><?= (int) $cl['n'] ?></span></button>
-    <?php endforeach; ?>
-  </nav>
 
   <div class="toolbar">
+    <?php $pickerClubs = $clubs; $pickerCurrent = null; $pickerId = 'att-clubs'; $pickerMode = 'filter-js'; $pickerTotal = $total; include BASE_PATH . '/app/Views/partials/club_picker.php'; ?>
     <label class="search"><?= icon('search') ?><span class="sr-only">Rechercher un judoka</span><input type="search" placeholder="Rechercher un judoka…" autocomplete="off" data-q></label>
     <select data-f="age_category_id" aria-label="Catégorie"><option value="">Catégories</option><?php foreach ($ages as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['name']) ?></option><?php endforeach; ?></select>
     <select data-f="sex" aria-label="Sexe"><option value="">Tous</option><option value="F">Filles</option><option value="M">Garçons</option></select>

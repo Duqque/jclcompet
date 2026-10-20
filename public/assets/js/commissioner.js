@@ -9,10 +9,17 @@
   const root = document.querySelector('[data-cm]');
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const model = cfg.model || {};
-  const TH = model.osaekomi || { yuko: 5, wazaari: 10, ippon: 20 };
-  const WZ = model.wazaari_for_ippon || 2;
-  const SH = model.shido_for_hansoku || 3;
+  // Barème du combat affiché : configuration de sa catégorie (copiée sur le combat), sinon paramètres de la compétition.
+  let model = cfg.model || {};
+  let TH = model.osaekomi || { yuko: 5, wazaari: 10, ippon: 20 };
+  let WZ = model.wazaari_for_ippon || 2;
+  let SH = model.shido_for_hansoku || 3;
+  function useModel(c) {
+    model = (c && c.model) || cfg.model || {};
+    TH = model.osaekomi || { yuko: 5, wazaari: 10, ippon: 20 };
+    WZ = model.wazaari_for_ippon || 2;
+    SH = model.shido_for_hansoku || 3;
+  }
   if (cfg.color === 'blue') document.body.classList.add('blue');
 
   let data = null;          // état du tapis (courant + restants)
@@ -195,6 +202,7 @@
   function render() {
     renderQueue();
     const c = cur();
+    useModel(c);
     const head = $('[data-bout-head]');
     const fighters = $('[data-fighters]');
     const foot = $('[data-foot]');
@@ -209,7 +217,8 @@
     const title = c.pool_label && c.pool_label.indexOf(c.category) === 0 ? c.pool_label : catLabel + ' — ' + c.pool_label;
     head.innerHTML = '<div><h1>' + esc(title) + '</h1><p class="meta">' +
       (c.phase === 'final' ? 'Barrage' : 'Combat ' + c.pool_position + '/' + c.pool_bouts) + ' · ordre ' + c.order_on_tatami + ' sur le tapis · durée ' + fmt(c.clock.duration_ms) +
-      (c.clock.golden_score ? ' · <strong style="color:var(--red)">Golden score</strong>' : '') + '</p></div><span class="badge ' +
+      (c.clock.golden_score ? ' · <strong style="color:var(--red)">Golden score</strong>' : '') + '</p>' +
+      (model.config_label || model.special_rules ? '<p class="rules"><strong>' + esc(model.config_label || 'Règles particulières') + '</strong>' + (model.special_rules ? ' — ' + esc(model.special_rules) : '') + '</p>' : '') + '</div><span class="badge ' +
       ({ validated: 'badge-green', finished: 'badge-orange', in_progress: 'badge-red' }[c.status] || '') + '">' + esc(c.status_label) + '</span>';
     fighters.hidden = false;
     const editable = c.status === 'in_progress';

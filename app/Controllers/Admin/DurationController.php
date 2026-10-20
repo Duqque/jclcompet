@@ -20,7 +20,7 @@ final class DurationController extends AdminController
         $c = $this->competition($r);
         $cid = (int) $c['id'];
         return $this->admin('durations', [
-            'title' => 'Durées de combat', 'competition' => $c, 'c' => $c, 'rules' => DurationRuleService::rules($cid),
+            'title' => 'Configurations de combat', 'model' => (array) \App\Services\SettingsService::get($cid, 'score_model'), 'competition' => $c, 'c' => $c, 'rules' => DurationRuleService::rules($cid),
             'ages' => CategoryService::ageCategories($cid), 'issues' => DurationRuleService::configurationIssues($cid),
             'scheduled' => (int) Database::value("SELECT COUNT(*) FROM bouts WHERE competition_id = ? AND status = 'scheduled'", [$cid]),
         ]);
@@ -47,7 +47,20 @@ final class DurationController extends AdminController
             'minutes' => 'required|int|min:0|max:20', 'seconds' => 'required|int|min:0|max:59', 'golden_score_mode' => 'required|in:none,limited,unlimited',
             'golden_score_seconds' => 'nullable|int|min:0|max:600', 'recovery_seconds' => 'nullable|int|min:0|max:3600', 'overtime_rule' => 'nullable|maxlen:255',
             'priority' => 'nullable|int', 'valid_from' => 'nullable|date', 'valid_until' => 'nullable|date', 'is_example' => 'bool',
-        ], ['minutes' => 'Minutes', 'seconds' => 'Secondes']);
+            'use_yuko' => 'nullable|in:0,1', 'osaekomi_yuko_s' => 'nullable|int|min:1|max:60', 'osaekomi_wazaari_s' => 'nullable|int|min:1|max:60',
+            'osaekomi_ippon_s' => 'nullable|int|min:1|max:60', 'wazaari_for_ippon' => 'nullable|int|min:1|max:5', 'shido_for_hansoku' => 'nullable|int|min:1|max:6',
+            'golden_first_score_wins' => 'nullable|in:0,1', 'special_rules' => 'nullable|maxlen:1000',
+        ], ['minutes' => 'Minutes', 'seconds' => 'Secondes', 'osaekomi_yuko_s' => 'Immobilisation yuko', 'osaekomi_wazaari_s' => 'Immobilisation waza-ari',
+            'osaekomi_ippon_s' => 'Immobilisation ippon', 'wazaari_for_ippon' => 'Waza-ari pour ippon', 'shido_for_hansoku' => 'Shido pour hansoku-make', 'special_rules' => 'Règles particulières']);
+        $m = (array) \App\Services\SettingsService::get($cid, 'score_model');
+        $th = [
+            (int) ($d['osaekomi_yuko_s'] ?? $m['osaekomi']['yuko'] ?? 5),
+            (int) ($d['osaekomi_wazaari_s'] ?? $m['osaekomi']['wazaari'] ?? 10),
+            (int) ($d['osaekomi_ippon_s'] ?? $m['osaekomi']['ippon'] ?? 20),
+        ];
+        if (!($th[0] < $th[1] && $th[1] < $th[2])) {
+            throw new DomainError("Les temps d'immobilisation doivent être croissants : yuko < waza-ari < ippon.");
+        }
         $duration = $d['minutes'] * 60 + $d['seconds'];
         if ($duration < 10) {
             throw new DomainError('La durée réglementaire doit être d\'au moins 10 secondes.');
@@ -62,6 +75,10 @@ final class DurationController extends AdminController
             'recovery_seconds' => (int) ($d['recovery_seconds'] ?? 0), 'overtime_rule' => $d['overtime_rule'], 'priority' => (int) ($d['priority'] ?? 0),
             'valid_from' => $d['valid_from'], 'valid_until' => $d['valid_until'], 'is_example' => $d['is_example'],
         ];
+        foreach (\App\Services\DurationRuleService::OVERRIDES as $k) {
+            $row[$k] = ($d[$k] ?? null) === null || $d[$k] === '' ? null : (int) $d[$k];
+        }
+        $row['special_rules'] = $d['special_rules'] ?: null;
         $id = $r->int('rule_id');
         if ($id) {
             Database::update('fight_duration_rules', $row, 'id = :id AND competition_id = :cid', ['id' => $id, 'cid' => $cid]);
@@ -69,6 +86,6 @@ final class DurationController extends AdminController
             $id = Database::insert('fight_duration_rules', $row);
         }
         AuditLogger::log('durations.save', 'fight_duration_rule', $id, null, $row, null, $cid);
-        return $this->back($r, 'Règle enregistrée. Les combats déjà créés conservent leur durée (utilisez « Réappliquer » pour les combats à venir).');
+        return $this->back($r, 'Configuration enregistrée. Les combats déjà créés gardent leur configuration (utilisez « Réappliquer » pour les combats à venir).');
     }
 }

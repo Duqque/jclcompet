@@ -25,8 +25,6 @@ $names = array_values(array_filter($partners, fn ($p) => !$p['logo_document_id']
     </div>
   </header>
 
-  <section class="board-totals" data-totals aria-label="Chiffres de la compétition"></section>
-
   <main class="board-grid">
     <section class="board-col" aria-labelledby="by-points"><h2 id="by-points">Par points</h2><ol class="board-list" data-list="points"></ol></section>
     <section class="board-col" aria-labelledby="by-medals"><h2 id="by-medals">Par médailles</h2><ol class="board-list" data-list="medals"></ol></section>

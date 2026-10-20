@@ -45,6 +45,8 @@
 .cm-bout-head { padding: .9rem 1.4rem 0; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .cm-bout-head h1 { font-size: 1.25rem; margin: 0; }
 .cm-bout-head .meta { color: var(--muted); font-size: .9rem; }
+.cm-bout-head .rules { margin: .35rem 0 0; display: inline-block; padding: .3rem .7rem; border-radius: 12px; background: var(--red-soft); color: var(--ink-2); font-size: .82rem; }
+.cm-bout-head .rules strong { color: var(--red); font-weight: 600; }
 .cm-fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem 1.4rem; }
 .cm-fighter { background: var(--white); border: 2px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem 1.1rem; text-align: center; }
 .cm-fighter-a { border-color: rgba(194,26,44,.45); }

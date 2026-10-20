@@ -33,11 +33,12 @@ final class AttendanceController extends Controller
         $cid = (int) $c['id'];
         return $this->view('attendance/show', [
             'title' => 'Présences', 'c' => $c,
-            'clubs' => Database::all(
-                "SELECT c.id, c.name, c.short_name, c.logo_path, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
-                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY n DESC, c.name",
+            'clubs' => \App\Services\ClubColorService::decorate(Database::all(
+                "SELECT c.id, c.name, c.short_name, c.city, c.logo_path, c.brand_color, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
+                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY c.name",
                 [$cid]
-            ),
+            )),
+            'total' => (int) Database::value("SELECT COUNT(*) FROM registrations WHERE competition_id = ? AND status IN ('pending','confirmed')", [$cid]),
             'ages' => CategoryService::ageCategories($cid),
             'lateAllowed' => (bool) SettingsService::get($cid, 'late_registration_allowed'),
             'weighIn' => SettingsService::get($cid, 'weight_input') === 'weight',
@@ -86,7 +87,7 @@ final class AttendanceController extends Controller
         $c = CompetitionService::find((int) $r->param('id'));
         return $this->view('attendance/onsite', [
             'title' => 'Inscription sur place', 'c' => $c, 'reg' => null, 'scripts' => ['registration-form.js'],
-            'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'),
+            'clubs' => \App\Services\ClubColorService::decorate(Database::all('SELECT id, name, short_name, city, logo_path, brand_color FROM clubs WHERE is_active = 1 ORDER BY name')),
             'lateAllowed' => (bool) SettingsService::get((int) $c['id'], 'late_registration_allowed'),
             'needsValidation' => (bool) SettingsService::get((int) $c['id'], 'late_registration_requires_validation'),
         ] + RegistrationController::formData($c), 'attendance');

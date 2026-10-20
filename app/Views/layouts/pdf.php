@@ -28,7 +28,7 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
   .doc-head { background: #f5f5f3; border-radius: 4mm; padding: 4mm 5mm; margin-bottom: 5mm; }
   .doc-head table { width: 100%; border-collapse: collapse; }
   .doc-head td { border: 0; padding: 0; vertical-align: middle; }
-  .doc-head img { height: 13mm; }
+  .doc-head img { height: 13mm; width: 19.5mm; }
   .doc-head .meta { color: #71717a; font-size: 7.6pt; margin-top: .8mm; }
   .doc-head .stamp { text-align: right; color: #71717a; font-size: 7.2pt; }
 
@@ -64,7 +64,7 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
   table.grid td.place { background: #fff; border: .6pt solid #e4e4e7; }
   table.grid .how { display: block; font-size: 5.6pt; font-weight: 500; color: #71717a; }
   table.grid .weight { display: block; font-size: 6.4pt; color: #71717a; }
-  .medal { display: inline-block; width: 6mm; height: 6mm; line-height: 6mm; border-radius: 3mm; text-align: center; font-weight: 700; font-size: 7.6pt; background: #f4f4f5; }
+  .medal { display: inline-block; width: 6.4mm; padding: 1.3mm 0 1.1mm; line-height: 1; border-radius: 3.2mm; text-align: center; font-weight: 700; font-size: 7.6pt; background: #f4f4f5; }
   .m1 { background: #f2c94c; } .m2 { background: #d4d7dd; } .m3 { background: #e0a370; }
   .order { margin-top: 2mm; padding-top: 2mm; border-top: .6pt solid #e4e4e7; font-size: 7pt; color: #71717a; }
   .order span.o { display: inline-block; padding: .5mm 2mm; margin: 0 .8mm .8mm 0; border-radius: 3mm; background: #f4f4f5; color: #3f3f46; font-weight: 500; }
@@ -77,7 +77,7 @@ $logoSrc = $engine ? (pdf_image('assets/img/logo-jcl.png') ?? '') : asset('img/l
 <?php if (!$engine): ?><div class="print-bar"><button type="button" data-print>Imprimer / enregistrer en PDF</button></div><script src="<?= e(asset('js/app.js')) ?>"></script><?php endif; ?>
 <div class="doc-head">
   <table><tr>
-    <td style="width:17mm"><?php if ($logoSrc): ?><img src="<?= e($logoSrc) ?>" alt=""><?php endif; ?></td>
+    <td style="width:26mm"><?php if ($logoSrc): ?><img src="<?= e($logoSrc) ?>" alt=""><?php endif; ?></td>
     <td>
       <?php if ($opt['show_competition'] ?? true): ?><p class="eyebrow"><?= e($c['name']) ?><?= $c['edition_label'] ? ' · ' . e($c['edition_label']) : '' ?></p><?php endif; ?>
       <h1><?= e($docTitle) ?></h1>

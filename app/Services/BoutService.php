@@ -141,7 +141,7 @@ final class BoutService
                     $now = max($now, (int) $b['clock_started_at_ms']);
                 }
             }
-            $model = (array) SettingsService::get((int) $b['competition_id'], 'score_model');
+            $model = DurationRuleService::model((int) $b['competition_id'], $b['rules_json'] ?? null);
             $changes = match ($action) {
                 'start' => self::doStart($b, $now),
                 'pause' => self::doPause($b, $now, $model),
@@ -687,6 +687,11 @@ final class BoutService
                 'golden_score_mode' => $b['golden_score_mode'],
                 'golden_score_ms' => $b['golden_score_seconds'] === null ? null : (int) $b['golden_score_seconds'] * 1000,
                 'final_elapsed_ms' => $b['final_elapsed_ms'] === null ? null : (int) $b['final_elapsed_ms'],
+            ];
+            $m = DurationRuleService::model((int) $b['competition_id'], $b['rules_json'] ?? null);
+            $state['model'] = [
+                'use_yuko' => (bool) ($m['use_yuko'] ?? true), 'osaekomi' => $m['osaekomi'], 'wazaari_for_ippon' => (int) ($m['wazaari_for_ippon'] ?? 2),
+                'shido_for_hansoku' => (int) ($m['shido_for_hansoku'] ?? 3), 'config_label' => $m['config_label'], 'special_rules' => $m['special_rules'],
             ];
             $state['osaekomi'] = $b['osaekomi_side'] === null ? null : ['side' => $b['osaekomi_side'], 'started_at_ms' => (int) $b['osaekomi_started_at_ms']];
             $state['validated_at'] = $b['validated_at'];

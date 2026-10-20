@@ -98,9 +98,45 @@ final class DurationRuleService
         }
         $examples = (int) Database::value('SELECT COUNT(*) FROM fight_duration_rules WHERE competition_id = ? AND is_example = 1', [$competitionId]);
         if ($examples) {
-            $issues[] = ['level' => 'warning', 'message' => "$examples règle(s) de durée sont encore des exemples non confirmés."];
+            $issues[] = ['level' => 'warning', 'message' => "$examples configuration(s) de combat sont encore des exemples non confirmés."];
         }
         return $issues;
+    }
+
+    /** Champs d'une configuration qui redéfinissent le barème de la compétition (NULL = valeur des paramètres sportifs). */
+    public const OVERRIDES = ['use_yuko', 'osaekomi_yuko_s', 'osaekomi_wazaari_s', 'osaekomi_ippon_s', 'wazaari_for_ippon', 'shido_for_hansoku', 'golden_first_score_wins'];
+
+    /** Copie figée de la configuration, enregistrée sur chaque combat. */
+    public static function snapshot(?array $rule): ?string
+    {
+        if (!$rule) {
+            return null;
+        }
+        $out = ['label' => $rule['label'] ?? null, 'special_rules' => $rule['special_rules'] ?? null];
+        foreach (self::OVERRIDES as $k) {
+            if (isset($rule[$k]) && $rule[$k] !== null && $rule[$k] !== '') {
+                $out[$k] = (int) $rule[$k];
+            }
+        }
+        return json_encode($out, JSON_UNESCAPED_UNICODE);
+    }
+
+    /** Barème applicable à un combat : paramètres sportifs de la compétition + configuration de la catégorie. */
+    public static function model(int $competitionId, ?string $rulesJson): array
+    {
+        $m = (array) SettingsService::get($competitionId, 'score_model');
+        $m['osaekomi'] = (array) ($m['osaekomi'] ?? ['yuko' => 5, 'wazaari' => 10, 'ippon' => 20]);
+        $r = $rulesJson ? (json_decode($rulesJson, true) ?: []) : [];
+        if (isset($r['use_yuko'])) { $m['use_yuko'] = (bool) $r['use_yuko']; }
+        if (isset($r['osaekomi_yuko_s'])) { $m['osaekomi']['yuko'] = (int) $r['osaekomi_yuko_s']; }
+        if (isset($r['osaekomi_wazaari_s'])) { $m['osaekomi']['wazaari'] = (int) $r['osaekomi_wazaari_s']; }
+        if (isset($r['osaekomi_ippon_s'])) { $m['osaekomi']['ippon'] = (int) $r['osaekomi_ippon_s']; }
+        if (isset($r['wazaari_for_ippon'])) { $m['wazaari_for_ippon'] = (int) $r['wazaari_for_ippon']; }
+        if (isset($r['shido_for_hansoku'])) { $m['shido_for_hansoku'] = (int) $r['shido_for_hansoku']; }
+        if (isset($r['golden_first_score_wins'])) { $m['golden_score_first_score_wins'] = (bool) $r['golden_first_score_wins']; }
+        $m['config_label'] = $r['label'] ?? null;
+        $m['special_rules'] = $r['special_rules'] ?? null;
+        return $m;
     }
 
     /** Réapplique les règles actuelles aux combats non commencés (action explicite de l'administrateur). */
@@ -120,8 +156,8 @@ final class DurationRuleService
             }
             $n += Database::run(
                 "UPDATE bouts SET duration_rule_id = ?, duration_seconds = ?, golden_score_mode = ?, golden_score_seconds = ?,
-                        recovery_seconds = ?, version = version + 1 WHERE id = ? AND status = 'scheduled'",
-                [$rule['id'], $rule['duration_seconds'], $rule['golden_score_mode'], $rule['golden_score_seconds'], $rule['recovery_seconds'], $b['id']]
+                        recovery_seconds = ?, rules_json = ?, version = version + 1 WHERE id = ? AND status = 'scheduled'",
+                [$rule['id'], $rule['duration_seconds'], $rule['golden_score_mode'], $rule['golden_score_seconds'], $rule['recovery_seconds'], self::snapshot($rule), $b['id']]
             )->rowCount();
         }
         AuditLogger::log('durations.reapply', 'competition', $competitionId, null, ['bouts' => $n], null, $competitionId);

@@ -46,11 +46,11 @@ final class RegistrationController extends AdminController
             'title' => 'Inscrits', 'competition' => $c, 'c' => $c, 'f' => $f, 'mode' => $mode,
             'rows' => RegistrationService::list($cid, $f, null, $per, $offset), 'total' => $total, 'page' => $page, 'pages' => (int) ceil($total / $per),
             'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'), 'ages' => CategoryService::ageCategories($cid),
-            'clubChips' => Database::all(
-                "SELECT c.id, c.name, c.short_name, c.logo_path, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
-                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY n DESC, c.name",
+            'clubChips' => \App\Services\ClubColorService::decorate(Database::all(
+                "SELECT c.id, c.name, c.short_name, c.city, c.logo_path, c.brand_color, COUNT(*) AS n FROM registrations r JOIN clubs c ON c.id = r.club_id
+                 WHERE r.competition_id = ? AND r.status IN ('pending','confirmed') GROUP BY c.id ORDER BY c.name",
                 [$cid]
-            ),
+            )),
             'stats' => \App\Services\CompetitionService::stats($cid),
         ]);
     }
@@ -59,7 +59,7 @@ final class RegistrationController extends AdminController
     {
         $c = $this->competition($r);
         return $this->admin('registrations/form', ['title' => 'Nouvelle inscription', 'competition' => $c, 'c' => $c, 'reg' => null,
-            'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'), 'scripts' => ['registration-form.js']] + self::formData($c));
+            'clubs' => \App\Services\ClubColorService::decorate(Database::all('SELECT id, name, short_name, city, logo_path, brand_color FROM clubs WHERE is_active = 1 ORDER BY name')), 'scripts' => ['registration-form.js']] + self::formData($c));
     }
 
     public function store(Request $r): Response
@@ -81,7 +81,7 @@ final class RegistrationController extends AdminController
         }
         return $this->admin('registrations/form', ['title' => 'Inscription', 'competition' => $c, 'c' => $c, 'reg' => $reg,
             'history' => \App\Services\AttendanceService::history((int) $reg['id']), 'inPool' => RegistrationService::inPool((int) $reg['id']),
-            'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'), 'scripts' => ['registration-form.js']] + self::formData($c));
+            'clubs' => \App\Services\ClubColorService::decorate(Database::all('SELECT id, name, short_name, city, logo_path, brand_color FROM clubs WHERE is_active = 1 ORDER BY name')), 'scripts' => ['registration-form.js']] + self::formData($c));
     }
 
     public function update(Request $r): Response

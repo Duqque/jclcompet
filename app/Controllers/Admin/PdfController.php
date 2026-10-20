@@ -22,7 +22,9 @@ final class PdfController extends AdminController
         'categories' => 'Listes par catégorie',
         'poules' => 'Poules',
         'planning' => 'Planning des tapis',
-        'feuilles' => 'Feuilles de résultats',
+        'feuilles' => 'Feuilles de poule',
+        'resultats-poules' => 'Résultats par poule',
+        'resultats-clubs' => 'Résultats par club',
         'classement' => 'Classement final',
         'clubs' => 'Classement des clubs',
     ];
@@ -55,6 +57,8 @@ final class PdfController extends AdminController
             'show_blank' => !isset($q['opts']) || !empty($q['show_blank']),
             'tatami_id' => isset($q['tatami_id']) && $q['tatami_id'] !== '' ? (int) $q['tatami_id'] : null,
             'age_category_id' => isset($q['age_category_id']) && $q['age_category_id'] !== '' ? (int) $q['age_category_id'] : null,
+            'pool_id' => isset($q['pool_id']) && $q['pool_id'] !== '' ? (int) $q['pool_id'] : null,
+            'club_id' => isset($q['club_id']) && $q['club_id'] !== '' ? (int) $q['club_id'] : null,
         ];
         $data = ['c' => $c, 'opt' => $opt, 'docTitle' => self::TYPES[$type], 'generatedAt' => date('d/m/Y H:i')];
         $g = PoolService::activeGeneration($cid);
@@ -65,6 +69,9 @@ final class PdfController extends AdminController
             $list = PoolService::pools((int) $g['id'], $opt['tatami_id']);
             if ($opt['age_category_id']) {
                 $list = array_values(array_filter($list, fn ($p) => (int) $p['age_category_id'] === $opt['age_category_id']));
+            }
+            if ($opt['pool_id']) {
+                $list = array_values(array_filter($list, fn ($p) => (int) $p['id'] === $opt['pool_id']));
             }
             return $list;
         };
@@ -80,8 +87,51 @@ final class PdfController extends AdminController
                 }
                 $data['rows'] = RegistrationService::list($cid, $f, null, 100000);
                 break;
-            case 'poules':
             case 'feuilles':
+                $data['pools'] = PoolService::sheets($pools());
+                if ($opt['pool_id'] && $data['pools']) {
+                    $data['docSubtitle'] = 'Poule ' . $data['pools'][0]['number'];
+                } elseif ($opt['tatami_id'] && $data['pools']) {
+                    $data['docSubtitle'] = 'Tapis ' . $data['pools'][0]['tatami_number'];
+                }
+                break;
+            case 'resultats-poules':
+                $list = PoolService::sheets($pools());
+                usort($list, fn ($x, $y) => [(int) $x['age_sort'], $x['sex'], (int) ($x['weight_sort'] ?? 0), (int) $x['number']] <=> [(int) $y['age_sort'], $y['sex'], (int) ($y['weight_sort'] ?? 0), (int) $y['number']]);
+                $data['pools'] = $list;
+                $data['medals'] = array_column(Database::all('SELECT registration_id, medal, place FROM athlete_rankings WHERE competition_id = ?', [$cid]), null, 'registration_id');
+                break;
+            case 'resultats-clubs':
+                $sheets = PoolService::sheets($pools());
+                $medals = array_column(Database::all('SELECT registration_id, medal, place FROM athlete_rankings WHERE competition_id = ?', [$cid]), null, 'registration_id');
+                $clubs = [];
+                foreach ($sheets as $p) {
+                    foreach ($p['athletes'] as $a) {
+                        $clubKey = $a['club_id'] ? (int) $a['club_id'] : 0;
+                        if ($opt['club_id'] && $clubKey !== $opt['club_id']) {
+                            continue;
+                        }
+                        $st = $p['standing'][(int) $a['registration_id']] ?? null;
+                        $clubs[$clubKey]['club'] ??= ['name' => $a['club_name'] ?? ($a['club_exception_label'] ?: 'Sans club'), 'logo' => $a['club_logo']];
+                        $clubs[$clubKey]['rows'][] = [
+                            'athlete' => $a, 'pool' => $p, 'wins' => $st['wins'] ?? 0, 'points' => $st['value_points'] ?? 0,
+                            'rank' => $p['complete'] && $st && !$st['excluded'] ? (int) $st['rank'] : null, 'complete' => $p['complete'],
+                            'medal' => $medals[(int) $a['registration_id']]['medal'] ?? null, 'fought' => $p['bouts_done'],
+                        ];
+                    }
+                }
+                foreach ($clubs as &$cl) {
+                    usort($cl['rows'], fn ($x, $y) => [(int) $x['pool']['age_sort'], $x['pool']['sex'], (int) ($x['pool']['weight_sort'] ?? 0), (int) $x['pool']['number'], $x['rank'] ?? 99, $x['athlete']['last_name']]
+                        <=> [(int) $y['pool']['age_sort'], $y['pool']['sex'], (int) ($y['pool']['weight_sort'] ?? 0), (int) $y['pool']['number'], $y['rank'] ?? 99, $y['athlete']['last_name']]);
+                }
+                unset($cl);
+                uasort($clubs, fn ($x, $y) => strcmp($x['club']['name'], $y['club']['name']));
+                $data['clubs'] = $clubs;
+                if ($opt['club_id'] && $clubs) {
+                    $data['docSubtitle'] = reset($clubs)['club']['name'];
+                }
+                break;
+            case 'poules':
                 $data['pools'] = $pools();
                 $data['bouts'] = [];
                 foreach (Database::all(

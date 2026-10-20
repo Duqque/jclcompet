@@ -967,4 +967,40 @@ ALTER TABLE documents
 
 INSERT INTO schema_migrations (version) VALUES ('004_photos.sql');
 
+-- ======================================================================
+-- 005_fight_configurations.sql
+-- ======================================================================
+-- Configurations de combat par catégorie : en plus de la durée, chaque règle peut redéfinir
+-- le barème (yuko, waza-ari pour ippon, shido pour hansoku), les seuils d'immobilisation
+-- et des règles particulières (ex. clés de bras et étranglements interdits).
+-- NULL = valeur des paramètres sportifs de la compétition.
+ALTER TABLE fight_duration_rules
+    ADD COLUMN use_yuko             TINYINT(1)       NULL AFTER overtime_rule,
+    ADD COLUMN osaekomi_yuko_s      TINYINT UNSIGNED NULL AFTER use_yuko,
+    ADD COLUMN osaekomi_wazaari_s   TINYINT UNSIGNED NULL AFTER osaekomi_yuko_s,
+    ADD COLUMN osaekomi_ippon_s     TINYINT UNSIGNED NULL AFTER osaekomi_wazaari_s,
+    ADD COLUMN wazaari_for_ippon    TINYINT UNSIGNED NULL AFTER osaekomi_ippon_s,
+    ADD COLUMN shido_for_hansoku    TINYINT UNSIGNED NULL AFTER wazaari_for_ippon,
+    ADD COLUMN golden_first_score_wins TINYINT(1)  NULL AFTER shido_for_hansoku,
+    ADD COLUMN special_rules        TEXT             NULL AFTER golden_first_score_wins;
+
+INSERT INTO schema_migrations (version) VALUES ('005_fight_configurations.sql');
+
+-- ======================================================================
+-- 006_bout_rules_snapshot.sql
+-- ======================================================================
+-- Chaque combat garde une copie de sa configuration (barème, immobilisations, règles particulières)
+-- au moment de sa création : modifier une configuration ne change pas un combat en cours.
+ALTER TABLE bouts ADD COLUMN rules_json JSON NULL AFTER recovery_seconds;
+
+INSERT INTO schema_migrations (version) VALUES ('006_bout_rules_snapshot.sql');
+
+-- ======================================================================
+-- 007_club_colors.sql
+-- ======================================================================
+-- Couleur principale du club (tirée de son logo, modifiable) : cartes du sélecteur de club.
+ALTER TABLE clubs ADD COLUMN brand_color CHAR(7) NULL AFTER logo_path;
+
+INSERT INTO schema_migrations (version) VALUES ('007_club_colors.sql');
+
 SET FOREIGN_KEY_CHECKS = 1;

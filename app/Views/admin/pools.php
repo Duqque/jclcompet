@@ -11,30 +11,42 @@ $post = fn (string $op, string $label, string $cls = 'btn-ghost', array $hidden 
     . '<button class="btn btn-sm ' . $cls . '" type="submit">' . $label . '</button></form>';
 $allPools = $pools;
 ?>
-<section class="card" style="margin-bottom:1.2rem">
-  <div class="card-head">
-    <div>
-      <h2 style="margin:0;font-size:1.2rem"><?= !$g ? 'Aucune poule générée' : ($draft ? 'Proposition en brouillon' : 'Composition validée') ?></h2>
-      <p class="small muted" style="margin:.2rem 0 0"><?= (int) $participants ?> athlètes présents et confirmés (catégories avec combats) · regroupement <?= $grouping === 'weight_category' ? 'par catégorie de poids' : 'morphologique' ?> · tailles <?= e($c['pool_sizes']) ?><?= $g ? ' · générée le ' . e(short_datetime($g['created_at'])) : '' ?></p>
-    </div>
-    <div class="btn-group">
-      <?php if (!$validated || ($loads && array_sum(array_column($loads['tatamis'], 'done')) === 0)): ?>
-        <?= $post('generate', $g ? 'Régénérer les poules' : 'Générer les poules', 'btn-red', [], $g ? 'Régénérer ? Les poules non verrouillées seront recomposées (les poules verrouillées sont conservées).' : null) ?>
-      <?php endif; ?>
-      <?php if ($g): ?><?= $post('distribute', 'Répartir sur les tapis') ?><?php endif; ?>
-      <?php if ($g && (!$validated || ($loads && array_sum(array_column($loads['tatamis'], 'done')) === 0))): ?><?= $post('cancel', 'Annuler la génération', 'btn-danger', [], 'Annuler la génération en cours ? Les poules (et les combats non commencés) seront supprimés.') ?><?php endif; ?>
-    </div>
+<?php
+$started = $loads && array_sum(array_column($loads['tatamis'], 'done')) > 0;
+$canGenerate = !$validated || !$started;
+$assigned = $g && $pools && !array_filter($pools, fn ($p) => !$p['tatami_id']);
+$pdf = url('/admin/competitions/' . $c['id'] . '/pdf/feuilles');
+$steps = [
+    ['Générer', $g ? count($pools) . ' poules · ' . (int) $participants . ' judokas présents' : (int) $participants . ' judokas présents et confirmés', (bool) $g],
+    ['Répartir sur les tapis', $assigned ? 'Toutes les poules ont un tapis' : 'Équilibre la durée entre les tapis', $assigned],
+    ['Ajuster', 'Glisser-déposer judokas et poules', $validated],
+    ['Valider', $validated ? 'Combats créés chez les commissaires' : 'Crée les combats', $validated],
+    ['Imprimer', 'Feuilles par poule ou par tapis', false],
+];
+?>
+<section class="card pool-flow">
+  <ol class="flow">
+    <?php foreach ($steps as $i => [$t, $d, $ok]): ?><li class="<?= $ok ? 'ok' : '' ?>"><span class="n"><?= $ok ? icon('check') : $i + 1 ?></span><span><strong><?= e($t) ?></strong><small><?= e($d) ?></small></span></li><?php endforeach; ?>
+  </ol>
+  <div class="flow-actions">
+    <?php if ($canGenerate): ?><?= $post('generate', icon('refresh') . ($g ? 'Mettre à jour les poules' : 'Générer les poules'), 'btn-red', [], $validated ? 'Recomposer les poules ? Les combats non commencés seront recréés (les poules verrouillées sont conservées).' : null) ?><?php endif; ?>
+    <?php if ($g): ?><?= $post('distribute', icon('grid') . 'Répartir sur les tapis', $assigned ? 'btn-ghost' : 'btn-red') ?><?php endif; ?>
+    <?php if ($g): ?><a class="btn btn-sm btn-ghost" href="?vue=tapis"><?= icon('sliders') ?>Ajuster par glisser-déposer</a><?php endif; ?>
+    <?php if ($draft): ?>
+      <form method="post" action="<?= e($u) ?>" class="btn-group" data-confirm="Valider la composition et la répartition ? Les combats seront créés avec la configuration de chaque catégorie et apparaîtront chez les commissaires.">
+        <?= csrf_field() ?><input type="hidden" name="op" value="validate">
+        <?php if ($unplaced): ?><label class="check"><input type="checkbox" name="acknowledge_unplaced" value="1"> Laisser <?= count($unplaced) ?> athlète(s) hors poule</label><?php endif; ?>
+        <button class="btn btn-sm btn-green" type="submit"><?= icon('check') ?>Valider les poules</button>
+      </form>
+    <?php endif; ?>
+    <?php if ($g): ?>
+      <span class="flow-sep"></span>
+      <a class="btn btn-sm btn-ghost" href="<?= e($pdf) ?>" target="_blank" rel="noopener"><?= icon('download') ?>Toutes les feuilles</a>
+      <?php foreach ($tatamis as $t): ?><a class="btn btn-sm btn-soft" href="<?= e($pdf . '?tatami_id=' . (int) $t['id']) ?>" target="_blank" rel="noopener">Tapis <?= (int) $t['number'] ?></a><?php endforeach; ?>
+    <?php endif; ?>
+    <?php if ($g && $canGenerate): ?><?= $post('cancel', 'Annuler la génération', 'btn-danger', [], 'Annuler la génération ? Les poules et les combats non commencés seront supprimés.') ?><?php endif; ?>
   </div>
-  <?php if ($draft): ?>
-    <form method="post" action="<?= e($u) ?>" class="btn-group" data-confirm="Valider définitivement la composition ? Les combats seront créés avec la durée applicable et apparaîtront chez les commissaires.">
-      <?= csrf_field() ?><input type="hidden" name="op" value="validate">
-      <?php if ($unplaced): ?><label class="check"><input type="checkbox" name="acknowledge_unplaced" value="1"> Je confirme laisser <?= count($unplaced) ?> athlète(s) hors poule</label><?php endif; ?>
-      <button class="btn btn-green" type="submit">Valider la composition</button>
-    </form>
-  <?php elseif (!$g): ?>
-    <p>Le système utilise uniquement les athlètes <strong>présents</strong> et confirmés, sépare toujours âges et sexes, compose les poules en rapprochant les poids et propose une répartition équilibrée sur les tapis. Rien n'est définitif avant validation.</p>
-    <p><a href="<?= e(url('/accueil/' . $c['id'])) ?>">Contrôler les présences</a> · <a href="<?= e(url('/admin/competitions/' . $c['id'] . '/parametres')) ?>">Paramètres des poules</a></p>
-  <?php endif; ?>
+  <p class="small muted" style="margin:.6rem 0 0">Seuls les judokas <strong>présents</strong> et confirmés sont placés ; âges et sexes ne sont jamais mélangés ; les poids sont rapprochés et les clubs séparés. « Mettre à jour » recalcule les poules à chaque clic tant qu'aucun combat n'a commencé (les poules verrouillées restent telles quelles).<?= !$g ? ' <a href="' . e(url('/accueil/' . $c['id'])) . '">Contrôler les présences</a>.' : '' ?></p>
 </section>
 
 <?php foreach (($report['groups'] ?? []) as $grp): if ($grp['status'] !== 'needs_decision') continue; ?>
@@ -78,6 +90,7 @@ $allPools = $pools;
   $cid = (int) $c['id'];
   $vq = fn (string $v) => '?' . http_build_query(array_filter(['vue' => $v, 'q' => $q]));
   $boutHref = fn (array $b) => url('/admin/competitions/' . $cid . '/combats/' . $b['id']);
+  $pdfHref = fn (array $p) => url('/admin/competitions/' . $cid . '/pdf/feuilles', ['pool_id' => $p['id']]);
   $byCat = [];
   foreach ($shown as $p) { $byCat[\App\Services\CategoryService::label(['name' => $p['age_name'], 'name_m' => $p['name_m'], 'name_f' => $p['name_f']], $p['sex'])][] = $p; } ?>
 <form method="get" class="toolbar" role="search">
@@ -129,19 +142,18 @@ $allPools = $pools;
 <div class="pool-board" data-pool-board data-api="<?= e($api) ?>">
   <?php foreach (array_merge($tatamis, [['id' => 0, 'number' => null]]) as $t): $list = $byTatami[$t['id']] ?? []; if ($t['id'] === 0 && !$list) continue; ?>
     <section class="mat-col" data-tatami="<?= (int) $t['id'] ?>">
-      <header><strong><?= $t['number'] ? 'Tapis ' . (int) $t['number'] : 'Non affectées' ?></strong><span><?= count($list) ?> poules · <?= array_sum(array_column($list, 'bouts_total')) ?> combats · <?= e(hours_label(array_sum(array_column($list, 'estimated_seconds')))) ?></span></header>
+      <header><strong><?= $t['number'] ? 'Tapis ' . (int) $t['number'] : 'Non affectées' ?></strong><span><?= count($list) ?> poules · <?= array_sum(array_column($list, 'bouts_total')) ?> combats · <?= e(hours_label(array_sum(array_column($list, 'estimated_seconds')))) ?></span><?php if ($t['id'] && $list): ?><a class="mat-pdf" href="<?= e(url('/admin/competitions/' . $cid . '/pdf/feuilles', ['tatami_id' => $t['id']])) ?>" target="_blank" rel="noopener" title="Feuilles de poule du tapis <?= (int) $t['number'] ?>"><?= icon('download') ?>PDF</a><?php endif; ?></header>
       <div class="drop">
         <?php foreach ($list as $i => $p): $locked = (int) $p['is_locked'] === 1; $started = $p['bouts_started'] > 0;
           $clubs = array_count_values(array_filter(array_column($p['athletes'], 'club_id'))); ?>
           <article class="pool<?= $locked ? ' locked' : '' ?><?= $started ? ' started' : '' ?>" data-pool="<?= (int) $p['id'] ?>"<?= !$started ? ' draggable="true"' : '' ?>>
-            <header><strong><?= e($p['label']) ?></strong>
+            <header><strong>Poule <?= (int) $p['number'] ?><?= $p['weight_label'] ? ' · ' . e($p['weight_label']) . ' kg' : '' ?></strong>
               <?php if ($locked): ?><span class="badge badge-yellow" title="Verrouillée">🔒</span><?php endif; ?>
               <span class="badge"><?= (int) $p['size'] ?></span></header>
             <ol>
               <?php foreach ($p['athletes'] as $a): ?>
                 <li class="athlete<?= ($a['club_id'] && ($clubs[$a['club_id']] ?? 0) > 1) ? ' dup' : '' ?>" data-reg="<?= (int) $a['registration_id'] ?>"<?= !$started && !$locked ? ' draggable="true"' : '' ?>>
-                  <?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span>
-                  <?php if ($p['final_rank'] ?? false): endif; ?>
+                  <?= e($a['last_name'] . ' ' . $a['first_name']) ?> <?= $a['reference_weight_kg'] !== null ? '<span class="small">' . e(kg($a['reference_weight_kg'])) . '</span>' : '' ?><br><span class="club"><?php $logo = $a['club_logo']; $name = $a['club_name'] ?? '?'; $size = 16; include BASE_PATH . '/app/Views/partials/club_logo.php'; ?> <?= e($a['club_short'] ?: ($a['club_name'] ?? $a['club_exception_label'])) ?></span>
                 </li>
               <?php endforeach; ?>
             </ol>

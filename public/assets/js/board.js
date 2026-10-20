@@ -22,11 +22,6 @@
       const ol = document.querySelector('[data-list="' + by + '"]');
       ol.innerHTML = d[by].length ? d[by].map((c) => row(c, by)).join('') : '<li class="empty-row">Classement en attente des premières poules terminées.</li>';
     });
-    const t = d.totals;
-    document.querySelector('[data-totals]').innerHTML =
-      '<div><strong>' + t.participants + '</strong><span>participants</span></div>' +
-      '<div><strong class="g">' + t.gold + '</strong><span>or</span></div><div><strong class="s">' + t.silver + '</strong><span>argent</span></div><div><strong class="b">' + t.bronze + '</strong><span>bronze</span></div>' +
-      '<div><strong>' + t.bouts_done + '<small>/' + t.bouts_total + '</small></strong><span>combats validés</span></div>';
     const when = d.updated_at ? new Date(d.updated_at.replace(' ', 'T')) : new Date(d.generated_at.replace(' ', 'T'));
     document.querySelector('[data-updated]').textContent = 'Mis à jour à ' + when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
@@ -61,6 +56,29 @@
     catch (e) { document.body.classList.add('stale'); document.querySelector('[data-updated]').textContent = 'Hors ligne — nouvel essai…'; }
     timer = setTimeout(refresh, every);
   }
+  // Défilement automatique lent : descend jusqu'en bas du classement, marque une pause, puis remonte.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let dir = 1;
+  let pauseUntil = Date.now() + 6000;
+  let pos = 0;
+  let last = performance.now();
+  function scrollStep(t) {
+    const dt = Math.min(100, t - last);
+    last = t;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    if (max > 4 && Date.now() > pauseUntil && !document.hidden) {
+      pos = Math.min(max, Math.max(0, pos + dir * (reduce ? 12 : 26) * dt / 1000)); // px par seconde
+      window.scrollTo(0, pos);
+      if (pos >= max) { dir = -1; pauseUntil = Date.now() + 8000; }
+      else if (pos <= 0) { dir = 1; pauseUntil = Date.now() + 8000; }
+    } else if (max <= 4) {
+      pos = 0;
+    }
+    requestAnimationFrame(scrollStep);
+  }
+  ['wheel', 'touchstart', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { pauseUntil = Date.now() + 15000; pos = window.scrollY; }, { passive: true }));
+  requestAnimationFrame(scrollStep);
+
   const initial = document.getElementById('board-data');
   if (initial) render(JSON.parse(initial.textContent));
   timer = setTimeout(refresh, every);

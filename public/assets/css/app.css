@@ -223,3 +223,38 @@ dialog::backdrop { background: rgba(24,24,27,.35); backdrop-filter: blur(3px); }
 @media print { .no-print { display: none !important; } body { background: #fff; } }
 [aria-invalid="true"] { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--red-soft); }
 .field-error[data-live] { margin-top: .3rem; }
+
+/* Sélecteur de club : fenêtre avec cartes aux couleurs des clubs */
+.club-picker { display: inline-flex; }
+.club-picker-btn { --club: var(--ink); display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .3rem .9rem .3rem .35rem; border: 0; border-radius: 999px; background: var(--white); box-shadow: var(--shadow); font: inherit; color: var(--ink); cursor: pointer; text-align: left; transition: box-shadow .15s; }
+.club-picker-btn:hover { box-shadow: var(--shadow-lg); }
+.club-picker-btn .cp-logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--club) 14%, white); flex: none; overflow: hidden; }
+.club-picker-btn .cp-logo img, .club-picker-btn .cp-logo .club-mono { width: 26px !important; height: 26px !important; }
+.club-picker-btn .cp-logo .icon { width: 18px; height: 18px; color: var(--muted); }
+.club-picker-btn .cp-txt small { display: block; font-size: .68rem; color: var(--muted); line-height: 1.1; }
+.club-picker-btn .cp-txt strong { display: block; font-size: .9rem; font-weight: 600; line-height: 1.2; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.club-picker-btn > .icon { width: 16px; height: 16px; color: var(--muted); }
+.club-dialog { max-width: min(980px, calc(100vw - 24px)); max-height: min(86vh, 860px); padding: 0; background: var(--panel); overflow: hidden; }
+.club-dialog[open] { display: flex; flex-direction: column; }
+.cd-head { display: flex; align-items: center; gap: .8rem; padding: 1.1rem 1.2rem .9rem; border-bottom: 1px solid var(--line); background: var(--white); }
+.cd-head h2 { margin: 0; font-size: 1.1rem; letter-spacing: -.02em; white-space: nowrap; }
+.cd-head .search { position: relative; flex: 1; }
+.cd-head .search input { padding-left: 2.3rem; border-radius: 999px; }
+.cd-head .search .icon { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.cd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .7rem; padding: 1.1rem 1.2rem 1.3rem; overflow-y: auto; }
+.cd-empty { margin: 0; padding: 0 1.2rem 1.4rem; color: var(--muted); }
+.club-pick { --club: var(--muted); position: relative; display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 1rem .6rem .8rem; border: 0; border-radius: 22px; cursor: pointer; text-decoration: none; color: var(--ink); font: inherit;
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--club) 34%, white) 0%, color-mix(in srgb, var(--club) 12%, white) 55%, var(--white) 100%);
+  box-shadow: var(--shadow), inset 0 0 0 1px color-mix(in srgb, var(--club) 18%, transparent); transition: transform .15s, box-shadow .15s; }
+.club-pick:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg), inset 0 0 0 1.5px color-mix(in srgb, var(--club) 45%, transparent); color: var(--ink); }
+.club-pick[aria-current=true] { box-shadow: var(--shadow-lg), inset 0 0 0 2px var(--club); }
+.club-pick[aria-current=true]::after { content: ""; position: absolute; top: .6rem; right: .6rem; width: 10px; height: 10px; border-radius: 50%; background: var(--club); box-shadow: 0 0 0 3px var(--white); }
+.club-pick .crest { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: var(--white); box-shadow: 0 6px 18px color-mix(in srgb, var(--club) 25%, transparent); }
+.club-pick .crest img, .club-pick .crest .club-mono { width: 64px !important; height: 64px !important; object-fit: contain; border-radius: 50%; }
+.club-pick .crest .club-mono { font-size: 1rem; }
+.club-pick .crest .club-mono.all { display: grid; place-items: center; background: var(--surface-2); }
+.club-pick .crest .club-mono.all .icon { width: 26px; height: 26px; color: var(--ink-2); }
+.club-pick .nm { font-size: .84rem; font-weight: 600; text-align: center; line-height: 1.2; }
+.club-pick .cnt { font-size: .72rem; color: var(--muted); margin-top: -.3rem; }
+.club-pick.all { --club: var(--ink); }
+@media (max-width: 560px) { .cd-grid { grid-template-columns: repeat(2, 1fr); } .cd-head { flex-wrap: wrap; } .cd-head .search { order: 3; flex-basis: 100%; } }

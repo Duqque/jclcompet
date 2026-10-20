@@ -28,6 +28,7 @@ $link = function (array $b, string $inner, string $cls, string $title) use ($bou
       <span class="badge"><?= $n ?> judokas</span>
       <span class="badge"><?= (int) $p['bouts_done'] ?>/<?= (int) $p['bouts_total'] ?> combats</span>
       <span class="badge <?= $state[0] ?>"><span class="dot"></span><?= $state[1] ?></span>
+      <?php if (!empty($pdfHref)): ?><a class="btn btn-ghost btn-sm" href="<?= e($pdfHref($p)) ?>" target="_blank" rel="noopener" title="Télécharger la feuille de la poule <?= (int) $p['number'] ?>"><?= icon('download') ?>PDF</a><?php endif; ?>
     </div>
   </header>
 
