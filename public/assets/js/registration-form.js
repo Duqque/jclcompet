@@ -9,6 +9,8 @@
   const $ = (s) => form.querySelector(s);
   const birth = $('[data-birth]'), ageSel = $('[data-age]'), weightSel = $('[data-weight]'), kg = $('[data-kg]'), summary = $('[data-reg-summary]');
   const current = $('[data-weight-current]').value;
+  // Catégorie de poids choisie à la main : on la garde ; sinon elle suit le poids saisi (même chiffre par chiffre).
+  let manual = !!current;
   const sex = () => { const c = form.querySelector('[data-sex]:checked'); return c ? c.value : null; };
   const natural = () => {
     if (!birth.value) return null;
@@ -19,7 +21,7 @@
   function update(keepWeight) {
     const s = sex(), nat = natural();
     const chosen = ageSel.value ? cfg.ages.find((a) => String(a.id) === ageSel.value) : nat;
-    const prev = keepWeight ? (weightSel.value || current) : weightSel.value;
+    const prev = manual ? (weightSel.value || current) : '';
     weightSel.length = 1;
     let msg = '';
     if (!birth.value || !s) { summary.textContent = 'Renseignez le sexe et la date de naissance pour voir la catégorie.'; return; }
@@ -45,7 +47,8 @@
     const wl = weightSel.value ? ws.find((w) => String(w.id) === weightSel.value).label + ' kg' : (ws.length ? 'catégorie de poids à choisir' : 'poule morphologique');
     summary.textContent = msg + 'Catégorie : ' + label(chosen, s) + (chosen.id !== nat.id ? ' (surclassement depuis ' + nat.name + ')' : '') + ' — ' + wl + '.';
   }
-  form.addEventListener('change', () => update(false));
+  weightSel.addEventListener('change', () => { manual = weightSel.value !== ''; });
+  form.addEventListener('change', (e) => { if (e.target !== weightSel) update(false); });
   kg.addEventListener('input', () => update(false));
   update(true);
 })();

@@ -56,6 +56,8 @@ ventes sont inventés et marqués « démo ».
 
 ## Documentation
 
+**Installer la démonstration sur Hostinger en SSH : [docs/HOSTINGER-SSH.md](docs/HOSTINGER-SSH.md)** (une commande : `php bin/install.php --demo`).
+
 | Document | Contenu |
 |---|---|
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Installation locale et **sur Hostinger**, variables de configuration, HTTPS, mises à jour, **sauvegarde et restauration** |
