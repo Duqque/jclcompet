@@ -33,7 +33,18 @@ final class DemoSeeder
 
     private const FIRST_M = ['Lucas', 'Nathan', 'Hugo', 'Léo', 'Gabin', 'Noah', 'Arthur', 'Jules', 'Maël', 'Sacha', 'Timéo', 'Rayan', 'Eliott', 'Nolan', 'Malo', 'Axel', 'Kylian', 'Lenny', 'Ethan', 'Tom'];
     private const FIRST_F = ['Emma', 'Léa', 'Chloé', 'Inès', 'Jade', 'Lina', 'Manon', 'Zoé', 'Lou', 'Mila', 'Rose', 'Anna', 'Nina', 'Lola', 'Romane', 'Eva', 'Louise', 'Clara', 'Ambre', 'Lise'];
-    private const LAST = ['Martinot', 'Bernardin', 'Duvalier', 'Lefebvrier', 'Moreaux', 'Fourmont', 'Girardet', 'Bonnaud', 'Mercieux', 'Blanchet', 'Garnieri', 'Fauvel', 'Rousselin', 'Chevalet', 'Lambertin', 'Colinet', 'Perrinet', 'Marchais', 'Delmotte', 'Vasseurin', 'Caronnet', 'Leclercq', 'Dupuich', 'Hennebelle'];
+    private const LAST = ['Martinot', 'Bernardin', 'Duvalier', 'Lefebvrier', 'Moreaux', 'Fourmont', 'Girardet', 'Bonnaud', 'Mercieux', 'Blanchet', 'Garnieri', 'Fauvel', 'Rousselin', 'Chevalet', 'Lambertin', 'Colinet', 'Perrinet', 'Marchais', 'Delmotte', 'Vasseurin', 'Caronnet', 'Leclercq', 'Dupuich', 'Hennebelle',
+        'Wattelier', 'Desmarais', 'Lemaitrin', 'Coquelet', 'Brasseur', 'Delannoy', 'Hautecoeur', 'Pruvostin', 'Vandamme', 'Lecomtel', 'Dhainaut', 'Carpentel', 'Bouchardin', 'Ternisien', 'Maillardet', 'Courtecuisse'];
+
+    /** Nom fictif unique pour le n-ième judoka créé (aucune combinaison répétée avant plusieurs centaines). */
+    private static int $nameSeq = 0;
+
+    private static function fakeName(string $sex): array
+    {
+        $n = ++self::$nameSeq;
+        $first = $sex === 'M' ? self::FIRST_M[$n % count(self::FIRST_M)] : self::FIRST_F[$n % count(self::FIRST_F)];
+        return [self::LAST[($n * 7 + intdiv($n, count(self::FIRST_M))) % count(self::LAST)], $first];
+    }
 
     public function run(): int
     {
@@ -74,12 +85,19 @@ final class DemoSeeder
             'is_demo' => 1,
         ], ['U11', 'U13', 'U15'], true);
         Database::run("UPDATE competitions SET status = 'registrations_open' WHERE id = ?", [$cid]);
-        // Quelques inscriptions déjà faites par le JC Lensois (compte coach@demo-judo.test)
-        foreach ([['Martinot', 'Lucas', 'M', 10, 31.5], ['Perrinet', 'Inès', 'F', 9, 27.0], ['Moreaux', 'Hugo', 'M', 12, 41.2]] as [$last, $first, $sex, $age, $kg]) {
-            RegistrationService::register($cid, [
-                'last_name' => $last, 'first_name' => $first, 'sex' => $sex, 'birth_date' => sprintf('%d-%02d-15', $year - $age, mt_rand(1, 12)),
-                'declared_weight_kg' => $kg, 'grade' => 'Orange',
-            ], ['actor' => 'club', 'club_id' => $clubs[1]]);
+        // Une quarantaine d'inscriptions déjà faites par les clubs (dont 6 pour le JC Lensois, compte coach@demo-judo.test)
+        $plan = [[[9, 10], 'M', 10, 30.0], [[9, 10], 'F', 7, 28.5], [[11, 12], 'M', 9, 40.0], [[11, 12], 'F', 6, 38.0], [[13, 14], 'M', 6, 50.0], [[13, 14], 'F', 4, 46.0]];
+        $n = 0;
+        foreach ($plan as [[$minAge, $maxAge], $sex, $count, $avg]) {
+            for ($i = 0; $i < $count; $i++) {
+                $n++;
+                [$last, $first] = self::fakeName($sex);
+                RegistrationService::register($cid, [
+                    'last_name' => $last, 'first_name' => $first, 'sex' => $sex,
+                    'birth_date' => sprintf('%d-%02d-%02d', $year - mt_rand($minAge, $maxAge), mt_rand(1, 12), mt_rand(1, 28)),
+                    'declared_weight_kg' => round($avg + mt_rand(-50, 50) / 10, 1), 'grade' => ['Blanche', 'Jaune', 'Orange', 'Verte'][mt_rand(0, 3)],
+                ], ['actor' => 'club', 'club_id' => $n <= 6 ? $clubs[1] : $clubs[$n % count($clubs)]]);
+            }
         }
         Database::run('UPDATE athletes SET is_demo = 1 WHERE id IN (SELECT athlete_id FROM registrations WHERE competition_id = ?)', [$cid]);
     }
@@ -101,7 +119,8 @@ final class DemoSeeder
      * Clubs de la démo : les vrais clubs de l'édition de l'année (avec leurs logos), les judokas restent fictifs.
      * Les deux comptes entraîneurs de démonstration sont rattachés aux deux premiers.
      */
-    private const DEMO_CLUBS = ['Judo Club Leforest', 'Judo Club Lensois', 'Hénin Judo Ju-Jitsu', 'Judo Club Harnésien', 'USA Liévin Judo Ju-Jitsu', 'Noyelles-sous-Lens Judo Ju-Jitsu', 'Méricourt Judo', 'Judo Club Sallauminois'];
+    private const DEMO_CLUBS = ['Judo Club Leforest', 'Judo Club Lensois', 'Hénin Judo Ju-Jitsu', 'Judo Club Harnésien', 'USA Liévin Judo Ju-Jitsu', 'Noyelles-sous-Lens Judo Ju-Jitsu', 'Méricourt Judo', 'Judo Club Sallauminois',
+        'Judo Club de Drocourt', 'Judo Club Vermellois', 'Dourges Association Judo', 'Ippon Club Rouvroysien'];
 
     private function clubs(array $users): array
     {
@@ -133,8 +152,8 @@ final class DemoSeeder
             'registration_opens_at' => date('Y-m-d H:i:s', strtotime('-30 days')),
             'registration_closes_at' => date('Y-m-d 23:59:00'),
             'age_reference_date' => $year . '-12-31',
-            'mat_count' => 4,
-            'expected_participants' => 48,
+            'mat_count' => 6,
+            'expected_participants' => 110,
             'pool_sizes' => '3,4,5',
             'practical_info' => 'Données fictives. Buvette ouverte toute la journée.',
             'coach_info' => 'Données fictives. Merci de vérifier la présence de vos judokas à l\'accueil.',
@@ -151,11 +170,11 @@ final class DemoSeeder
     private function registrations(int $cid, array $clubs): void
     {
         $year = (int) date('Y');
-        // [catégorie (âge min, âge max), sexe, effectif, poids moyen]
+        // [catégorie (âge min, âge max), sexe, effectif, poids moyen] : une centaine de combattants fictifs
         $plan = [
-            [[9, 10], 'M', 11, 30.0], [[9, 10], 'F', 7, 29.0],
-            [[11, 12], 'M', 12, 40.0], [[11, 12], 'F', 8, 38.0],
-            [[13, 14], 'M', 10, 50.0],
+            [[9, 10], 'M', 20, 30.0], [[9, 10], 'F', 13, 29.0],
+            [[11, 12], 'M', 22, 40.0], [[11, 12], 'F', 15, 38.0],
+            [[13, 14], 'M', 19, 50.0], [[13, 14], 'F', 13, 47.0],
         ];
         $n = 0;
         foreach ($plan as [[$minAge, $maxAge], $sex, $count, $avg]) {
@@ -163,13 +182,12 @@ final class DemoSeeder
                 $n++;
                 $age = mt_rand($minAge, $maxAge);
                 $birth = sprintf('%d-%02d-%02d', $year - $age, mt_rand(1, 12), mt_rand(1, 28));
-                $first = $sex === 'M' ? self::FIRST_M[$n % count(self::FIRST_M)] : self::FIRST_F[$n % count(self::FIRST_F)];
-                $last = self::LAST[($n * 7) % count(self::LAST)];
+                [$last, $first] = self::fakeName($sex);
                 $weight = round($avg + mt_rand(-60, 60) / 10, 1);
                 $club = $clubs[$n % count($clubs)];
                 RegistrationService::register($cid, [
                     'last_name' => $last, 'first_name' => $first, 'sex' => $sex, 'birth_date' => $birth,
-                    'declared_weight_kg' => $weight, 'grade' => ['Blanche', 'Jaune', 'Orange', 'Verte'][mt_rand(0, 3)],
+                    'declared_weight_kg' => $weight, 'grade' => ['Blanche', 'Jaune', 'Orange', 'Verte', 'Bleue'][mt_rand(0, 4)],
                 ], ['actor' => 'club', 'club_id' => $club]);
             }
         }
@@ -177,9 +195,9 @@ final class DemoSeeder
         Database::run("UPDATE competitions SET status = 'attendance' WHERE id = ?", [$cid]);
         $regs = Database::all('SELECT id, declared_weight_kg FROM registrations WHERE competition_id = ? ORDER BY id', [$cid]);
         foreach ($regs as $k => $r) {
-            if ($k === 5 || $k === 23) {
+            if (in_array($k, [5, 23, 57, 88], true)) {
                 AttendanceService::mark((int) $r['id'], 'absent', null, 'Forfait (démo)');
-            } elseif ($k === 40) {
+            } elseif (in_array($k, [40, 71], true)) {
                 AttendanceService::mark((int) $r['id'], 'to_check', null, 'Licence à vérifier (démo)');
             } else {
                 $measured = round((float) $r['declared_weight_kg'] + mt_rand(-5, 8) / 10, 1);
@@ -240,7 +258,7 @@ final class DemoSeeder
         foreach (CompetitionService::tatamis($cid) as $idx => $t) {
             $bouts = array_map('intval', \App\Core\Database::column("SELECT id FROM bouts WHERE tatami_id = ? AND status = 'scheduled' ORDER BY order_on_tatami", [$t['id']]));
             // Tapis 1 et 3 : bien avancés ; tapis 2 : un combat terminé en attente de validation ; tapis 4 : un combat en cours.
-            $done = [0 => 9, 1 => 6, 2 => 11, 3 => 4][$idx] ?? 3;
+            $done = [0 => 12, 1 => 8, 2 => 14, 3 => 6, 4 => 10, 5 => 9][$idx] ?? 6;
             for ($k = 0; $k < min($done, count($bouts)); $k++) {
                 BoutService::selectCurrent((int) $t['id'], $bouts[$k]);
                 $this->play($bouts[$k], $scripts[($k + $idx) % count($scripts)]);

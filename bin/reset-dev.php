@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// RÉINITIALISATION COMPLÈTE — réservée au développement (APP_ENV=local).
+// RÉINITIALISATION COMPLÈTE — développement (APP_ENV=local) ou site de démonstration (APP_ENV=demo), jamais en production.
 // Supprime toutes les tables, réapplique les migrations, importe le contenu du programme et les données de démonstration.
 // Usage : php bin/reset-dev.php [--yes] [--no-demo]
 require dirname(__DIR__) . '/app/bootstrap.php';
@@ -10,8 +10,8 @@ $_SESSION = [];
 use App\Core\Config;
 use App\Core\Database;
 
-if (Config::get('app.env') !== 'local') {
-    fwrite(STDERR, "Refusé : la réinitialisation n'est autorisée qu'avec APP_ENV=local.\n");
+if (!in_array(Config::get('app.env'), ['local', 'demo'], true)) {
+    fwrite(STDERR, "Refusé : la réinitialisation n'est autorisée qu'avec APP_ENV=local ou APP_ENV=demo (jamais en production).\n");
     exit(1);
 }
 if (!in_array('--yes', $argv, true)) {
