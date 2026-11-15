@@ -1,0 +1,7 @@
+// Réglages communs de JCL Live.
+// Adresse du site JCL Compét utilisée par défaut sur un iPhone (le simulateur utilise http://localhost:8095).
+// Pour la production, mettre l'adresse publique, par exemple : JCL_DEFAULT_SERVER = https:/$()/compet.jcleforest.fr
+// Pour tester sur un iPhone avec le serveur du Mac, créer Config/Local.xcconfig (non versionné) :
+//   JCL_DEFAULT_SERVER = http:/$()/NOM-DU-MAC.local:8095
+JCL_DEFAULT_SERVER =
+#include? "Local.xcconfig"

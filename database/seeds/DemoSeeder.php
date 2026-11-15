@@ -243,6 +243,29 @@ final class DemoSeeder
         if ($validate) {
             $act(['action' => 'validate']);
         }
+        $this->spreadTimeline($boutId);
+    }
+
+    /** Démo : les actions jouées instantanément reçoivent des temps de chrono réalistes (chronologie du combat). */
+    private function spreadTimeline(int $boutId): void
+    {
+        $events = Database::all('SELECT id, action FROM score_events WHERE bout_id = ? ORDER BY id', [$boutId]);
+        $duration = (int) Database::value('SELECT duration_seconds FROM bouts WHERE id = ?', [$boutId]) * 1000;
+        $scores = count(array_filter($events, fn ($e) => str_starts_with($e['action'], 'score')));
+        $end = $scores ? mt_rand((int) ($duration * .35), $duration) : $duration;
+        $t = 0;
+        $k = 0;
+        foreach ($events as $e) {
+            if (str_starts_with($e['action'], 'score')) {
+                $k++;
+                $t = max($t + 4000, (int) ($end * $k / ($scores + .6)) + mt_rand(-6000, 6000));
+                $clock = min($t, $end);
+            } else {
+                $clock = $e['action'] === 'start' ? 0 : $end;
+            }
+            Database::run('UPDATE score_events SET clock_ms = ? WHERE id = ?', [$clock, $e['id']]);
+        }
+        Database::run('UPDATE bouts SET final_elapsed_ms = ?, clock_elapsed_ms = ? WHERE id = ? AND status IN (\'validated\', \'finished\')', [$end, $end, $boutId]);
     }
 
     private function bouts(int $cid): void

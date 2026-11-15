@@ -58,6 +58,8 @@ ventes sont inventés et marqués « démo ».
 
 **Installer la démonstration sur Hostinger en SSH : [docs/HOSTINGER-SSH.md](docs/HOSTINGER-SSH.md)** (une commande : `php bin/install.php --demo`).
 
+**Application iPhone « JCL Live »** (suivi en direct pour les parents et les coachs) : [ios/JCLLive/README.md](ios/JCLLive/README.md). API publique en lecture seule : `/api/v1/…`.
+
 | Document | Contenu |
 |---|---|
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Installation locale et **sur Hostinger**, variables de configuration, HTTPS, mises à jour, **sauvegarde et restauration** |

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>fr.jcleforest.live.refresh</string>
+	</array>
+	<key>JCLDefaultServer</key>
+	<string>$(JCL_DEFAULT_SERVER)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>JCL Live se connecte au site de la compétition sur le réseau local de la salle pour suivre les combats en direct.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Poppins-700Italic.ttf</string>
+		<string>Poppins-800Italic.ttf</string>
+		<string>Poppins-900Italic.ttf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+</dict>
+</plist>

@@ -35,3 +35,18 @@ $router->post('/api/admin/competitions/{id:\d+}/poules', [PoolController::class,
 
 // Caisse
 $router->post('/api/caisse/{id:\d+}/ventes', [PosController::class, 'store'], ['auth', 'can:sales.record']);
+
+// Application mobile « JCL Live » : lecture seule, aucune donnée privée
+use App\Controllers\Api\MobileController;
+$router->get('/api/v1/accueil', [MobileController::class, 'home']);
+$router->get('/api/v1/competitions', [MobileController::class, 'competitionsList']);
+$router->get('/api/v1/competitions/{slug}', [MobileController::class, 'competition']);
+$router->get('/api/v1/competitions/{slug}/direct', [MobileController::class, 'live']);
+$router->get('/api/v1/competitions/{slug}/etat', [MobileController::class, 'stamp']);
+$router->get('/api/v1/competitions/{slug}/combats', [MobileController::class, 'bouts']);
+$router->get('/api/v1/competitions/{slug}/poules', [MobileController::class, 'pools']);
+$router->get('/api/v1/competitions/{slug}/judokas', [MobileController::class, 'athletes']);
+$router->get('/api/v1/competitions/{slug}/resultats', [MobileController::class, 'results']);
+$router->get('/api/v1/combats/{id:\d+}', [MobileController::class, 'boutDetail']);
+$router->get('/api/v1/judokas/{id:\d+}', [MobileController::class, 'athlete']);
+$router->get('/api/v1/suivi', [MobileController::class, 'follow']);
