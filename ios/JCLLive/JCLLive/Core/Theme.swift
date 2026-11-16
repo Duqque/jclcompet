@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Jetons de design repris du site (public/assets/css/app.css) : fond gris chaud, cartes blanches arrondies,
 /// rouge du club en touche, halo rosé, chiffres en Poppins italique.
@@ -106,6 +107,28 @@ extension View {
 
     /// Fond commun des écrans : gris chaud + halo.
     func screenBackground(glow: Double = 0.6) -> some View {
-        background(GlowBackground(intensity: glow))
+        background(GlowBackground(intensity: glow).background(SwipeBackLock()))
+    }
+}
+
+/// Écrans fixes : depuis iOS 26, glisser vers la droite n'importe où sur l'écran ramène à la page précédente et fait
+/// bouger tout le contenu. Ce geste est coupé dans toute l'application ; on revient avec le bouton ‹ (ou depuis le bord
+/// gauche de l'écran, geste habituel d'iOS).
+struct SwipeBackLock: UIViewRepresentable {
+    func makeUIView(context: Context) -> LockView { LockView() }
+    func updateUIView(_ view: LockView, context: Context) { view.lock() }
+
+    final class LockView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            DispatchQueue.main.async { [weak self] in self?.lock() }
+        }
+
+        func lock() {
+            var responder: UIResponder? = self
+            while let r = responder, !(r is UIViewController) { responder = r.next }
+            guard let nav = (responder as? UIViewController)?.navigationController else { return }
+            if #available(iOS 26.0, *) { nav.interactiveContentPopGestureRecognizer?.isEnabled = false }
+        }
     }
 }

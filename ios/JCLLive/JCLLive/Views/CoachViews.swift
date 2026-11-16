@@ -5,14 +5,18 @@ import PhotosUI
 
 struct ClubTabView: View {
     @State private var store = AccountStore.shared
+    @State private var path: [CoachCompetition] = []
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if store.isSignedIn { CoachHomeView() } else { CoachWelcomeView() }
             }
             .screenBackground(glow: 0.9)
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: CoachCompetition.self) { CoachCompetitionView(summary: $0) }
         }
+        // Session expirée ou déconnexion : retour direct à l'écran de connexion (jamais d'écran vide).
+        .onChange(of: store.isSignedIn) { _, signed in if !signed { path = [] } }
     }
 }
 
@@ -52,7 +56,7 @@ struct CoachWelcomeView: View {
                 Text("Commissaires, accueil et buvette : utilisez le site avec les comptes fournis par l'organisation.")
                     .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 4)
             }
-            .padding(16)
+            .padding(16).fixedScreenWidth()
         }
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: $signup) { SignUpView { mail in email = mail } }
@@ -195,7 +199,7 @@ struct SignUpView: View {
             Text("Vos coordonnées servent uniquement à l'organisation de la compétition.").font(.caption).foregroundStyle(Theme.muted)
                 .frame(maxWidth: .infinity).multilineTextAlignment(.center)
         }
-        .padding(16)
+        .padding(16).fixedScreenWidth()
     }
 
     private func success(_ text: String) -> some View {
@@ -262,7 +266,7 @@ struct ClubPickerSheet: View {
                     }
                     if !clubs.isEmpty && shown.isEmpty { EmptyState(icon: "magnifyingglass", title: "Aucun club pour « \(query) »", message: "Fermez et indiquez que votre club n'est pas dans la liste.") }
                 }
-                .padding(16)
+                .padding(16).fixedScreenWidth()
             }
             .screenBackground(glow: 0.3)
             .navigationTitle("Choisir mon club").navigationBarTitleDisplayMode(.inline)
@@ -303,11 +307,10 @@ struct CoachHomeView: View {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
                 }
             }
-            .padding(16)
+            .padding(16).fixedScreenWidth()
         }
         .refreshable { await load() }
         .polling(every: 10) { await load() }
-        .navigationDestination(for: CoachCompetition.self) { CoachCompetitionView(summary: $0) }
         .confirmationDialog("Se déconnecter de l'espace coach ?", isPresented: $logout, titleVisibility: .visible) {
             Button("Se déconnecter", role: .destructive) { Task { await store.signOut() } }
         }
@@ -402,7 +405,7 @@ struct CoachCompetitionView: View {
                 if let error, d == nil { ErrorCard(message: error) { Task { await load() } } }
                 if let d { content(d) } else if error == nil { ProgressView().frame(maxWidth: .infinity).padding(.top, 60) }
             }
-            .padding(16)
+            .padding(16).fixedScreenWidth()
         }
         .scrollDismissesKeyboard(.interactively)
         .screenBackground(glow: 0.5)
@@ -700,7 +703,7 @@ struct FighterFormView: View {
                     }
                     if isNew && mode == 1 { clubList } else { form }
                 }
-                .padding(16)
+                .padding(16).fixedScreenWidth()
             }
             .scrollDismissesKeyboard(.interactively)
             .screenBackground(glow: 0.3)
@@ -998,5 +1001,13 @@ struct Toast: View {
             .background(Theme.ink, in: Capsule())
             .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
             .padding(.horizontal, 20).padding(.top, 8)
+    }
+}
+
+extension View {
+    /// Contenu d'un écran à défilement vertical : exactement la largeur de l'écran, jamais de déplacement sur le côté.
+    func fixedScreenWidth() -> some View {
+        frame(maxWidth: .infinity, alignment: .leading)
+            .containerRelativeFrame(.horizontal)
     }
 }
