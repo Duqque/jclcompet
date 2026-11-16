@@ -60,6 +60,10 @@ $unread = $user ? NotificationService::unreadCount($user) : 0;
         <?= $link('/commissaire', 'Saisie des combats', 'whistle', false) ?>
         <?= $link('/caisse/' . $nc['id'], 'Caisse', 'bag', false) ?>
       <?php endif; ?>
+      <?php if (\App\Core\Auth::clubId()): ?>
+        <h2>Mon club</h2>
+        <?= $link('/espace-club', 'Espace club', 'users', false) ?>
+      <?php endif; ?>
     </nav>
     <div class="bo-user">
       <span class="avatar-mono"><?= e(initials($user['display_name'])) ?></span>

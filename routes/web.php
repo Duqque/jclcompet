@@ -107,7 +107,7 @@ $router->group('/admin', ['auth', 'role:admin'], function ($r) {
 });
 
 // --- Espace club -----------------------------------------------------------------
-$router->group('/espace-club', ['auth', 'role:coach'], function ($r) {
+$router->group('/espace-club', ['auth', 'role:coach,admin'], function ($r) {
     $r->get('', [ClubSpaceController::class, 'dashboard']);
     $r->get('/profil', [ClubSpaceController::class, 'profile']);
     $r->post('/profil', [ClubSpaceController::class, 'updateProfile']);

@@ -33,6 +33,7 @@ $link = fn (string $href, string $label, string $ic, bool $exact = false) => '<a
       <?= $link('/espace-club', 'Toutes mes compétitions', 'calendar', true) ?>
       <?= $link('/espace-club/profil', 'Informations du club', 'id') ?>
       <?= $link('/compte/mot-de-passe', 'Mot de passe', 'lock') ?>
+      <?php if (\App\Core\Auth::hasRole('admin')): ?><?= $link('/admin', 'Administration', 'sliders') ?><?php endif; ?>
     </nav>
     <div class="bo-user">
       <span class="avatar-mono"><?= e(initials($user['display_name'])) ?></span>
