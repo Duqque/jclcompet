@@ -34,7 +34,7 @@ $current = array_key_exists($_GET['profil'] ?? '', $profiles) ? $_GET['profil'] 
         <form method="post" action="<?= e(url('/connexion')) ?>" class="stack" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="profil" value="<?= e($current) ?>" data-profile-input>
-          <div class="field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="username" required value="<?= e(old('email')) ?>" placeholder="prenom.nom@club.fr" autofocus></div>
+          <div class="field"><label for="email">Adresse e-mail ou identifiant</label><input id="email" name="email" type="text" inputmode="email" autocapitalize="none" spellcheck="false" autocomplete="username" required value="<?= e(old('email')) ?>" placeholder="prenom.nom@club.fr ou table1" autofocus></div>
           <div class="field"><label for="password">Mot de passe</label>
             <div class="pw"><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••••••">
               <button type="button" class="pw-toggle" data-pw-toggle aria-label="Afficher le mot de passe" aria-pressed="false"><?= icon('eye') ?></button></div>

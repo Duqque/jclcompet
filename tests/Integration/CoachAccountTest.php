@@ -141,4 +141,14 @@ final class CoachAccountTest extends TestCase
         $this->assertSame($s2, RegistrationService::stamp($cid, $club), 'stable sans changement');
         $this->assertSame(RegistrationService::stamp($cid, $this->club()), RegistrationService::stamp($cid, $this->club()), 'un autre club ne voit pas ces changements');
     }
+
+    public function testShortIdentifierLogsInWhenUnique(): void
+    {
+        $u = $this->user('commissioner');
+        $email = (string) Database::value('SELECT email FROM users WHERE id = ?', [$u]);
+        $short = strstr($email, '@', true);
+        $this->assertTrue(Auth::verify($short, 'MotDePasse2026!', $this->request())['ok'], 'identifiant court');
+        $this->assertTrue(Auth::verify(strtoupper($short), 'MotDePasse2026!', $this->request())['ok'], 'sans tenir compte des majuscules');
+        $this->assertFalse(Auth::verify('%', 'MotDePasse2026!', $this->request())['ok'], 'pas de joker SQL');
+    }
 }

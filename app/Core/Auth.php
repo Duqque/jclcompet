@@ -17,6 +17,13 @@ final class Auth
     public static function verify(string $email, string $password, Request $request): array
     {
         $email = mb_strtolower(trim($email));
+        // Identifiant court (« table1 », « commissaire1 », « buvette ») : partie avant @ d'une adresse, si elle est unique.
+        if ($email !== '' && !str_contains($email, '@')) {
+            $matches = Database::column("SELECT email FROM users WHERE email LIKE ? ESCAPE '!' LIMIT 2", [strtr($email, ['!' => '!!', '%' => '!%', '_' => '!_']) . '@%']);
+            if (count($matches) === 1) {
+                $email = (string) $matches[0];
+            }
+        }
         if (RateLimiter::tooManyAttempts($email, $request->ip())) {
             return ['ok' => false, 'error' => 'Trop de tentatives. Patientez quelques minutes avant de réessayer.'];
         }
