@@ -52,10 +52,10 @@ struct RootView: View {
                 .tabItem { Label("Compétitions", systemImage: "calendar") }.tag(1)
             DirectTabView()
                 .tabItem { Label("Direct", systemImage: "dot.radiowaves.left.and.right") }.tag(2)
-            SearchView()
-                .tabItem { Label("Recherche", systemImage: "magnifyingglass") }.tag(3)
             FavoritesView()
-                .tabItem { Label("Favoris", systemImage: "star.fill") }.tag(4)
+                .tabItem { Label("Favoris", systemImage: "star.fill") }.tag(3)
+            ClubTabView()
+                .tabItem { Label("Mon club", systemImage: "person.2.fill") }.tag(4)
         }
     }
 }

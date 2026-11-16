@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var podiums: [Podium] = []
     @State private var error: String?
     @State private var settings = false
+    @State private var search = false
 
     var body: some View {
         NavigationStack {
@@ -39,6 +40,7 @@ struct HomeView: View {
             .navigationDestination(for: Route.self) { $0.view }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $settings) { SettingsView() }
+            .sheet(isPresented: $search) { SearchView() }
         }
     }
 
@@ -53,6 +55,11 @@ struct HomeView: View {
                 Text("Judo Club Leforest").font(.caption).foregroundStyle(Theme.muted)
             }
             Spacer()
+            Button { search = true } label: {
+                Image(systemName: "magnifyingglass").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
+                    .frame(width: 42, height: 42).background(Theme.surface, in: Circle())
+            }
+            .accessibilityLabel("Rechercher un judoka")
             Button { settings = true } label: {
                 Image(systemName: "gearshape.fill").font(.system(size: 17)).foregroundStyle(Theme.ink)
                     .frame(width: 42, height: 42).background(Theme.surface, in: Circle())

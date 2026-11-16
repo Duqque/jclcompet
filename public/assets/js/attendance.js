@@ -119,5 +119,5 @@
   // Club mémorisé : on rétablit l'affichage du sélecteur (le clic déclenche aussi le chargement)
   const savedPick = state.club_id ? document.querySelector('[data-picker="att-clubs"] [data-pick="' + state.club_id + '"]') : null;
   if (savedPick) savedPick.click(); else load();
-  setInterval(() => { if (!document.hidden && !q.matches(':focus') && !document.querySelector('dialog[open]')) load(); }, 15000);
+  setInterval(() => { if (!document.hidden && !q.matches(':focus') && !document.querySelector('dialog[open]')) load(); }, 4000);
 })();

@@ -427,3 +427,22 @@ a.bout-row:hover { box-shadow: 0 0 0 1.5px var(--ink); color: var(--ink); }
 .pos-clear { width: 100%; margin-top: .45rem; }
 .pos-today .dot { background: var(--green); }
 @media (max-width: 900px) { .pos { grid-template-columns: 1fr; } .pos-cart { position: static; } }
+
+/* Demandes de compte coach (Profils) */
+.acc-requests { margin: 0 0 1.4rem; }
+.acc-requests h2 { font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; margin: 0 0 .8rem; }
+.acc-requests h2 .count { background: var(--red); color: var(--white); border-radius: 999px; font-size: .75rem; padding: .1rem .55rem; }
+.acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .9rem; }
+.acc-card { background: var(--white); border-radius: 22px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .7rem; box-shadow: 0 0 0 2px var(--red-soft); }
+.acc-card header { display: flex; align-items: center; gap: .7rem; }
+.acc-card header > div { display: grid; flex: 1; min-width: 0; }
+.acc-card header small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-card dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem .8rem; margin: 0; font-size: .86rem; }
+.acc-card dt { color: var(--muted); }
+.acc-card dd { margin: 0; overflow-wrap: anywhere; }
+.acc-msg { margin: 0; font-size: .86rem; background: var(--surface-2); border-radius: 12px; padding: .55rem .7rem; }
+.acc-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: auto; }
+.acc-actions form { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.acc-actions select { min-height: 34px; max-width: 220px; }
+.acc-actions form { display: contents; }
+.acc-actions select { flex: 1 1 100%; max-width: none; }

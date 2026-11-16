@@ -41,7 +41,8 @@ $current = array_key_exists($_GET['profil'] ?? '', $profiles) ? $_GET['profil'] 
             <span class="hint">Au moins 12 caractères, avec des lettres et des chiffres.</span></div>
           <button class="btn btn-lg btn-block" type="submit">Se connecter</button>
         </form>
-        <p class="small muted login-help">Pas encore de compte ? Les comptes sont créés par l'organisation du JC Leforest.<br><a href="<?= e(url('/')) ?>">Retour au site</a></p>
+        <a class="login-signup" href="<?= e(url('/creer-un-compte')) ?>"><span class="ic"><?= icon('users') ?></span><span><strong>Coach : pas encore de compte ?</strong><small>Créez-le en 1 minute, l'organisation le valide.</small></span><?= icon('arrow') ?></a>
+        <p class="small muted login-help">Commissaires, accueil, buvette : comptes fournis par l'organisation.<br><a href="<?= e(url('/')) ?>">Retour au site</a></p>
         <?php if ($isDemoEnv): ?>
           <details class="login-demo"><summary>Environnement de démonstration — comptes fictifs</summary>
             <ul><?php foreach (\Database\Seeds\DemoSeeder::ACCOUNTS as [$mail, $pwd, $label]): ?><li><code><?= e($mail) ?></code> · <code><?= e($pwd) ?></code></li><?php endforeach; ?></ul></details>

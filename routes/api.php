@@ -50,3 +50,25 @@ $router->get('/api/v1/competitions/{slug}/resultats', [MobileController::class, 
 $router->get('/api/v1/combats/{id:\d+}', [MobileController::class, 'boutDetail']);
 $router->get('/api/v1/judokas/{id:\d+}', [MobileController::class, 'athlete']);
 $router->get('/api/v1/suivi', [MobileController::class, 'follow']);
+
+// Application JCL Live — comptes coach (jeton « Bearer », sans cookie ni CSRF). Mêmes règles que l'espace club du site.
+use App\Controllers\Api\CoachApiController;
+
+$router->post('/api/v1/compte/connexion', [CoachApiController::class, 'login'], ['nocsrf']);
+$router->post('/api/v1/compte/demande', [CoachApiController::class, 'signup'], ['nocsrf']);
+$router->get('/api/v1/compte/clubs', [CoachApiController::class, 'clubs']);
+$router->get('/api/v1/compte', [CoachApiController::class, 'me'], ['token']);
+$router->post('/api/v1/compte/deconnexion', [CoachApiController::class, 'logout'], ['token']);
+$router->group('/api/v1/club', ['token', 'role:coach,admin'], function ($r) {
+    $r->get('', [CoachApiController::class, 'home']);
+    $r->get('/photos/{doc:\d+}', [CoachApiController::class, 'media']);
+    $r->get('/competitions/{id:\d+}', [CoachApiController::class, 'competition']);
+    $r->get('/competitions/{id:\d+}/etat', [CoachApiController::class, 'stamp']);
+    $r->post('/competitions/{id:\d+}/apercu', [CoachApiController::class, 'preview']);
+    $r->post('/competitions/{id:\d+}/inscriptions', [CoachApiController::class, 'register']);
+    $r->post('/competitions/{id:\d+}/valider-liste', [CoachApiController::class, 'validateList']);
+    $r->post('/competitions/{id:\d+}/inscriptions/{rid:\d+}', [CoachApiController::class, 'update']);
+    $r->post('/competitions/{id:\d+}/inscriptions/{rid:\d+}/photo', [CoachApiController::class, 'photo']);
+    $r->post('/competitions/{id:\d+}/inscriptions/{rid:\d+}/retirer', [CoachApiController::class, 'withdraw']);
+    $r->post('/competitions/{id:\d+}/inscriptions/{rid:\d+}/presence', [CoachApiController::class, 'mark']);
+});

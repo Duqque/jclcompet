@@ -4,6 +4,7 @@ use App\Services\RegistrationService;
 $base = '/admin/competitions/' . $c['id'];
 $q = fn (array $over) => '?' . http_build_query(array_filter(array_merge($f, ['vue' => $mode], $over), fn ($v) => $v !== null && $v !== ''));
 $heading = 'Inscrits';
+$liveStamp = $base . '/inscriptions/etat';
 $sub = $stats['registered'] . ' judokas · ' . $stats['clubs'] . ' clubs · ' . $stats['present'] . ' présents';
 $actions = '<a class="btn btn-ghost" href="' . e(url($base . '/inscriptions/export.csv')) . '">' . icon('download') . 'Exporter</a>'
     . '<a class="btn" href="' . e(url($base . '/inscriptions/nouvelle')) . '">' . icon('plus') . 'Inscrire un judoka</a>';

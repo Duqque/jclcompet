@@ -34,6 +34,8 @@ $router->get('/media/{id:\d+}', [SiteController::class, 'media']);
 $router->get('/connexion', [AuthController::class, 'showLogin']);
 $router->post('/connexion', [AuthController::class, 'login']);
 $router->post('/deconnexion', [AuthController::class, 'logout']);
+$router->get('/creer-un-compte', [AuthController::class, 'showSignup']);
+$router->post('/creer-un-compte', [AuthController::class, 'signup']);
 $router->get('/compte/mot-de-passe', [AuthController::class, 'showPassword'], ['auth']);
 $router->post('/compte/mot-de-passe', [AuthController::class, 'updatePassword'], ['auth']);
 
@@ -67,6 +69,7 @@ $router->group('/admin', ['auth', 'role:admin'], function ($r) {
         $r->get('/tapis', [Admin\TatamiController::class, 'index'], ['can:tv.manage']);
         $r->post('/tapis', [Admin\TatamiController::class, 'action'], ['can:tv.manage']);
         $r->get('/inscriptions', [Admin\RegistrationController::class, 'index'], ['can:registrations.manage']);
+        $r->get('/inscriptions/etat', [Admin\RegistrationController::class, 'stamp'], ['can:registrations.manage']);
         $r->get('/inscriptions/nouvelle', [Admin\RegistrationController::class, 'create'], ['can:registrations.manage']);
         $r->post('/inscriptions', [Admin\RegistrationController::class, 'store'], ['can:registrations.manage']);
         $r->get('/inscriptions/{rid:\d+}', [Admin\RegistrationController::class, 'edit'], ['can:registrations.manage']);
@@ -112,6 +115,7 @@ $router->group('/espace-club', ['auth', 'role:coach,admin'], function ($r) {
     $r->get('/profil', [ClubSpaceController::class, 'profile']);
     $r->post('/profil', [ClubSpaceController::class, 'updateProfile']);
     $r->get('/competitions/{id:\d+}', [ClubSpaceController::class, 'competition']);
+    $r->get('/competitions/{id:\d+}/etat', [ClubSpaceController::class, 'stamp']);
     $r->post('/competitions/{id:\d+}/inscriptions', [ClubSpaceController::class, 'register']);
     $r->get('/competitions/{id:\d+}/inscriptions/{rid:\d+}', [ClubSpaceController::class, 'editRegistration']);
     $r->post('/competitions/{id:\d+}/inscriptions/{rid:\d+}', [ClubSpaceController::class, 'updateRegistration']);

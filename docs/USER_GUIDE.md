@@ -89,6 +89,30 @@ Le journal n'est pas modifiable depuis l'interface ; « Vérifier l'intégrité 
 
 ## 2. Club / entraîneur
 
+### Créer son compte coach
+
+Le coach crée lui-même son compte, sur le site (**Connexion › Coach : pas encore de compte ?**, adresse `/creer-un-compte`)
+ou dans l'application iPhone **JCL Live** (onglet **Mon club › Créer un compte**) : nom, e-mail, téléphone, club (choisi
+dans la liste, ou nouveau club avec sa ville), mot de passe (12 caractères, lettres et chiffres).
+
+1. La demande crée un compte **inactif** : il ne donne accès à rien.
+2. L'organisation est prévenue (notification). Dans **Administration › Profils**, la carte de la demande montre le nom,
+   l'e-mail, le téléphone et le club : **Accepter** (le compte est activé et rattaché au club ; pour un nouveau club, on
+   peut le créer ou choisir un club existant) ou **Refuser**.
+3. Le coach se connecte ensuite **sur le site et dans l'application avec les mêmes identifiants**. Avant la validation, la
+   connexion affiche « Votre compte attend la validation de l'organisation ».
+
+Désactiver un compte dans Profils le déconnecte aussi de l'application.
+
+### Tout est synchronisé en direct
+
+Site, application et écrans de l'organisation travaillent sur la même base. Un ajout, une modification, un retrait, une
+validation de liste, une présence ou une pesée apparaît en quelques secondes partout : la fiche de la compétition dans
+l'application se met à jour toutes les 3 s, la page **Mes combattants** du site toutes les 3 s, la page **Inscrits** de
+l'administration et la page **Présences** de l'accueil toutes les 4 s (sans recharger pendant une saisie).
+
+### Espace club (site et application)
+
 Le menu de l'espace club affiche en permanence la compétition en cours et toutes ses rubriques :
 
 - **Mes combattants** : cartes des judokas (photo facultative, catégorie, poids, statut). Bouton **Ajouter un combattant** :

@@ -110,3 +110,7 @@ php bin/install.php --comptes        # tables + programme 2026 + comptes de conf
 ```
 
 Ne jamais lancer `--demo` sur le site réel.
+
+Les coachs créent ensuite eux-mêmes leur compte (`https://…/creer-un-compte` ou l'application JCL Live) ; l'organisation
+les accepte dans **Administration › Profils**. Mise à jour du site réel : `git pull origin main && composer install --no-dev
+&& php bin/migrate.php`.

@@ -344,6 +344,29 @@ final class RegistrationService
         return $v;
     }
 
+    /**
+     * Empreinte des inscriptions (d'un club ou de toute la compétition) : change dès qu'une inscription, une présence,
+     * un poids, une photo, une validation de liste ou les poules changent. Sert au direct entre le site et l'application.
+     */
+    public static function stamp(int $competitionId, ?int $clubId = null): string
+    {
+        $rows = Database::all(
+            'SELECT r.id, r.status, r.attendance_status, r.measured_weight_kg, r.declared_weight_kg, r.age_category_id, r.weight_category_id,
+                    r.updated_at, a.updated_at AS a_upd, a.photo_document_id
+             FROM registrations r JOIN athletes a ON a.id = r.athlete_id
+             WHERE r.competition_id = ?' . ($clubId !== null ? ' AND r.club_id = ?' : '') . ' ORDER BY r.id',
+            $clubId !== null ? [$competitionId, $clubId] : [$competitionId]
+        );
+        $extra = Database::one(
+            "SELECT (SELECT MAX(validated_at) FROM club_list_validations WHERE competition_id = ?) AS v,
+                    (SELECT CONCAT(id, status) FROM pool_generations WHERE competition_id = ? ORDER BY id DESC LIMIT 1) AS g,
+                    (SELECT COUNT(*) FROM pool_athletes pa JOIN pool_generations pg ON pg.id = pa.generation_id WHERE pg.competition_id = ? AND pg.status IN ('draft','validated')) AS p,
+                    (SELECT CONCAT(status, updated_at) FROM competitions WHERE id = ?) AS c",
+            [$competitionId, $competitionId, $competitionId, $competitionId]
+        );
+        return substr(md5(json_encode([$rows, $extra])), 0, 16);
+    }
+
     public static function inPool(int $registrationId): bool
     {
         return (bool) Database::value(

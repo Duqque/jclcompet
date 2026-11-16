@@ -27,6 +27,7 @@ final class UserController extends AdminController
             'role' => (string) ($r->query['role'] ?? ''),
             'roles' => Database::all('SELECT * FROM roles ORDER BY id'),
             'clubs' => Database::all('SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name'),
+            'requests' => \App\Services\AccountRequestService::pending(),
         ]);
     }
 
@@ -55,6 +56,16 @@ final class UserController extends AdminController
             AuditLogger::log('user.create', 'user', $uid, null, ['email' => $email, 'role' => $role['code']]);
             return $this->back($r, 'Compte créé. Le mot de passe provisoire devra être changé à la première connexion.');
         }
+        if ($op === 'approve_request') {
+            $res = \App\Services\AccountRequestService::approve((int) $r->int('request_id'), $r->int('club_id') ?: null);
+            $name = (string) Database::value('SELECT display_name FROM users WHERE id = ?', [$res['user_id']]);
+            $club = (string) Database::value('SELECT name FROM clubs WHERE id = ?', [$res['club_id']]);
+            return $this->back($r, "Compte de $name activé et rattaché à $club : il peut se connecter sur le site et dans l'application.");
+        }
+        if ($op === 'reject_request') {
+            \App\Services\AccountRequestService::reject((int) $r->int('request_id'), $r->str('note') ?: null);
+            return $this->back($r, 'Demande refusée.');
+        }
         $uid = (int) $r->int('user_id');
         $target = Database::one('SELECT * FROM users WHERE id = ?', [$uid]) ?? throw new DomainError('Compte introuvable.');
         if ($uid === Auth::id() && in_array($op, ['toggle', 'role'], true)) {
@@ -63,6 +74,9 @@ final class UserController extends AdminController
         switch ($op) {
             case 'toggle':
                 Database::run('UPDATE users SET is_active = 1 - is_active WHERE id = ?', [$uid]);
+                if ((int) $target['is_active'] === 1) {
+                    \App\Services\ApiTokenService::revokeAll($uid); // déconnecte aussi l'application
+                }
                 AuditLogger::log('user.toggle', 'user', $uid, ['is_active' => $target['is_active']], ['is_active' => 1 - (int) $target['is_active']]);
                 return $this->back($r, 'Compte mis à jour.');
             case 'reset_password':

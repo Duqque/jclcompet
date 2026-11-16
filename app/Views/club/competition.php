@@ -9,7 +9,7 @@ $count = fn (string $att) => count(array_filter($active, fn ($r) => $r['attendan
 $attLabel = ['expected' => ['', 'Attendu'], 'present' => ['badge-green', 'Présent'], 'absent' => ['badge-red', 'Absent'], 'to_check' => ['badge-orange', 'À vérifier']];
 $openAdd = !empty($GLOBALS['__errors']) || !empty($GLOBALS['__old']);
 ?>
-<div class="page-head">
+<div class="page-head" data-live-stamp="<?= e(url('/espace-club/competitions/' . $c['id'] . '/etat')) ?>" data-live-interval="3000">
   <div><p class="eyebrow"><?= e($c['name']) ?> · <?= e(fr_date($c['event_date'], true)) ?></p><h1>Mes combattants</h1>
     <p class="muted" style="margin:.2rem 0 0"><?= count($active) ?> inscrit(s)<?= $attendanceOpen ? ' · ' . $count('present') . ' présent(s) · ' . $count('expected') . ' attendu(s)' : '' ?></p></div>
   <div class="btn-group">

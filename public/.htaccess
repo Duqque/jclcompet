@@ -4,6 +4,9 @@ DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Transmettre l'en-tête Authorization (jeton de l'application) à PHP, y compris en CGI / FastCGI.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
     # Fichiers et dossiers réels (assets) servis directement
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d

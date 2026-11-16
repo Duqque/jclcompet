@@ -19,14 +19,24 @@ halo rosé, chiffres en Poppins italique, logos de club toujours dans une carte 
   direct sur l'horloge du serveur, golden score, matte, barre d'osaekomi avec les seuils yuko / waza-ari / ippon,
   cartons, déroulé horodaté, autres combats des deux judokas.
 - **Feuille de poule** : grille des scores au format IWY-cartons, victoires, points, classement, ordre des combats.
-- **Recherche** : judokas et clubs de toutes les compétitions en cours et à venir.
 - **Favoris** : suivre un judoka (étoile), voir son prochain combat (« dans 2 combats, tapis 3 »), alertes locales
   quand il va combattre, quand il combat et quand son résultat est validé (au premier plan toutes les 20 s, et en
   arrière-plan quand iOS l'autorise).
+- **Mon club** (coachs) : connexion avec le compte du site, ou **demande de compte** (club choisi dans une grille de cartes
+  aux couleurs des clubs, ou nouveau club) validée par l'organisation. Une fois connecté : compétitions du club (jour J,
+  inscriptions ouvertes, à venir, terminées), **mes combattants** (cartes, recherche, filtres de présence), **ajouter un
+  combattant** (nouveau ou déjà au club, catégorie calculée en direct par le serveur), modifier, retirer, **photo** du judoka,
+  **valider la liste**, et le jour J **présent / absent** et **pesée**. Mise à jour en direct toutes les 3 s.
+- **Recherche** (loupe de l'accueil) : judokas et clubs de toutes les compétitions en cours et à venir.
 - **Réglages** : adresse du site, alertes, thème clair / sombre / système.
 
-Aucun compte, aucune donnée envoyée : l'application lit l'API publique en lecture seule `/api/v1/…`
+Suivi en direct sans compte : l'application lit l'API publique en lecture seule `/api/v1/…`
 (`app/Controllers/Api/MobileController.php`), qui ne publie ni date de naissance, ni licence, ni coordonnées.
+
+Espace coach : API privée `/api/v1/compte` et `/api/v1/club` (`app/Controllers/Api/CoachApiController.php`), mêmes règles
+que l'espace club du site (un coach ne voit et ne modifie que son club). Connexion par jeton (en-tête
+`Authorization: Bearer`) gardé dans le **trousseau iOS** ; le serveur n'en garde que l'empreinte SHA-256, le jeton expire
+après 90 jours sans usage et la déconnexion le révoque. Changer l'adresse du site dans Réglages déconnecte.
 Le direct respecte le réglage « direct public » de chaque compétition ; les poules n'apparaissent qu'une fois publiées ;
 les photos seulement si l'option des photos de podium est activée.
 

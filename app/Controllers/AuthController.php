@@ -40,6 +40,22 @@ final class AuthController extends Controller
         return Response::redirect($target);
     }
 
+    /** Création de compte coach : la demande est validée par l'organisation avant toute connexion. */
+    public function showSignup(Request $r): Response
+    {
+        if (Auth::check()) {
+            return Response::redirect(Auth::homePath());
+        }
+        return $this->view('auth/signup', ['title' => 'Créer un compte coach', 'split' => true,
+            'clubs' => \App\Services\AccountRequestService::clubs()], 'auth');
+    }
+
+    public function signup(Request $r): Response
+    {
+        \App\Services\AccountRequestService::create($r->post, 'web', $r->ip());
+        return $this->redirect('/connexion?profil=club', "Demande envoyée. L'organisation du JC Leforest valide votre compte : vous pourrez ensuite vous connecter ici et dans l'application JCL Live avec cette adresse e-mail et ce mot de passe.");
+    }
+
     public function logout(Request $r): Response
     {
         Auth::logout();

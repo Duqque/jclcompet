@@ -8,8 +8,13 @@ final class Auth
     private static ?array $user = null;
     private static bool $loaded = false;
     private static array $permissions = [];
+    private static ?int $tokenUserId = null;
 
-    public static function attempt(string $email, string $password, Request $request): array
+    /**
+     * Vérifie un identifiant et un mot de passe (site et application), avec limitation des tentatives.
+     * @return array{ok: bool, error?: string, user?: array}
+     */
+    public static function verify(string $email, string $password, Request $request): array
     {
         $email = mb_strtolower(trim($email));
         if (RateLimiter::tooManyAttempts($email, $request->ip())) {
@@ -23,6 +28,16 @@ final class Auth
         $hash = $user['password_hash'] ?? '$2y$12$0000000000000000000000.000000000000000000000000000000';
         $valid = password_verify($password, $hash);
         $blockedDemo = $user && (int) $user['is_demo'] === 1 && Config::get('app.env') === 'production';
+        if ($user && $valid && (int) $user['is_active'] !== 1) {
+            // Mot de passe juste mais compte inactif : on peut dire pourquoi (demande de compte en attente ou refusée).
+            $req = Database::value('SELECT status FROM account_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1', [$user['id']]);
+            if ($req === 'pending') {
+                return ['ok' => false, 'pending' => true, 'error' => "Votre compte attend la validation de l'organisation du JC Leforest. Vous pourrez vous connecter dès qu'il sera accepté."];
+            }
+            if ($req === 'rejected') {
+                return ['ok' => false, 'error' => "Votre demande de compte n'a pas été acceptée. Contactez l'organisation du JC Leforest."];
+            }
+        }
         if (!$user || !$valid || (int) $user['is_active'] !== 1 || $blockedDemo) {
             RateLimiter::hit($email, $request->ip(), false);
             $msg = $blockedDemo ? 'Les comptes de démonstration sont désactivés en production.' : 'Identifiant ou mot de passe incorrect.';
@@ -32,10 +47,28 @@ final class Auth
         if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
             Database::run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $user['id']]);
         }
-        self::login((int) $user['id']);
         Database::run('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$user['id']]);
-        \App\Services\AuditLogger::log('auth.login', 'user', (int) $user['id']);
+        return ['ok' => true, 'user' => $user];
+    }
+
+    public static function attempt(string $email, string $password, Request $request): array
+    {
+        $result = self::verify($email, $password, $request);
+        if (!$result['ok']) {
+            return $result;
+        }
+        self::login((int) $result['user']['id']);
+        \App\Services\AuditLogger::log('auth.login', 'user', (int) $result['user']['id']);
         return ['ok' => true, 'user' => self::user()];
+    }
+
+    /** Requête de l'application authentifiée par jeton : l'utilisateur est chargé sans session ni cookie. */
+    public static function useToken(int $userId): void
+    {
+        self::$tokenUserId = $userId;
+        self::$loaded = false;
+        self::$user = null;
+        self::$permissions = [];
     }
 
     public static function login(int $userId): void
@@ -62,7 +95,7 @@ final class Auth
     {
         if (!self::$loaded) {
             self::$loaded = true;
-            $id = Session::get('user_id');
+            $id = self::$tokenUserId ?? Session::get('user_id');
             if ($id) {
                 $user = Database::one(
                     'SELECT u.id, u.email, u.display_name, u.role_id, u.is_active, u.is_demo, u.must_change_password,
@@ -78,7 +111,7 @@ final class Auth
                         'SELECT p.code FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = ?',
                         [(int) $user['role_id']]
                     );
-                } else {
+                } elseif (self::$tokenUserId === null) {
                     Session::forget('user_id');
                 }
             }
@@ -90,6 +123,7 @@ final class Auth
     public static function actAs(?int $userId): void
     {
         $_SESSION['user_id'] = $userId;
+        self::$tokenUserId = null;
         self::$loaded = false;
         self::$user = null;
         self::$permissions = [];

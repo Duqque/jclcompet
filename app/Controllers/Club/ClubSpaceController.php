@@ -114,12 +114,20 @@ final class ClubSpaceController extends Controller
             'rows' => RegistrationService::list($cid, ['status' => 'all'], (int) $club['id'], 1000),
             'canEdit' => RegistrationService::clubCanEdit($c) && $c['status'] !== 'archived',
             'athletes' => Database::all('SELECT * FROM athletes WHERE club_id = ? AND id NOT IN (SELECT athlete_id FROM registrations WHERE competition_id = ? AND status IN ("pending","confirmed")) ORDER BY last_name, first_name', [$club['id'], $cid]),
-            'scripts' => ['registration-form.js'], 'reg' => null,
+            'scripts' => ['registration-form.js', 'live-reload.js'], 'reg' => null,
             'listValidation' => RegistrationService::clubListValidation($cid, (int) $club['id']),
             'attendanceOpen' => self::attendanceOpen($c),
             'weighIn' => \App\Services\SettingsService::get($cid, 'weight_input') === 'weight',
             'clubRow' => $club,
         ] + RegistrationController::formData($c));
+    }
+
+    /** Empreinte des inscriptions du club : la page se recharge dès qu'un changement arrive (application, accueil, organisation). */
+    public function stamp(Request $r): Response
+    {
+        $club = $this->club();
+        $c = CompetitionService::find((int) $r->param('id'));
+        return $this->json(['stamp' => RegistrationService::stamp((int) $c['id'], (int) $club['id'])])->header('Cache-Control', 'no-store');
     }
 
     /** Photos de la compétition : l'entraîneur les consulte et peut en ajouter. */

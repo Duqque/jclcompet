@@ -9,7 +9,7 @@ $adminTabs = [
 ];
 $inAdmin = isset($adminTabs[substr($path, strlen($base))]) && str_starts_with($path, $base);
 ?>
-<div class="page-head">
+<div class="page-head"<?= !empty($liveStamp) ? ' data-live-stamp="' . e(url($liveStamp)) . '"' : '' ?>>
   <div><p class="eyebrow"><?= e($c['name']) ?> · <?= e(CompetitionService::statusLabel($c['status'])) ?></p><h1><?= e($inAdmin ? 'Administration' : $heading) ?></h1><?php if (!empty($sub)): ?><p class="sub"><?= e($sub) ?></p><?php endif; ?></div>
   <?php if (!empty($actions)): ?><div class="btn-group"><?= $actions ?></div><?php endif; ?>
 </div>

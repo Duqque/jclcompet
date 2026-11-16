@@ -36,7 +36,8 @@ final class App
 
     private function runMiddleware(array $middleware, Request $request): void
     {
-        $csrf = $request->method !== 'GET' && $request->method !== 'HEAD' && !in_array('nocsrf', $middleware, true);
+        // Les routes de l'application (jeton « Bearer », sans cookie) ne sont pas exposées au CSRF.
+        $csrf = $request->method !== 'GET' && $request->method !== 'HEAD' && !in_array('nocsrf', $middleware, true) && !in_array('token', $middleware, true);
         foreach ($middleware as $mw) {
             [$name, $arg] = array_pad(explode(':', $mw, 2), 2, null);
             switch ($name) {
@@ -45,6 +46,16 @@ final class App
                         throw new HttpException(401);
                     }
                     $this->enforcePasswordChange($request);
+                    break;
+                case 'token':
+                    $userId = \App\Services\ApiTokenService::resolve((string) $request->header('Authorization'));
+                    if (!$userId) {
+                        throw new HttpException(401, 'Session expirée : reconnectez-vous.');
+                    }
+                    Auth::useToken($userId);
+                    if (!Auth::check()) {
+                        throw new HttpException(401, 'Compte désactivé : contactez l\'organisation.');
+                    }
                     break;
                 case 'guest':
                     if (Auth::check()) {

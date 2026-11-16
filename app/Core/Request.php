@@ -83,7 +83,8 @@ final class Request
     public function header(string $name): ?string
     {
         $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
-        return $this->server[$key] ?? null;
+        // Certains hébergements (CGI / FastCGI) ne transmettent Authorization que sous REDIRECT_HTTP_AUTHORIZATION.
+        return $this->server[$key] ?? $this->server['REDIRECT_' . $key] ?? null;
     }
 
     public function wantsJson(): bool

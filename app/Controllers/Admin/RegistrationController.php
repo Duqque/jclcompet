@@ -54,7 +54,15 @@ final class RegistrationController extends AdminController
                 [$cid]
             )),
             'stats' => \App\Services\CompetitionService::stats($cid),
+            'scripts' => ['live-reload.js'],
         ]);
+    }
+
+    /** Empreinte des inscriptions : la page se recharge dès qu'un club inscrit, modifie ou pointe (site ou application). */
+    public function stamp(Request $r): Response
+    {
+        $c = $this->competition($r);
+        return $this->json(['stamp' => RegistrationService::stamp((int) $c['id'])])->header('Cache-Control', 'no-store');
     }
 
     public function create(Request $r): Response

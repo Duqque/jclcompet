@@ -7,8 +7,13 @@
   const KEY = 'jcl-live-scroll:' + location.pathname;
   let stamp = null;
   try { const y = sessionStorage.getItem(KEY); if (y) { window.scrollTo(0, +y); sessionStorage.removeItem(KEY); } } catch (e) { /* stockage indisponible */ }
+  // Pas de rechargement pendant une saisie (champ actif, formulaire modifié) ni fenêtre ouverte.
+  let lastInput = 0;
+  document.addEventListener('input', (e) => { if (e.target.closest('form')) lastInput = Date.now(); });
+  document.addEventListener('submit', () => { lastInput = 0; });
   async function check() {
-    if (document.hidden || document.querySelector('dialog[open]')) return;
+    const a = document.activeElement;
+    if (document.hidden || document.querySelector('dialog[open]') || Date.now() - lastInput < 20000 || (a && a.matches('input, textarea, select'))) return;
     try {
       const s = (await JCL.api(url)).stamp;
       if (stamp !== null && s !== stamp) {
@@ -19,5 +24,5 @@
     } catch (e) { /* hors ligne : nouvel essai au prochain passage */ }
   }
   check();
-  setInterval(check, 6000);
+  setInterval(check, +(el.dataset.liveInterval || 4000));
 })();
