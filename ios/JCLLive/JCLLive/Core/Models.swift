@@ -32,6 +32,8 @@ struct Competition: Codable, Identifiable, Hashable {
     let clubsCount: Int
     let athletesCount: Int
     let poster: String?
+    /// Tableaux consultables : poules publiées ou au moins un tirage au sort validé
+    let bracketsAvailable: Bool?
 
     var isFinished: Bool { ["finished", "archived"].contains(status) }
     var isUpcoming: Bool { !live && !isFinished }
@@ -67,7 +69,7 @@ struct CompetitionDetail: Codable {
     var summary: Competition {
         Competition(id: id, slug: slug, name: name, edition: edition, date: date, venue: venue, city: city, status: status,
                     statusLabel: statusLabel, live: live, registrationsOpen: registrationsOpen, matsCount: matsCount,
-                    clubsCount: clubsCount, athletesCount: athletesCount, poster: poster)
+                    clubsCount: clubsCount, athletesCount: athletesCount, poster: poster, bracketsAvailable: poolsPublished)
     }
 }
 

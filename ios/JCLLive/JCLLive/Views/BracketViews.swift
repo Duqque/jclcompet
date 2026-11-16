@@ -144,7 +144,7 @@ struct BracketTabView: View {
                     // Compétition : menu compact (les noms sont longs)
                     Menu {
                         ForEach(competitions) { c in
-                            Button { slug = c.slug } label: { Label(c.name, systemImage: c.live ? "dot.radiowaves.left.and.right" : "checkmark.seal") }
+                            Button { slug = c.slug } label: { Label(c.name, systemImage: c.live ? "dot.radiowaves.left.and.right" : (c.isFinished ? "checkmark.seal" : "shuffle")) }
                         }
                     } label: {
                         HStack(spacing: 10) {
@@ -195,8 +195,10 @@ struct BracketTabView: View {
 
     private func loadCompetitions() async {
         guard let list = try? await API.competitions() else { return }
-        // En cours d'abord, puis terminées récentes (les poules et tableaux ne sont publiés qu'à partir du jour J)
-        competitions = list.filter { $0.live } + list.filter { $0.isFinished }.prefix(3)
+        // En cours d'abord, puis à venir dont des tirages au sort sont faits, puis terminées récentes
+        competitions = list.filter { $0.live }
+            + list.filter { $0.isUpcoming && $0.bracketsAvailable == true }
+            + list.filter { $0.isFinished }.prefix(3)
         // Dernière compétition choisie si elle est toujours listée, sinon la première en cours
         if slug == nil { slug = competitions.first(where: { $0.slug == savedSlug })?.slug ?? competitions.first?.slug }
     }

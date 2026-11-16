@@ -1,7 +1,7 @@
 /* Interface commissaire sportif — tablette ou ordinateur, toute la journée. */
 .cm { background: var(--floor); }
 .cm-bar { display: flex; align-items: center; gap: .8rem; padding: .6rem 16px; background: var(--ink); color: var(--white); flex-wrap: wrap; }
-.cm-bar .btn-ghost { --fg: var(--white); border-color: rgba(255,255,255,.3); }
+.cm-bar .btn-ghost { --fg: var(--white); color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,.3); }
 .cm-bar .btn-ghost:hover { background: rgba(255,255,255,.1); }
 .cm-brand { display: flex; align-items: center; gap: .6rem; color: var(--white); text-decoration: none; margin-right: auto; font: 800 italic 1rem var(--font-display); text-transform: uppercase; }
 .cm-brand img { width: 54px; }
@@ -94,3 +94,12 @@
   .cm-side { max-height: 34vh; order: 2; }
   .cm-fighters { grid-template-columns: 1fr; }
 }
+
+/* Choix de la compétition */
+.cm-choices { margin-top: 1rem; }
+.cm-choice { position: relative; display: grid; gap: .35rem; text-decoration: none; color: var(--ink); padding-right: 3.2rem; transition: transform .2s, box-shadow .2s; }
+.cm-choice:hover, .cm-choice:focus-visible { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--red), 0 14px 34px rgba(0,0,0,.08); }
+.cm-choice strong { font: 800 italic 1.25rem/1.15 var(--font-display); }
+.cm-choice .badge { justify-self: start; }
+.cm-choice-go { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--red); color: #fff; }
+.cm-others { color: var(--orange, #c2410c); font-weight: 600; }

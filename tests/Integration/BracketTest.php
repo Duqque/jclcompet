@@ -301,4 +301,31 @@ final class BracketTest extends TestCase
             }
         }
     }
+
+    public function testValidatedDrawsArePublicBeforePoolsArePublished(): void
+    {
+        $this->admin();
+        $cid = $this->officialCompetition();
+        $this->fighters($cid, 12);
+        $gen = PoolService::generate($cid);
+        Database::run("UPDATE competitions SET status = 'pool_preparation' WHERE id = ?", [$cid]);
+        \App\Services\SettingsService::set($cid, 'pools_published', false);
+        $pool = Database::one("SELECT * FROM pools WHERE generation_id = ? AND kind = 'bracket'", [$gen]);
+        $slug = (string) Database::value('SELECT slug FROM competitions WHERE id = ?', [$cid]);
+        $api = new \App\Controllers\Api\MobileController();
+        $req = function (array $params) {
+            $r = new \App\Core\Request('GET', '/api/v1', [], [], [], ['REMOTE_ADDR' => '10.0.0.8']);
+            $r->params = $params;
+            return $r;
+        };
+        // Tirage pas encore validé : rien de public
+        $this->assertDomainError(fn () => $api->brackets($req(['slug' => $slug])), 'pas encore', 404);
+        $this->assertSame([], BracketService::drawnPools($cid));
+        // Tirage validé : la catégorie devient consultable dans l'application
+        Database::run('UPDATE pools SET is_locked = 1 WHERE id = ?', [$pool['id']]);
+        $list = json_decode($api->brackets($req(['slug' => $slug]))->body, true);
+        $this->assertSame([(int) $pool['id']], array_column($list['categories'], 'id'));
+        $detail = json_decode($api->bracket($req(['slug' => $slug, 'id' => (string) $pool['id']]))->body, true);
+        $this->assertNotEmpty($detail['trees']);
+    }
 }

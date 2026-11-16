@@ -1122,6 +1122,16 @@ final class BracketService
     }
 
     /** Toutes les catégories d'une génération (une entrée par catégorie : poule, 2 poules + tableau final, tableau). */
+    /**
+     * Tableaux dont le tirage au sort est validé (avant la publication des poules) : seuls ceux-là sont publics,
+     * un tirage en cours ou refait n'est jamais montré. @return int[]
+     */
+    public static function drawnPools(int $competitionId): array
+    {
+        $g = PoolService::activeGeneration($competitionId);
+        return $g ? array_map('intval', Database::column("SELECT id FROM pools WHERE generation_id = ? AND kind = 'bracket' AND is_locked = 1", [$g['id']])) : [];
+    }
+
     public static function categories(int $generationId): array
     {
         $pools = Database::all(

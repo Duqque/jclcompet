@@ -112,4 +112,40 @@ final class AuthPermissionTest extends TestCase
         $state = BoutService::act((int) $bout['id'], ['action' => 'start', 'version' => $bout['version']]);
         $this->assertTrue($state['clock']['running']);
     }
+
+    public function testCommissionerChoosesCompetitionThenTatami(): void
+    {
+        $this->admin();
+        $cid = $this->competition();
+        $this->athletes($cid, 3);
+        $g = \App\Services\PoolService::generate($cid);
+        \App\Services\PoolService::validate($g);
+        Database::run("UPDATE competitions SET status = 'in_progress' WHERE id = ?", [$cid]);
+        $bout = Database::one('SELECT * FROM bouts WHERE competition_id = ? ORDER BY id LIMIT 1', [$cid]);
+        $tid = (int) $bout['tatami_id'];
+        $u = $this->user('commissioner');
+        Auth::actAs($u);
+        $ctl = new \App\Controllers\Commissioner\CommissionerController();
+        $req = fn (string $method, array $params = [], array $query = []) => (function () use ($method, $params, $query) {
+            $r = new Request($method, '/commissaire', $query, [], [], ['REMOTE_ADDR' => '10.0.0.9']);
+            $r->params = $params;
+            return $r;
+        })();
+
+        // La compétition du jour J apparaît dans le choix, puis son tapis
+        $ctl->home($req('GET', [], ['competition' => (string) $cid]));
+        $this->assertSame($cid, \App\Core\Session::get('commissioner_competition'));
+
+        // Choisir un tapis non affecté : affectation par le commissaire lui-même, tapis actif, saisie possible
+        $ctl->activate($req('POST', ['tid' => (string) $tid]));
+        $this->assertSame(1, (int) Database::value('SELECT is_active FROM commissioner_tatamis WHERE user_id = ? AND tatami_id = ?', [$u, $tid]));
+        $state = BoutService::act((int) $bout['id'], ['action' => 'start', 'version' => $bout['version']]);
+        $this->assertTrue($state['clock']['running']);
+
+        // Compétition hors jour J : refusé côté serveur
+        $closed = $this->competition();
+        $other = (int) Database::value('SELECT id FROM tatamis WHERE competition_id = ? LIMIT 1', [$closed]);
+        Database::run("UPDATE competitions SET status = 'registrations_open' WHERE id = ?", [$closed]);
+        $this->assertDomainError(fn () => $ctl->activate($req('POST', ['tid' => (string) $other])), 'pas ouvert', 403);
+    }
 }

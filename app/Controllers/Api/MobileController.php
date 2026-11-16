@@ -278,11 +278,28 @@ final class MobileController extends Controller
     // ------------------------------------------------------------------ Tableaux (onglet Tableau de l'application)
 
     /** Catégories de la compétition : tableau à double repêchage, 2 poules + tableau final, poule(s). */
+    /** Avant la publication des poules : uniquement les tableaux au tirage validé (null = tout est public). */
+    private function visiblePools(array $c): ?array
+    {
+        if ($this->poolsPublished($c)) {
+            return null;
+        }
+        $drawn = $c['status'] === 'draft' ? [] : BracketService::drawnPools((int) $c['id']);
+        if (!$drawn) {
+            throw new HttpException(404, 'Les tableaux ne sont pas encore publiés.');
+        }
+        return $drawn;
+    }
+
     public function brackets(Request $r): Response
     {
-        $c = $this->requirePools($r);
+        $c = $this->comp($r);
+        $visible = $this->visiblePools($c);
         $g = PoolService::activeGeneration((int) $c['id']);
         $cats = $g ? BracketService::categories((int) $g['id']) : [];
+        if ($visible !== null) {
+            $cats = array_values(array_filter($cats, fn ($k) => in_array((int) $k['main_pool_id'], $visible, true)));
+        }
         return $this->out(['competition' => $this->summary($c), 'categories' => array_map(fn ($k) => [
             'id' => $k['main_pool_id'], 'label' => $k['label'], 'kind' => $k['kind'], 'count' => $k['count'], 'mat' => $k['tatami'], 'finished' => $k['finished'],
             'sex' => $k['sex'], 'age' => $k['age'],
@@ -292,10 +309,11 @@ final class MobileController extends Controller
     /** Une catégorie : tours du tableau (ou poules), combats en direct, classement complet de la catégorie. */
     public function bracket(Request $r): Response
     {
-        $c = $this->requirePools($r);
+        $c = $this->comp($r);
+        $visible = $this->visiblePools($c);
         $g = PoolService::activeGeneration((int) $c['id']);
         $pool = $g ? Database::one('SELECT * FROM pools WHERE id = ? AND generation_id = ?', [(int) $r->param('id'), $g['id']]) : null;
-        if (!$pool) {
+        if (!$pool || ($visible !== null && !in_array((int) $pool['id'], $visible, true))) {
             throw new HttpException(404, 'Catégorie introuvable.');
         }
         $siblings = Database::all("SELECT * FROM pools WHERE generation_id = ? AND group_key = ? AND kind = 'pool' ORDER BY number", [$g['id'], $pool['group_key']]);
@@ -502,6 +520,8 @@ final class MobileController extends Controller
             'date' => $c['event_date'], 'venue' => $c['venue'], 'city' => $c['city'],
             'status' => $c['status'], 'status_label' => CompetitionService::statusLabel($c['status']),
             'live' => $c['status'] === 'in_progress',
+            // Tableaux consultables : poules publiées, ou au moins un tirage au sort validé
+            'brackets_available' => $c['status'] !== 'draft' && ($this->poolsPublished($c) || BracketService::drawnPools($cid) !== []),
             'registrations_open' => CompetitionService::registrationWindowOpen($c),
             'mats_count' => (int) $c['mat_count'],
             'clubs_count' => (int) Database::value("SELECT COUNT(DISTINCT club_id) FROM registrations WHERE competition_id = ? AND status IN ('pending','confirmed') AND club_id IS NOT NULL", [$cid]),

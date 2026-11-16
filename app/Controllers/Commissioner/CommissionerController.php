@@ -9,6 +9,7 @@ use App\Core\Database;
 use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Services\AuditLogger;
 use App\Services\BoutService;
 use App\Services\CompetitionService;
@@ -29,50 +30,102 @@ final class CommissionerController extends Controller
         }
     }
 
-    /** Tapis accessibles : tapis affectés (commissaire) ou tous les tapis des compétitions en cours (administrateur). */
-    private function myTatamis(): array
+    /** Statuts où l'on peut saisir des combats (jour J). */
+    private const DAY_STATUSES = ['registrations_closed', 'attendance', 'pool_preparation', 'in_progress'];
+
+    /** Compétitions du jour J qui ont au moins un tapis actif. */
+    private function competitions(): array
     {
-        if (Auth::can('results.correct')) {
-            return Database::all(
-                "SELECT t.*, c.name AS competition_name, c.status AS competition_status, 1 AS is_active_for_me
-                 FROM tatamis t JOIN competitions c ON c.id = t.competition_id
-                 WHERE t.is_active = 1 AND c.status IN ('pool_preparation','in_progress','attendance','registrations_closed')
-                 ORDER BY c.event_date, t.number"
-            );
-        }
+        $in = implode(',', array_fill(0, count(self::DAY_STATUSES), '?'));
         return Database::all(
-            "SELECT t.*, c.name AS competition_name, c.status AS competition_status, ct.is_active AS is_active_for_me
-             FROM commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id JOIN competitions c ON c.id = t.competition_id
-             WHERE ct.user_id = ? AND c.status <> 'archived' ORDER BY c.event_date, t.number",
-            [Auth::id()]
+            "SELECT c.id, c.name, c.status, c.event_date, c.city,
+                    (SELECT COUNT(*) FROM tatamis t WHERE t.competition_id = c.id AND t.is_active = 1) AS mats,
+                    (SELECT COUNT(*) FROM bouts b WHERE b.competition_id = c.id AND b.status IN ('scheduled','in_progress','finished')) AS remaining,
+                    (SELECT COUNT(*) FROM commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id WHERE t.competition_id = c.id AND ct.user_id = ?) AS mine
+             FROM competitions c
+             WHERE c.status IN ($in) AND EXISTS (SELECT 1 FROM tatamis t WHERE t.competition_id = c.id AND t.is_active = 1)
+             ORDER BY c.status = 'in_progress' DESC, c.event_date, c.name",
+            array_merge([Auth::id()], self::DAY_STATUSES)
         );
     }
 
-    public function home(Request $r): Response
+    /** Tapis d'une compétition, avec l'état « affecté / actif » du commissaire et les autres commissaires présents. */
+    private function tatamisOf(int $competitionId): array
     {
-        $this->guard();
-        $tatamis = $this->myTatamis();
-        foreach ($tatamis as &$t) {
+        $rows = Database::all(
+            "SELECT t.*, COALESCE(ct.is_active, 0) AS is_active_for_me, ct.user_id IS NOT NULL AS is_mine,
+                    (SELECT GROUP_CONCAT(u.display_name SEPARATOR ', ')
+                       FROM commissioner_tatamis o JOIN users u ON u.id = o.user_id
+                      WHERE o.tatami_id = t.id AND o.is_active = 1 AND o.user_id <> ?) AS others
+             FROM tatamis t LEFT JOIN commissioner_tatamis ct ON ct.tatami_id = t.id AND ct.user_id = ?
+             WHERE t.competition_id = ? AND t.is_active = 1 ORDER BY t.number",
+            [Auth::id(), Auth::id(), $competitionId]
+        );
+        foreach ($rows as &$t) {
             $t['remaining'] = (int) Database::value("SELECT COUNT(*) FROM bouts WHERE tatami_id = ? AND status IN ('scheduled','in_progress','finished')", [$t['id']]);
             $t['done'] = (int) Database::value("SELECT COUNT(*) FROM bouts WHERE tatami_id = ? AND status = 'validated'", [$t['id']]);
         }
-        unset($t);
-        return $this->view('commissioner/home', ['title' => 'Commissaire sportif', 'tatamis' => $tatamis], 'commissioner');
+        return $rows;
+    }
+
+    /**
+     * Paramètres : choix de la compétition (mémorisé pour la session), puis du tapis.
+     * ?competition=0 revient au choix de la compétition.
+     */
+    public function home(Request $r): Response
+    {
+        $this->guard();
+        $competitions = $this->competitions();
+        $ids = array_map(fn ($c) => (int) $c['id'], $competitions);
+        if (array_key_exists('competition', $r->query)) {
+            Session::put('commissioner_competition', (int) $r->query['competition']);
+        }
+        $chosen = (int) Session::get('commissioner_competition', 0);
+        if (!in_array($chosen, $ids, true)) {
+            $chosen = 0;
+            // Une seule compétition possible : choisie d'office (sauf retour explicite au choix)
+            if (count($ids) === 1 && !array_key_exists('competition', $r->query)) {
+                $chosen = $ids[0];
+            }
+        }
+        $competition = null;
+        foreach ($competitions as $c) {
+            if ((int) $c['id'] === $chosen) {
+                $competition = $c;
+            }
+        }
+        return $this->view('commissioner/home', [
+            'title' => 'Commissaire sportif', 'competitions' => $competitions, 'competition' => $competition,
+            'tatamis' => $competition ? $this->tatamisOf((int) $competition['id']) : [],
+        ], 'commissioner');
     }
 
     public function activate(Request $r): Response
     {
         $this->guard();
         $tid = (int) $r->param('tid');
+        $tatami = Database::one('SELECT t.*, c.status AS competition_status FROM tatamis t JOIN competitions c ON c.id = t.competition_id WHERE t.id = ?', [$tid]);
+        if (!$tatami) {
+            throw new HttpException(404, 'Tapis introuvable.');
+        }
         if (!Auth::can('results.correct')) {
-            $row = Database::one('SELECT ct.*, t.competition_id FROM commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id WHERE ct.user_id = ? AND ct.tatami_id = ?', [Auth::id(), $tid]);
+            if (!Auth::can('bouts.score')) {
+                throw new HttpException(403);
+            }
+            $row = Database::one('SELECT * FROM commissioner_tatamis WHERE user_id = ? AND tatami_id = ?', [Auth::id(), $tid]);
             if (!$row) {
-                throw new HttpException(403, "Ce tapis ne vous est pas affecté.");
+                // Le commissaire choisit lui-même son tapis, uniquement sur une compétition du jour J et un tapis en service
+                if (!in_array($tatami['competition_status'], self::DAY_STATUSES, true) || (int) $tatami['is_active'] !== 1) {
+                    throw new HttpException(403, "Ce tapis n'est pas ouvert à la saisie.");
+                }
+                Database::insert('commissioner_tatamis', ['user_id' => Auth::id(), 'tatami_id' => $tid, 'is_active' => 0]);
+                AuditLogger::log('commissioner.self_assign', 'tatami', $tid, null, null, null, (int) $tatami['competition_id']);
             }
             // Un seul tapis actif à la fois dans l'interface de saisie (par compétition).
-            Database::run('UPDATE commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id SET ct.is_active = (ct.tatami_id = ?) WHERE ct.user_id = ? AND t.competition_id = ?', [$tid, Auth::id(), $row['competition_id']]);
-            AuditLogger::log('commissioner.activate', 'tatami', $tid, null, null, null, (int) $row['competition_id']);
+            Database::run('UPDATE commissioner_tatamis ct JOIN tatamis t ON t.id = ct.tatami_id SET ct.is_active = (ct.tatami_id = ?) WHERE ct.user_id = ? AND t.competition_id = ?', [$tid, Auth::id(), $tatami['competition_id']]);
+            AuditLogger::log('commissioner.activate', 'tatami', $tid, null, null, null, (int) $tatami['competition_id']);
         }
+        Session::put('commissioner_competition', (int) $tatami['competition_id']);
         return $this->redirect('/commissaire/tapis/' . $tid);
     }
 

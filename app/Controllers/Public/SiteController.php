@@ -237,7 +237,8 @@ final class SiteController extends Controller
     public function bracketPdf(Request $r): Response
     {
         $c = CompetitionService::findBySlug((string) $r->param('slug'));
-        $published = in_array($c['status'], ['in_progress', 'finished', 'archived'], true) || \App\Services\SettingsService::get((int) $c['id'], 'pools_published');
+        $published = in_array($c['status'], ['in_progress', 'finished', 'archived'], true) || \App\Services\SettingsService::get((int) $c['id'], 'pools_published')
+            || in_array((int) $r->param('id'), \App\Services\BracketService::drawnPools((int) $c['id']), true); // tirage validé
         if ($c['status'] === 'draft' || (!$published && !Auth::hasRole('admin'))) {
             throw new HttpException(404, 'Tableau introuvable.');
         }
