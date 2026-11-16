@@ -95,7 +95,7 @@ final class Notifier {
                 if n.isLive, sent.insert("live-\(n.id)").inserted {
                     post("\(who.fullName) combat maintenant", "En direct sur le \(mat).", id: "live-\(n.id)")
                 } else if let before = n.boutsBefore, before <= 2, !n.isLive, sent.insert("soon-\(n.id)").inserted {
-                    let when = before == 0 ? "C'est le prochain combat" : "Dans \(before) combat\(before > 1 ? "s" : "")"
+                    let when = n.queueLabel ?? "Prochain combat"
                     post("\(who.fullName) va combattre", "\(when) sur le \(mat).", id: "soon-\(n.id)")
                 }
             }

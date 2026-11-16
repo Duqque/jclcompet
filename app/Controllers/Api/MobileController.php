@@ -142,7 +142,46 @@ final class MobileController extends Controller
             'winner' => $s['winner_side'], 'method' => $m, 'method_label' => $m ? (self::METHOD_SHORT[$m] ?? $s['win_method_label']) : null,
             'clock' => $s['clock'] ?? null, 'osaekomi' => $s['osaekomi'] ?? null,
             'model' => isset($s['model']) ? ['osaekomi' => $s['model']['osaekomi'], 'use_yuko' => $s['model']['use_yuko'], 'shido_max' => $s['model']['shido_for_hansoku']] : null,
+            'bouts_before' => in_array($s['status'], ['scheduled', 'in_progress', 'finished'], true) ? $this->boutsBefore((int) $s['id']) : null,
         ];
+    }
+
+    /** @var array<int, int> nombre de combats à disputer avant chaque combat restant, par identifiant */
+    private array $before = [];
+    /** @var array<int, bool> compétitions dont la file d'attente est déjà calculée */
+    private array $queued = [];
+
+    /**
+     * Combien de combats passent avant celui-ci sur son tapis : le combat présent sur le tapis (en cours ou en attente
+     * de validation) compte, puis les combats restants dans l'ordre du tapis. 0 = c'est le combat du tapis.
+     */
+    private function boutsBefore(int $boutId): ?int
+    {
+        if (!array_key_exists($boutId, $this->before)) {
+            $cid = (int) Database::value('SELECT competition_id FROM bouts WHERE id = ?', [$boutId]);
+            if ($cid && !isset($this->queued[$cid])) {
+                $this->queued[$cid] = true;
+                $rows = Database::all(
+                    "SELECT b.id, b.tatami_id, b.status, t.current_bout_id FROM bouts b JOIN tatamis t ON t.id = b.tatami_id
+                     WHERE b.competition_id = ? AND b.status IN ('scheduled','in_progress','finished')
+                     ORDER BY b.tatami_id, b.order_on_tatami, b.id",
+                    [$cid]
+                );
+                $mats = [];
+                foreach ($rows as $row) {
+                    $mats[(int) $row['tatami_id']][] = $row;
+                }
+                foreach ($mats as $list) {
+                    // Le combat présent sur le tapis passe en tête, même s'il a été appelé hors de l'ordre prévu.
+                    usort($list, fn ($x, $y) => ((int) $y['id'] === (int) $y['current_bout_id'] || $y['status'] !== 'scheduled')
+                        <=> ((int) $x['id'] === (int) $x['current_bout_id'] || $x['status'] !== 'scheduled'));
+                    foreach ($list as $i => $row) {
+                        $this->before[(int) $row['id']] = $i;
+                    }
+                }
+            }
+        }
+        return $this->before[$boutId] ?? null;
     }
 
     public function boutDetail(Request $r): Response
@@ -265,13 +304,8 @@ final class MobileController extends Controller
             }
             $next = Database::value("SELECT id FROM bouts WHERE (a_registration_id = ? OR b_registration_id = ?) AND status IN ('scheduled','in_progress','finished') ORDER BY order_on_tatami LIMIT 1", [$rid, $rid]);
             $last = Database::value("SELECT id FROM bouts WHERE (a_registration_id = ? OR b_registration_id = ?) AND status = 'validated' ORDER BY validated_at DESC, id DESC LIMIT 1", [$rid, $rid]);
-            $before = 0;
-            if ($next) {
-                $n = Database::one('SELECT tatami_id, order_on_tatami FROM bouts WHERE id = ?', [$next]);
-                $before = (int) Database::value("SELECT COUNT(*) FROM bouts WHERE tatami_id = ? AND status = 'scheduled' AND order_on_tatami < ?", [$n['tatami_id'], $n['order_on_tatami']]);
-            }
             $out[] = ['registration_id' => $rid, 'competition' => $comp['slug'],
-                'next' => $next ? $this->bout(BoutService::state((int) $next, false)) + ['bouts_before' => $before] : null,
+                'next' => $next ? $this->bout(BoutService::state((int) $next, false)) : null,
                 'last' => $last ? $this->bout(BoutService::state((int) $last, false)) : null];
         }
         return $this->out(['follow' => $out, 'server_now_ms' => BoutService::nowMs()], 'no-store');

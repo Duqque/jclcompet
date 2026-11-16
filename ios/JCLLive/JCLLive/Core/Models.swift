@@ -168,6 +168,11 @@ struct Bout: Codable, Identifiable, Hashable {
     let boutsBefore: Int?
 
     var isLive: Bool { status == "in_progress" }
+    /// « Prochain combat », « Dans 3 combats » : place dans la file du tapis (calculée par le serveur).
+    var queueLabel: String? {
+        guard status == "scheduled", let n = boutsBefore else { return nil }
+        return n == 0 ? "Prochain combat" : "Dans \(n) combat\(n > 1 ? "s" : "")"
+    }
     var isDone: Bool { ["finished", "validated", "forfeit"].contains(status) || winner != nil }
     var categoryLine: String { [category, weight?.text.isEmpty == false ? "\(weight!.text) kg" : nil].compactMap { $0 }.joined(separator: " · ") }
     func involves(_ ids: Set<Int>) -> Bool { [a?.registrationId, b?.registrationId].contains { $0.map(ids.contains) ?? false } }

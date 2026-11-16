@@ -113,16 +113,13 @@ struct AthletesTab: View {
     let slug: String
     @State private var athletes: [Athlete] = []
     @State private var query = ""
-    @State private var club = ""
+    @State private var filter = AthleteFilter()
     @State private var error: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             SearchField(text: $query, prompt: "Nom, prénom, club, catégorie")
-            let clubs = Array(Set(athletes.compactMap { $0.clubShort ?? $0.club })).sorted()
-            if clubs.count > 1 {
-                PillTabs(items: [("", "Tous les clubs")] + clubs.map { ($0, $0) }, selection: $club).padding(.horizontal, -16)
-            }
+            AthleteFilterBar(athletes: athletes, filter: $filter).padding(.horizontal, -16)
             if let error, athletes.isEmpty { ErrorCard(message: error) }
             Text("\(shown.count) judoka\(shown.count > 1 ? "s" : "")").font(.caption).foregroundStyle(Theme.muted)
             LazyVStack(spacing: 8) {
@@ -140,7 +137,7 @@ struct AthletesTab: View {
     private var shown: [Athlete] {
         let q = query.folded
         return athletes.filter { a in
-            (club.isEmpty || (a.clubShort ?? a.club) == club)
+            filter.matches(a)
                 && (q.isEmpty || "\(a.firstName) \(a.lastName) \(a.club ?? "") \(a.clubShort ?? "") \(a.categoryLine)".folded.contains(q))
         }
     }

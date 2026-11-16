@@ -7,17 +7,21 @@ struct SearchView: View {
     @State private var athletes: [Athlete] = []
     @State private var comps: [String: Competition] = [:]
     @State private var loading = true
+    @State private var filter = AthleteFilter()
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    SearchField(text: $query, prompt: "Judoka, club, catégorie").padding(.bottom, 6)
+                    SearchField(text: $query, prompt: "Judoka, club, catégorie")
+                    AthleteFilterBar(athletes: athletes, filter: $filter).padding(.horizontal, -16).padding(.bottom, 4)
                     if loading { ProgressView().frame(maxWidth: .infinity).padding(.top, 40) }
-                    else if query.folded.count < 2 {
-                        EmptyState(icon: "magnifyingglass", title: "Trouvez un judoka", message: "Tapez au moins deux lettres : nom, prénom ou club. \(athletes.count) judokas inscrits.")
+                    else if query.folded.count < 2 && !filter.isActive {
+                        EmptyState(icon: "magnifyingglass", title: "Trouvez un judoka", message: "Tapez au moins deux lettres (nom, prénom ou club) ou choisissez un filtre. \(athletes.count) judokas inscrits.")
                     } else if results.isEmpty {
-                        EmptyState(icon: "person.fill.questionmark", title: "Aucun résultat pour « \(query) »")
+                        EmptyState(icon: "person.fill.questionmark", title: query.folded.count >= 2 ? "Aucun résultat pour « \(query) »" : "Aucun judoka pour ces filtres")
+                    } else {
+                        Text("\(results.count) judoka\(results.count > 1 ? "s" : "")").font(.caption).foregroundStyle(Theme.muted)
                     }
                     ForEach(groups, id: \.0) { slug, list in
                         Text(comps[slug]?.name ?? slug).font(.caption.weight(.heavy)).foregroundStyle(Theme.muted).padding(.top, 8)
@@ -39,12 +43,14 @@ struct SearchView: View {
 
     private var results: [Athlete] {
         let q = query.folded
-        guard q.count >= 2 else { return [] }
-        return athletes.filter { "\($0.firstName) \($0.lastName) \($0.lastName) \($0.firstName) \($0.club ?? "") \($0.clubShort ?? "") \($0.categoryLine)".folded.contains(q) }
+        guard q.count >= 2 || filter.isActive else { return [] }
+        return athletes.filter { a in
+            filter.matches(a) && (q.count < 2 || "\(a.firstName) \(a.lastName) \(a.lastName) \(a.firstName) \(a.club ?? "") \(a.clubShort ?? "") \(a.categoryLine)".folded.contains(q))
+        }
     }
 
     private var groups: [(String, [Athlete])] {
-        Dictionary(grouping: results.prefix(150), by: \.competition).sorted { (comps[$0.key]?.live ?? false) && !(comps[$1.key]?.live ?? false) }
+        Dictionary(grouping: results.prefix(300), by: \.competition).sorted { (comps[$0.key]?.live ?? false) && !(comps[$1.key]?.live ?? false) }
     }
 
     private func load() async {
@@ -149,8 +155,7 @@ struct FavoriteCard: View {
     }
 
     private func nextLabel(_ n: Bout) -> String {
-        guard let b = n.boutsBefore else { return "Prochain combat" }
-        return b == 0 ? "C'est le prochain combat" : "Dans \(b) combat\(b > 1 ? "s" : "")"
+        n.queueLabel ?? "Prochain combat"
     }
     private func opponent(_ n: Bout) -> String? { (n.a?.registrationId == athlete.registrationId ? n.b : n.a)?.fullName }
     private func won(_ l: Bout) -> Bool { (l.winner == "a" ? l.a : l.winner == "b" ? l.b : nil)?.registrationId == athlete.registrationId }

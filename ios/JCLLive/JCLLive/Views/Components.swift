@@ -76,7 +76,17 @@ struct StatusChip: View {
         switch bout.status {
         case "in_progress": LiveBadge(label: "EN COURS")
         case "validated", "finished", "forfeit": Chip(text: bout.methodLabel ?? bout.statusLabel, color: Theme.green, fill: Theme.greenSoft)
-        default: Chip(text: bout.statusLabel)
+        default:
+            if let q = bout.queueLabel {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill").font(.system(size: 10, weight: .bold))
+                    Text(q).font(.system(size: 12, weight: .bold))
+                }
+                .foregroundStyle(Theme.red)
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .background(Theme.redSoft, in: Capsule())
+                .accessibilityLabel(q)
+            } else { Chip(text: bout.statusLabel) }
         }
     }
 }
