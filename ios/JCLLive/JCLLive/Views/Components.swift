@@ -43,19 +43,22 @@ struct LiveBadge: View {
     }
 }
 
-/// Dessin de ceinture : le premier appelé porte la ceinture rouge, le second la blanche.
+/// Dessin de ceinture : par défaut le premier appelé porte la ceinture rouge, le second la blanche.
+/// La couleur suit le réglage « Premier appelé » (rouge par défaut).
 struct BeltMark: View {
     let side: String
     var width: CGFloat = 18
+    @AppStorage(SideColor.key) private var firstColor = SideColor.defaultValue
     var body: some View {
+        let red = SideColor.isRed(side, firstColor: firstColor)
         ZStack {
-            Capsule().fill(side == "a" ? Theme.red : Color.white)
-                .overlay(Capsule().stroke(side == "a" ? Theme.redDeep : Color(hex: 0xD4D4D8), lineWidth: 1))
+            Capsule().fill(red ? Theme.red : Color.white)
+                .overlay(Capsule().stroke(red ? Theme.redDeep : Color(hex: 0xD4D4D8), lineWidth: 1))
                 .frame(width: width, height: width * 0.36)
-            RoundedRectangle(cornerRadius: 1.5).fill(side == "a" ? Theme.redDeep : Color(hex: 0xD4D4D8))
+            RoundedRectangle(cornerRadius: 1.5).fill(red ? Theme.redDeep : Color(hex: 0xD4D4D8))
                 .frame(width: width * 0.22, height: width * 0.5)
         }
-        .accessibilityLabel(side == "a" ? "Ceinture rouge" : "Ceinture blanche")
+        .accessibilityLabel(red ? "Ceinture rouge" : "Ceinture blanche")
     }
 }
 
@@ -147,7 +150,8 @@ struct FighterLine: View {
             ClubLogo(path: fighter?.clubLogo, name: fighter?.club, size: 30)
             VStack(alignment: .leading, spacing: 1) {
                 if let f = fighter {
-                    Text("\(f.firstName) \(Text(f.lastName).fontWeight(.bold))").font(.system(size: 15)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Text("\(f.firstName) \(Text(f.lastName).fontWeight(.bold))").font(.system(size: 15)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(f.clubShort ?? f.club ?? "").font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
                 } else {
                     Text("À désigner").font(.subheadline).foregroundStyle(Theme.faint)
@@ -227,20 +231,26 @@ struct PillTabs<T: Hashable>: View {
     let items: [(T, String)]
     @Binding var selection: T
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(items, id: \.0) { value, label in
-                    Button { withAnimation(.snappy) { selection = value } } label: {
-                        Text(label).font(.system(size: 14, weight: .semibold))
-                            .padding(.horizontal, 14).padding(.vertical, 8)
-                            .foregroundStyle(selection == value ? Theme.onInk : Theme.ink)
-                            .background(selection == value ? Theme.ink : Theme.surface, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.line, lineWidth: selection == value ? 0 : 1))
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(items, id: \.0) { value, label in
+                        Button { withAnimation(.snappy) { selection = value } } label: {
+                            Text(label).font(.system(size: 14, weight: .semibold))
+                                .padding(.horizontal, 14).padding(.vertical, 8)
+                                .foregroundStyle(selection == value ? Theme.onInk : Theme.ink)
+                                .background(selection == value ? Theme.ink : Theme.surface, in: Capsule())
+                                .overlay(Capsule().stroke(Theme.line, lineWidth: selection == value ? 0 : 1))
+                        }
+                        .buttonStyle(.plain)
+                        .id(value)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
+            // L'onglet choisi reste toujours visible (ex. tour du tableau ouvert en glissant)
+            .onAppear { proxy.scrollTo(selection, anchor: .center) }
+            .onChange(of: selection) { _, v in withAnimation(.snappy) { proxy.scrollTo(v, anchor: .center) } }
         }
     }
 }
@@ -284,6 +294,7 @@ struct AthleteRow: View {
             ClubLogo(path: athlete.clubLogo, name: athlete.club, size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(athlete.firstName) \(Text(athlete.lastName).fontWeight(.bold))").font(.system(size: 15)).foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text([athlete.clubShort ?? athlete.club, athlete.categoryLine].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
                     .font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
             }

@@ -45,6 +45,8 @@ $router->get('/api/v1/competitions/{slug}/direct', [MobileController::class, 'li
 $router->get('/api/v1/competitions/{slug}/etat', [MobileController::class, 'stamp']);
 $router->get('/api/v1/competitions/{slug}/combats', [MobileController::class, 'bouts']);
 $router->get('/api/v1/competitions/{slug}/poules', [MobileController::class, 'pools']);
+$router->get('/api/v1/competitions/{slug}/tableaux', [MobileController::class, 'brackets']);
+$router->get('/api/v1/competitions/{slug}/tableaux/{id:\d+}', [MobileController::class, 'bracket']);
 $router->get('/api/v1/competitions/{slug}/judokas', [MobileController::class, 'athletes']);
 $router->get('/api/v1/competitions/{slug}/resultats', [MobileController::class, 'results']);
 $router->get('/api/v1/combats/{id:\d+}', [MobileController::class, 'boutDetail']);

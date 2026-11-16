@@ -8,6 +8,11 @@
 use App\Services\BoutService;
 use App\Services\CategoryService;
 
+if (!empty($p['bracket'])) {
+    include __DIR__ . '/bracket.php'; // tableau à double repêchage ou tableau final croisé
+    return;
+}
+
 $n = count($p['athletes']);
 $short = ['ippon' => 'Ippon', 'wazaari' => 'Waza-ari', 'yuko' => 'Yuko', 'decision' => 'Décision', 'hansoku_make' => 'Hansoku', 'fusen_gachi' => 'Forfait', 'kiken_gachi' => 'Abandon', 'shido' => 'Shido'];
 $q = mb_strtolower(trim($q ?? ''));

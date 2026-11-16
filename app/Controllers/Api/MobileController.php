@@ -10,6 +10,7 @@ use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Services\BoutService;
+use App\Services\BracketService;
 use App\Services\CategoryService;
 use App\Services\ClubColorService;
 use App\Services\CompetitionService;
@@ -135,7 +136,8 @@ final class MobileController extends Controller
         return [
             'id' => $s['id'], 'status' => $s['status'], 'status_label' => $s['status_label'], 'phase' => $s['phase'],
             'mat' => $s['tatami_number'], 'order_on_mat' => $s['order_on_tatami'],
-            'pool_number' => (int) preg_replace('/^.*Poule /u', '', (string) $s['pool_label']), 'pool_id' => $s['pool_id'],
+            'pool_number' => $s['stage_label'] ? null : (int) preg_replace('/^.*Poule /u', '', (string) $s['pool_label']), 'pool_id' => $s['pool_id'],
+            'stage' => $s['stage_label'],
             'pool_position' => $s['pool_position'], 'pool_bouts' => $s['pool_bouts'],
             'category' => $s['category'], 'weight' => $s['weight_label'],
             'a' => $fighter($s['a']), 'b' => $fighter($s['b']),
@@ -235,6 +237,9 @@ final class MobileController extends Controller
         $colors = $this->clubColors();
         $out = [];
         foreach ($sheets as $p) {
+            if (($p['kind'] ?? 'pool') !== 'pool') {
+                continue; // tableaux : onglet Tableau (/tableaux)
+            }
             $athletes = [];
             foreach ($p['athletes'] as $i => $a) {
                 $st = $p['standing'][(int) $a['registration_id']] ?? null;
@@ -268,6 +273,120 @@ final class MobileController extends Controller
             ];
         }
         return $this->out(['pools' => $out], 'no-store');
+    }
+
+    // ------------------------------------------------------------------ Tableaux (onglet Tableau de l'application)
+
+    /** Catégories de la compétition : tableau à double repêchage, 2 poules + tableau final, poule(s). */
+    public function brackets(Request $r): Response
+    {
+        $c = $this->requirePools($r);
+        $g = PoolService::activeGeneration((int) $c['id']);
+        $cats = $g ? BracketService::categories((int) $g['id']) : [];
+        return $this->out(['competition' => $this->summary($c), 'categories' => array_map(fn ($k) => [
+            'id' => $k['main_pool_id'], 'label' => $k['label'], 'kind' => $k['kind'], 'count' => $k['count'], 'mat' => $k['tatami'], 'finished' => $k['finished'],
+        ], $cats)], 'no-store');
+    }
+
+    /** Une catégorie : tours du tableau (ou poules), combats en direct, classement complet de la catégorie. */
+    public function bracket(Request $r): Response
+    {
+        $c = $this->requirePools($r);
+        $g = PoolService::activeGeneration((int) $c['id']);
+        $pool = $g ? Database::one('SELECT * FROM pools WHERE id = ? AND generation_id = ?', [(int) $r->param('id'), $g['id']]) : null;
+        if (!$pool) {
+            throw new HttpException(404, 'Catégorie introuvable.');
+        }
+        $siblings = Database::all("SELECT * FROM pools WHERE generation_id = ? AND group_key = ? AND kind = 'pool' ORDER BY number", [$g['id'], $pool['group_key']]);
+        $colors = $this->clubColors();
+        $people = [];
+        $athlete = function (int $reg) use (&$people) {
+            $people[$reg] ??= BracketService::people([$reg])[$reg] ?? null;
+            return $people[$reg];
+        };
+        $sections = [];
+        $rankings = [];
+        // Poules de la catégorie (poule seule, poules morphologiques, ou 2 poules avant le tableau final)
+        foreach ($pool['kind'] === 'bracket' ? [] : $siblings as $sp) {
+            $matches = [];
+            foreach (Database::all("SELECT id FROM bouts WHERE pool_id = ? AND status <> 'cancelled' ORDER BY order_in_pool", [$sp['id']]) as $i => $b) {
+                $st = BoutService::state((int) $b['id'], false);
+                $matches[] = $this->bracketMatch($st, 'Combat ' . ($i + 1), $athlete);
+            }
+            $sections[] = ['key' => 'P' . $sp['id'], 'title' => 'Poule ' . $sp['number'], 'note' => null, 'matches' => $matches];
+            $rows = [];
+            foreach (Database::all('SELECT registration_id, final_rank, computed_rank FROM pool_athletes WHERE pool_id = ? ORDER BY COALESCE(final_rank, 99), seed', [$sp['id']]) as $pa) {
+                $rows[] = ['place' => $pa['final_rank'] === null ? null : (int) $pa['final_rank'], 'athlete' => $athlete((int) $pa['registration_id'])];
+            }
+            if ($pool['kind'] === 'pool') {
+                $rankings[] = ['title' => count($siblings) > 1 ? 'Poule ' . $sp['number'] : 'Classement', 'complete' => (int) $sp['ranking_complete'] === 1, 'rows' => $rows];
+            }
+        }
+        $complete = (bool) array_product(array_map(fn ($sp) => (int) $sp['ranking_complete'], $siblings ?: [['ranking_complete' => 1]]));
+        if ($pool['kind'] !== 'pool') {
+            $view = BracketService::view($pool);
+            $complete = $view['complete'];
+            foreach ($view['sections'] as $sec) {
+                $matches = [];
+                foreach ($sec['nodes'] as $n) {
+                    if (!$n['fight'] && $n['a']['type'] !== 'pending' && $n['b']['type'] !== 'pending' && $sec['key'] !== 'F') {
+                        continue; // tour offert
+                    }
+                    $matches[] = $this->bracketNode($n, $colors);
+                }
+                $sections[] = ['key' => $sec['key'], 'title' => $sec['title'], 'note' => $sec['note'] ?? null, 'matches' => $matches];
+            }
+            $rankings = [['title' => 'Classement de la catégorie', 'complete' => $view['complete'], 'rows' => array_map(fn ($x) => ['place' => $x['place'], 'athlete' => $x['athlete'] ? $x['athlete'] + ['club_color' => $x['athlete']['club_color'] ?? null] : null], $view['ranking'])]];
+        }
+        $tatami = $pool['tatami_id'] ? (int) Database::value('SELECT number FROM tatamis WHERE id = ?', [$pool['tatami_id']]) : null;
+        $label = (string) preg_replace('/ · (Poule \d+|Tableau final|Tableau)$/u', '', $pool['label']);
+        return $this->out([
+            'id' => (int) $pool['id'], 'label' => $label, 'kind' => $pool['kind'] === 'bracket' ? 'bracket' : ($pool['kind'] === 'final_block' ? 'pools_final' : (count($siblings) > 1 ? 'pools' : 'pool')),
+            'mat' => $tatami, 'complete' => $complete, 'size' => $pool['bracket_size'] === null ? null : (int) $pool['bracket_size'],
+            'sections' => $sections, 'rankings' => $rankings, 'server_now_ms' => BoutService::nowMs(),
+        ], 'no-store');
+    }
+
+    private function bracketSide(array $x, array $colors): array
+    {
+        if ($x['type'] === 'athlete' && $x['athlete']) {
+            $a = $x['athlete'];
+            return ['type' => 'athlete', 'text' => null, 'seed' => $x['seed'] ?? null, 'athlete' => $a];
+        }
+        return ['type' => $x['type'] === 'bye' ? 'bye' : 'pending', 'text' => $x['text'] ?? null, 'seed' => null, 'athlete' => null];
+    }
+
+    private function bracketNode(array $n, array $colors): array
+    {
+        $b = $n['bout'];
+        $score = function (string $side) use ($b, $n) {
+            if (!$b || !in_array($b['status'], ['validated', 'finished', 'in_progress'], true)) {
+                return null;
+            }
+            $real = $b['flip'] ? ($side === 'a' ? 'b' : 'a') : $side;
+            $sc = $b['score'][$real];
+            return $sc['ippon'] . $sc['wazaari'] . $sc['yuko'] . ($sc['shido'] > 0 ? '-' . $sc['shido'] : '');
+        };
+        return [
+            'key' => $n['key'], 'label' => $n['label'], 'stage' => $n['stage'],
+            'a' => $this->bracketSide($n['a'], $colors) + ['score' => $score('a')],
+            'b' => $this->bracketSide($n['b'], $colors) + ['score' => $score('b')],
+            'winner' => $n['winner'],
+            'bout' => $b ? ['id' => $b['id'], 'status' => $b['status'], 'mat' => $b['tatami'], 'method' => $b['method'] ? (self::METHOD_SHORT[$b['method']] ?? null) : null,
+                'bouts_before' => in_array($b['status'], ['scheduled', 'in_progress', 'finished'], true) ? $this->boutsBefore((int) $b['id']) : null] : null,
+        ];
+    }
+
+    private function bracketMatch(array $s, string $label, callable $athlete): array
+    {
+        $side = fn (string $x) => ['type' => 'athlete', 'text' => null, 'seed' => null, 'athlete' => $athlete((int) $s[$x]['registration_id']),
+            'score' => in_array($s['status'], ['validated', 'finished', 'in_progress'], true) ? $s[$x]['ippon'] . $s[$x]['wazaari'] . $s[$x]['yuko'] . ($s[$x]['shido'] > 0 ? '-' . $s[$x]['shido'] : '') : null];
+        return [
+            'key' => 'b' . $s['id'], 'label' => $label, 'stage' => 'pool', 'a' => $side('a'), 'b' => $side('b'),
+            'winner' => $s['status'] === 'validated' ? $s['winner_side'] : null,
+            'bout' => ['id' => $s['id'], 'status' => $s['status'], 'mat' => $s['tatami_number'], 'method' => $s['win_method'] ? (self::METHOD_SHORT[$s['win_method']] ?? null) : null,
+                'bouts_before' => in_array($s['status'], ['scheduled', 'in_progress', 'finished'], true) ? $this->boutsBefore((int) $s['id']) : null],
+        ];
     }
 
     // ------------------------------------------------------------------ Judokas
@@ -417,7 +536,9 @@ final class MobileController extends Controller
             "SELECT r.id, a.first_name, a.last_name, a.sex, a.grade, a.photo_document_id, r.club_id, r.club_exception_label, r.attendance_status,
                     c.name AS club_name, c.short_name AS club_short, c.logo_path AS club_logo,
                     ac.name AS age_name, ac.name_m, ac.name_f, ac.sort_order AS age_sort, wc.label AS weight_label,
-                    p.number AS pool_number, t.number AS mat, ar.place, ar.medal
+                    p.number AS pool_number, p.id AS pool_id, p.kind AS pool_kind,
+                    COALESCE((SELECT x.id FROM pools x WHERE x.generation_id = p.generation_id AND x.group_key = p.group_key AND x.kind <> 'pool' LIMIT 1), p.id) AS category_pool_id,
+                    t.number AS mat, ar.place, ar.medal
              FROM registrations r JOIN athletes a ON a.id = r.athlete_id LEFT JOIN clubs c ON c.id = r.club_id
              JOIN age_categories ac ON ac.id = r.age_category_id LEFT JOIN weight_categories wc ON wc.id = r.weight_category_id
              LEFT JOIN pool_athletes pa ON pa.registration_id = r.id
@@ -445,6 +566,8 @@ final class MobileController extends Controller
                 'club_logo' => $a['club_logo'] ? url('/' . ltrim($a['club_logo'], '/')) : null, 'club_color' => $colors[(int) $a['club_id']] ?? ClubColorService::FALLBACK,
                 'photo' => $photos && $a['photo_document_id'] && $a['place'] !== null ? url('/classement/' . $c['slug'] . '/photo/' . $a['id']) : null,
                 'pool_number' => $a['pool_number'] === null ? null : (int) $a['pool_number'], 'mat' => $a['mat'] === null ? null : (int) $a['mat'],
+                'pool_id' => $a['pool_id'] === null ? null : (int) $a['pool_id'], 'pool_kind' => $a['pool_kind'],
+                'category_pool_id' => $a['category_pool_id'] === null ? null : (int) $a['category_pool_id'],
                 'present' => $a['attendance_status'] === 'present',
                 'place' => $a['place'] === null ? null : (int) $a['place'], 'medal' => $a['medal'],
             ];

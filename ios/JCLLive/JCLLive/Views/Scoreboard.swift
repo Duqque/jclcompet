@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Tableau d'affichage façon TV : ligne rouge (premier appelé) et ligne blanche, chiffres Poppins italique,
+/// Tableau d'affichage façon TV : ligne rouge et ligne blanche (premier appelé en rouge par défaut, réglable), chiffres Poppins italique,
 /// chrono qui tourne en direct (horloge serveur) et barre d'osaekomi avec ses seuils.
 struct Scoreboard: View {
     let bout: Bout
     var large = true
+    @AppStorage(SideColor.key) private var firstColor = SideColor.defaultValue
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,7 +21,7 @@ struct Scoreboard: View {
     private func fighter(_ s: String) -> Fighter? { s == "a" ? bout.a : bout.b }
 
     private func row(_ side: String) -> some View {
-        let red = side == "a"
+        let red = SideColor.isRed(side, firstColor: firstColor)
         let f = fighter(side)
         return VStack(spacing: 0) {
             HStack(spacing: large ? 12 : 10) {
@@ -28,10 +29,11 @@ struct Scoreboard: View {
                 VStack(alignment: .leading, spacing: 1) {
                     if let f {
                         Text(f.firstName).font(.system(size: large ? 14 : 12, weight: .medium)).opacity(0.85).lineLimit(1)
-                        Text(f.lastName).font(.score(large ? 22 : 17, weight: 800)).lineLimit(1).minimumScaleFactor(0.6)
+                        Text(f.lastName).font(.score(large ? 22 : 17, weight: 800)).lineLimit(1).minimumScaleFactor(0.5)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(f.clubShort ?? f.club ?? "").font(.system(size: 11, weight: .medium)).opacity(0.75).lineLimit(1)
                     } else {
-                        Text(red ? "En attente" : " ").font(.headline).opacity(0.7)
+                        Text(side == "a" ? "En attente" : " ").font(.headline).opacity(0.7)
                     }
                 }
                 Spacer(minLength: 4)

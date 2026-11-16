@@ -32,6 +32,7 @@ $steps = [
     <?php if ($canGenerate): ?><?= $post('generate', icon('refresh') . ($g ? 'Mettre à jour les poules' : 'Générer les poules'), 'btn-red', [], $validated ? 'Recomposer les poules ? Les combats non commencés seront recréés (les poules verrouillées sont conservées).' : null) ?><?php endif; ?>
     <?php if ($g): ?><?= $post('distribute', icon('grid') . 'Répartir sur les tapis', $assigned ? 'btn-ghost' : 'btn-red') ?><?php endif; ?>
     <?php if ($g): ?><a class="btn btn-sm btn-ghost" href="?vue=tapis"><?= icon('sliders') ?>Ajuster par glisser-déposer</a><?php endif; ?>
+    <?php if ($g && array_filter($pools, fn ($pp) => ($pp['kind'] ?? 'pool') === 'bracket' && (int) $pp['bracket_size'] >= 2)): ?><a class="btn btn-sm btn-red" href="<?= e(url('/admin/competitions/' . $c['id'] . '/tirage')) ?>"><?= icon('flag') ?>Lancer le tirage au sort</a><?php endif; ?>
     <?php if ($draft): ?>
       <form method="post" action="<?= e($u) ?>" class="btn-group" data-confirm="Valider la composition et la répartition ? Les combats seront créés avec la configuration de chaque catégorie et apparaîtront chez les commissaires.">
         <?= csrf_field() ?><input type="hidden" name="op" value="validate">

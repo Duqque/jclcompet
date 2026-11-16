@@ -521,6 +521,7 @@ final class BoutService
             if (!in_array($winner, ['a', 'b'], true) || !isset(self::METHODS[$method])) {
                 throw new DomainError('Vainqueur et type de victoire obligatoires.');
             }
+            BracketService::assertCorrectable($b, $winner);
             $changes = [];
             foreach (['a', 'b'] as $s) {
                 foreach (['ippon' => 1, 'wazaari' => 9, 'yuko' => 99, 'shido' => 9, 'hansoku' => 1] as $k => $max) {
@@ -665,7 +666,9 @@ final class BoutService
             'tatami_id' => $b['tatami_id'] === null ? null : (int) $b['tatami_id'],
             'tatami_number' => $b['tatami_number'] === null ? null : (int) $b['tatami_number'],
             'pool_id' => (int) $b['pool_id'],
-            'pool_label' => $b['pool_label'],
+            // Combat de tableau : « Minimes Garçons -46 kg · Quart de finale 2 » (commissaire, TV, administration)
+            'pool_label' => $b['stage_label'] ? preg_replace('/ · (Tableau final|Tableau)$/u', '', (string) $b['pool_label']) . ' · ' . $b['stage_label'] : $b['pool_label'],
+            'stage_label' => $b['stage_label'],
             'category' => $category,
             'weight_label' => $b['weight_label'],
             'order_on_tatami' => (int) $b['order_on_tatami'],

@@ -49,7 +49,7 @@ final class CategoryController extends AdminController
                     $d = Validator::validate($r->post, [
                         'code' => 'required|maxlen:20', 'name' => 'required|maxlen:80', 'name_m' => 'nullable|maxlen:80', 'name_f' => 'nullable|maxlen:80',
                         'birth_year_min' => 'required|int|min:1900|max:2100', 'birth_year_max' => 'required|int|min:1900|max:2100',
-                        'format' => 'required|in:pools,animation', 'upgrade_to_id' => 'nullable|int', 'max_participants' => 'nullable|int|min:1', 'sort_order' => 'nullable|int',
+                        'format' => 'required|in:pools,brackets,animation', 'upgrade_to_id' => 'nullable|int', 'max_participants' => 'nullable|int|min:1', 'sort_order' => 'nullable|int',
                     ], ['code' => 'Code', 'name' => 'Nom', 'birth_year_min' => 'Année min.', 'birth_year_max' => 'Année max.']);
                     if ($d['birth_year_min'] > $d['birth_year_max']) {
                         throw new DomainError("L'année minimale doit être inférieure ou égale à l'année maximale.");

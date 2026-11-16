@@ -50,7 +50,7 @@ final class CompetitionController extends AdminController
         $data = Validator::validate($r->post, self::RULES, self::LABELS);
         $data['pool_sizes'] = implode(',', (array) ($r->post['pool_sizes'] ?? ['3', '4', '5']));
         $codes = array_values(array_intersect((array) ($r->post['age_templates'] ?? []), array_column(CategoryService::TEMPLATES, 'code')));
-        $id = CompetitionService::create($data, $codes, $r->bool('with_weights'));
+        $id = CompetitionService::create($data, $codes, $r->bool('with_weights'), $r->str('formula') ?: 'morpho');
         $this->handleUploads($r, $id);
         return $this->redirect('/admin/competitions/' . $id, 'Compétition créée. Vérifiez les catégories, les durées de combat et les paramètres sportifs.');
     }

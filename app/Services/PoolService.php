@@ -37,13 +37,13 @@ final class PoolService
         $rows = Database::all(
             "SELECT r.id, r.club_id, r.age_category_id, r.weight_category_id, r.declared_weight_kg, r.measured_weight_kg,
                     a.sex, a.last_name, a.first_name, ac.name AS age_name, ac.name_m, ac.name_f, ac.sort_order AS age_sort,
-                    wc.label AS weight_label, wc.sort_order AS weight_sort, cc.merge_group
+                    wc.label AS weight_label, wc.sort_order AS weight_sort, cc.merge_group, ac.format AS age_format
              FROM registrations r
              JOIN athletes a ON a.id = r.athlete_id
              JOIN age_categories ac ON ac.id = r.age_category_id
              LEFT JOIN weight_categories wc ON wc.id = r.weight_category_id
              LEFT JOIN competition_categories cc ON cc.competition_id = r.competition_id AND cc.age_category_id = r.age_category_id AND cc.sex = a.sex
-             WHERE r.competition_id = ? AND r.status = 'confirmed' AND r.attendance_status = 'present' AND ac.format = 'pools'
+             WHERE r.competition_id = ? AND r.status = 'confirmed' AND r.attendance_status = 'present' AND ac.format IN ('pools','brackets')
              ORDER BY ac.sort_order, a.sex, wc.sort_order, r.id",
             [$competitionId]
         );
@@ -54,8 +54,15 @@ final class PoolService
         return $rows;
     }
 
+    /** Formule « tableaux officiels » : regroupement toujours par catégorie de poids officielle. */
+    public static function effectiveMode(array $r, string $mode): string
+    {
+        return ($r['age_format'] ?? 'pools') === 'brackets' ? 'weight_category' : $mode;
+    }
+
     public static function groupKey(array $r, string $mode): string
     {
+        $mode = self::effectiveMode($r, $mode);
         $base = $r['merge_group'] ? 'm:' . $r['merge_group'] : 'a' . $r['age_category_id'];
         $key = $base . '|' . $r['sex'];
         if ($mode === 'weight_category') {
@@ -66,6 +73,7 @@ final class PoolService
 
     public static function groupLabel(array $r, string $mode): string
     {
+        $mode = self::effectiveMode($r, $mode);
         $name = CategoryService::label(['name' => $r['age_name'], 'name_m' => $r['name_m'], 'name_f' => $r['name_f']], $r['sex']);
         if ($r['merge_group']) {
             $name = 'Groupe ' . $r['merge_group'] . ' ' . sex_label($r['sex'], true);
@@ -97,7 +105,8 @@ final class PoolService
                     'label' => self::groupLabel($r, $mode),
                     'age_category_id' => (int) $r['age_category_id'],
                     'sex' => $r['sex'],
-                    'weight_category_id' => $mode === 'weight_category' ? ($r['weight_category_id'] === null ? null : (int) $r['weight_category_id']) : null,
+                    'weight_category_id' => self::effectiveMode($r, $mode) === 'weight_category' ? ($r['weight_category_id'] === null ? null : (int) $r['weight_category_id']) : null,
+                    'format' => $r['age_format'] ?? 'pools',
                     'sort' => [(int) $r['age_sort'], $r['sex'], (int) ($r['weight_sort'] ?? 0)],
                     'athletes' => [],
                 ];
@@ -185,6 +194,9 @@ final class PoolService
     /** Compose les poules d'un groupe et les enregistre. $number est incrémenté. */
     private static function generateGroup(array $competition, int $genId, array $group, int &$number, int $seed): array
     {
+        if (($group['format'] ?? 'pools') === 'brackets') {
+            return BracketService::generateGroup($competition, $genId, $group, $number, $seed);
+        }
         $cid = (int) $competition['id'];
         $overrides = (array) SettingsService::get($cid, 'pool_group_overrides');
         $decision = $overrides[$group['key']] ?? null;
@@ -259,8 +271,11 @@ final class PoolService
         }
         $n = (int) Database::value('SELECT COUNT(*) FROM pool_athletes WHERE pool_id = ?', [$poolId]);
         $bouts = (int) Database::value("SELECT COUNT(*) FROM bouts WHERE pool_id = ? AND status <> 'cancelled'", [$poolId]);
-        if ($bouts === 0) {
-            $bouts = PoolGenerator::boutCount($n);
+        if ($pool['kind'] === 'final_block') {
+            $n = (int) Database::value("SELECT COUNT(*) FROM pool_athletes pa JOIN pools p ON p.id = pa.pool_id WHERE p.generation_id = ? AND p.group_key = ? AND p.kind = 'pool'", [$pool['generation_id'], $pool['group_key']]);
+        }
+        if ($bouts === 0 || $pool['kind'] !== 'pool') {
+            $bouts = max($bouts, BracketService::estimatedBouts($pool, $n));
             $rule = DurationRuleService::resolve((int) $pool['competition_id'], (int) $pool['age_category_id'], $pool['sex']);
             $duration = (int) ($rule['duration_seconds'] ?? 180);
         } else {
@@ -392,6 +407,12 @@ final class PoolService
                     $pool['cells'][$sb][$sa] = $b + ['side' => 'b'];
                 }
             }
+            if (($pool['kind'] ?? 'pool') !== 'pool') {
+                $pool['bracket'] = BracketService::view($pool);
+                $pool['complete'] = $pool['bracket']['complete'];
+                $pool['standing'] = [];
+                continue;
+            }
             $standing = RankingService::computePool((int) $pool['id']);
             $pool['complete'] = $standing['complete'];
             $pool['standing'] = array_column($standing['rows'], null, 'registration_id');
@@ -437,6 +458,9 @@ final class PoolService
     private static function assertEditable(array $pool, bool $allowLocked = false): void
     {
         CompetitionService::assertWritable((int) $pool['competition_id']);
+        if (($pool['kind'] ?? 'pool') !== 'pool') {
+            throw new DomainError("« {$pool['label']} » est un tableau : choisissez les têtes de série puis « Refaire le tirage », ou régénérez la catégorie.");
+        }
         $g = self::generation((int) $pool['generation_id']);
         if ($g['status'] === 'cancelled') {
             throw new DomainError('Cette génération a été annulée.');
@@ -657,11 +681,13 @@ final class PoolService
         $cid = (int) $g['competition_id'];
         CompetitionService::assertWritable($cid);
         $tatamis = array_map('intval', array_column(CompetitionService::tatamis($cid), 'id'));
-        $pools = Database::all(
-            'SELECT p.id, p.estimated_seconds, p.tatami_id, p.is_locked, ac.sort_order, p.sex, p.weight_min_kg, p.number
+        $all = Database::all(
+            'SELECT p.id, p.estimated_seconds, p.tatami_id, p.is_locked, ac.sort_order, p.sex, p.weight_min_kg, p.number, p.kind, p.group_key
              FROM pools p JOIN age_categories ac ON ac.id = p.age_category_id WHERE p.generation_id = ?',
             [$generationId]
         );
+        $pools = array_values(array_filter($all, fn ($p) => $p['kind'] !== 'final_block'));
+        $blocks = array_values(array_filter($all, fn ($p) => $p['kind'] === 'final_block'));
         $started = [];
         foreach ($pools as $p) {
             if (self::hasStartedBouts((int) $p['id'])) {
@@ -678,6 +704,19 @@ final class PoolService
         $sortKey = [];
         foreach ($pools as $p) {
             $sortKey[(int) $p['id']] = [(int) $p['sort_order'], $p['sex'], (float) ($p['weight_min_kg'] ?? 0), (int) $p['number']];
+        }
+        // Tableau final croisé : sur le tapis de la première poule de sa catégorie, juste après ses poules
+        foreach ($blocks as $b) {
+            $first = null;
+            foreach ($pools as $p) {
+                if ($p['group_key'] === $b['group_key'] && ($first === null || (int) $p['number'] < (int) $first['number'])) {
+                    $first = $p;
+                }
+            }
+            if ($first && isset($assign[(int) $first['id']])) {
+                $assign[(int) $b['id']] = $assign[(int) $first['id']];
+                $sortKey[(int) $b['id']] = [(int) $first['sort_order'], $first['sex'], (float) ($first['weight_min_kg'] ?? 0), (int) $b['number']];
+            }
         }
         $byTatami = [];
         foreach ($assign as $pid => $t) {
@@ -888,6 +927,15 @@ final class PoolService
         }
         foreach ($pools as $p) {
             $n = (int) Database::value('SELECT COUNT(*) FROM pool_athletes WHERE pool_id = ?', [$p['id']]);
+            if ($p['kind'] !== 'pool') {
+                if ($p['tatami_id'] === null) {
+                    throw new DomainError("Le tableau « {$p['label']} » n'est affecté à aucun tapis.");
+                }
+                if (!DurationRuleService::resolve($cid, (int) $p['age_category_id'], $p['sex'], 'final') && !DurationRuleService::resolve($cid, (int) $p['age_category_id'], $p['sex'], 'pool')) {
+                    throw new DomainError("Aucune durée de combat applicable à « {$p['label']} » : configurez les durées avant de valider.");
+                }
+                continue;
+            }
             if ($n < 2) {
                 throw new DomainError("La poule « {$p['label']} » compte moins de 2 combattants : complétez-la ou supprimez-la.");
             }
@@ -902,7 +950,15 @@ final class PoolService
         Database::transaction(function () use ($generationId, $pools, $cid, $unplaced) {
             foreach ($pools as $p) {
                 Database::run("UPDATE pools SET status = 'validated' WHERE id = ?", [$p['id']]);
-                self::createBouts(self::pool((int) $p['id']));
+                if ($p['kind'] === 'pool') {
+                    self::createBouts(self::pool((int) $p['id']));
+                }
+            }
+            // Tableaux : premiers combats (tour 1) ; un combattant seul est classé 1er.
+            foreach ($pools as $p) {
+                if ($p['kind'] !== 'pool') {
+                    BracketService::refresh(self::pool((int) $p['id']));
+                }
             }
             foreach (array_unique(array_column($pools, 'tatami_id')) as $t) {
                 self::resequenceTatami((int) $t);

@@ -59,6 +59,8 @@ final class SettingsService
         'require_license' => false,
         // weight = catégorie déduite du poids déclaré (ou mesuré) ; category = le club choisit la catégorie de poids (pas de pesée)
         'weight_input' => 'weight',
+        'competition_formula' => 'morpho',       // 'morpho' : poules morphologiques ; 'official' : poids officiels et tableaux
+        'bracket_seeds' => [],                   // têtes de série par catégorie de tableau : [clé de groupe => [inscription => 1..8]]
         'card_payment_accepted' => true,
     ];
 

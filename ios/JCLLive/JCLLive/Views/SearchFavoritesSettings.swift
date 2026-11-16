@@ -69,13 +69,27 @@ struct SearchView: View {
 struct FavoritesView: View {
     @Environment(Favorites.self) private var favorites
     @State private var notif: UNAuthorizationStatus = .notDetermined
+    @State private var search = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    // Ajouter des judokas directement : recherche par nom, club ou catégorie, puis l'étoile
+                    Button { search = true } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.faint)
+                            Text("Rechercher un judoka à suivre").foregroundStyle(Theme.faint)
+                            Spacer()
+                            Image(systemName: "star.fill").foregroundStyle(Theme.yellow)
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 13)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Rechercher un judoka à ajouter aux favoris")
                     if favorites.items.isEmpty {
-                        EmptyState(icon: "star", title: "Suivez vos judokas", message: "Touchez l'étoile d'un judoka (fiche, combat, liste) : vous verrez ici son prochain combat et serez prévenu quand il approche.")
+                        EmptyState(icon: "star", title: "Suivez vos judokas", message: "Recherchez un judoka ci-dessus (ou touchez l'étoile sur sa fiche, un combat, une liste) : vous verrez ici son prochain combat et serez prévenu quand il approche.")
                     } else {
                         if notif == .denied {
                             Label("Alertes désactivées dans les réglages iOS : autorisez les notifications de JCL Live pour être prévenu.", systemImage: "bell.slash")
@@ -88,6 +102,12 @@ struct FavoritesView: View {
             }
             .screenBackground(glow: 0.5)
             .navigationTitle("Favoris")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { search = true } label: { Image(systemName: "magnifyingglass") }.accessibilityLabel("Rechercher un judoka")
+                }
+            }
+            .sheet(isPresented: $search) { SearchView().environment(favorites) }
             .navigationDestination(for: Route.self) { $0.view }
             .refreshable { await favorites.refresh() }
             .task {
@@ -110,6 +130,7 @@ struct FavoriteCard: View {
                     ClubLogo(path: athlete.clubLogo, name: athlete.clubShort, size: 44)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(athlete.firstName) \(Text(athlete.lastName).fontWeight(.bold))").font(.system(size: 16)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text([athlete.clubShort, athlete.category].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
                             .font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
                     }
@@ -128,7 +149,7 @@ struct FavoriteCard: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(n.isLive ? "Combat en cours" : nextLabel(n)).font(.subheadline.weight(.bold)).foregroundStyle(Theme.ink)
                             Text(["Tapis \(n.mat ?? 0)", opponent(n).map { "contre \($0)" }].compactMap { $0 }.joined(separator: " · "))
-                                .font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
+                                .font(.caption).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.faint)
@@ -165,6 +186,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(API.serverKey) private var server = API.defaultServer
     @AppStorage("appearance") private var appearance = 0
+    @AppStorage(SideColor.key) private var firstColor = SideColor.defaultValue
     @State private var notifications = Notifier.shared.enabled
     @State private var test: String?
 
@@ -193,6 +215,14 @@ struct SettingsView: View {
                         Text("Système").tag(0); Text("Clair").tag(1); Text("Sombre").tag(2)
                     }
                     .pickerStyle(.segmented)
+                }
+                Section {
+                    Picker("Premier appelé", selection: $firstColor) {
+                        Text("Rouge").tag("red"); Text("Blanc").tag("white")
+                    }
+                    .pickerStyle(.segmented)
+                } header: { Text("Combattants") } footer: {
+                    Text("Couleur du premier judoka appelé sur le tapis ; le second prend l'autre couleur. Ceintures, tableau d'affichage et déroulé des combats suivent ce choix.")
                 }
                 Section {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")

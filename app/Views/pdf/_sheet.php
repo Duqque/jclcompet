@@ -3,6 +3,11 @@
 use App\Services\BoutService;
 use App\Services\CategoryService;
 
+if (!empty($p['bracket'])) {
+    include __DIR__ . '/_bracket.php';
+    return;
+}
+
 $n = count($p['athletes']);
 $blank = $blank ?? false; // feuille vierge : aucun résultat reporté
 $short = ['ippon' => 'Ippon', 'wazaari' => 'Waza-ari', 'yuko' => 'Yuko', 'decision' => 'Décision', 'hansoku_make' => 'Hansoku', 'fusen_gachi' => 'Forfait', 'kiken_gachi' => 'Abandon', 'shido' => 'Shido'];

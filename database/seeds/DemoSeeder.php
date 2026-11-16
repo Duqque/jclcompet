@@ -66,6 +66,74 @@ final class DemoSeeder
         $this->sales($cid);
         $this->gallery($cid);
         $this->upcoming($clubs);
+        $this->official($clubs);
+        return $cid;
+    }
+
+    /**
+     * Troisième tournoi fictif, en formule « tableaux officiels » (poids officiels France Judo), en cours :
+     * minimes -55 kg en tableau de 32 avec têtes de série, -46 kg en tableau de 16, -50 kg en 2 poules + tableau final,
+     * minimes filles -44 kg en poule, -48 kg seule. Une partie des combats est jouée pour voir les tableaux en direct.
+     */
+    public function official(array $clubs): int
+    {
+        $year = (int) date('Y');
+        $cid = CompetitionService::create([
+            'name' => 'Open officiel de démonstration (tableaux)',
+            'tagline' => 'Catégories de poids officielles, tableaux à double repêchage — données fictives',
+            'description' => "**Données de démonstration** : formule « tableaux officiels France Judo ».\n\nPar catégorie de poids : 1 à 5 combattants en poule, 6 à 8 en deux poules puis tableau croisé, 9 et plus en tableau à double repêchage.",
+            'event_date' => date('Y-m-d'), 'start_time' => '09:00:00', 'venue' => 'Dojo de démonstration', 'address' => '2 rue de l\'Exemple', 'city' => 'Démoville',
+            'registration_opens_at' => date('Y-m-d H:i:s', strtotime('-30 days')), 'registration_closes_at' => date('Y-m-d 23:59:00'),
+            'age_reference_date' => $year . '-12-31', 'mat_count' => 4, 'expected_participants' => 45, 'pool_sizes' => '3,4,5', 'is_demo' => 1,
+        ], ['U15'], true, 'official');
+        SettingsService::set($cid, 'pools_published', true);
+        Database::run("UPDATE competitions SET status = 'registrations_open' WHERE id = ?", [$cid]);
+        // [sexe, effectif, poids min, poids max]
+        $plan = [['M', 18, 50.3, 54.9], ['M', 12, 42.3, 45.9], ['M', 7, 46.3, 49.8], ['F', 5, 40.3, 43.8], ['F', 1, 46.0, 46.0]];
+        $n = 0;
+        foreach ($plan as [$sex, $count, $min, $max]) {
+            for ($i = 0; $i < $count; $i++) {
+                $n++;
+                [$last, $first] = self::fakeName($sex);
+                $id = RegistrationService::register($cid, [
+                    'last_name' => $last, 'first_name' => $first, 'sex' => $sex, 'birth_date' => sprintf('%d-%02d-%02d', $year - mt_rand(13, 14), mt_rand(1, 12), mt_rand(1, 28)),
+                    'declared_weight_kg' => round($min + ($max - $min) * mt_rand(0, 100) / 100, 1), 'grade' => ['Orange', 'Verte', 'Bleue', 'Marron'][mt_rand(0, 3)],
+                ], ['actor' => 'club', 'club_id' => $clubs[($n * 7) % count($clubs)]]);
+                AttendanceService::mark($id, 'present');
+            }
+        }
+        Database::run('UPDATE athletes SET is_demo = 1 WHERE id IN (SELECT athlete_id FROM registrations WHERE competition_id = ?)', [$cid]);
+        $gen = PoolService::generate($cid);
+        // Têtes de série du tableau de 32 (-55 kg) : les 4 plus lourds, tirage refait
+        $big = Database::one("SELECT * FROM pools WHERE generation_id = ? AND kind = 'bracket' ORDER BY bracket_size DESC LIMIT 1", [$gen]);
+        if ($big) {
+            $top = Database::column('SELECT registration_id FROM pool_athletes WHERE pool_id = ? ORDER BY reference_weight_kg DESC LIMIT 4', [$big['id']]);
+            \App\Services\BracketService::redraw((int) $big['id'], array_combine(array_map('intval', $top), [1, 2, 3, 4]));
+        }
+        PoolService::validate($gen, true);
+        Database::run("UPDATE competitions SET status = 'in_progress' WHERE id = ?", [$cid]);
+        $scripts = [
+            [['action' => 'score', 'side' => 'a', 'kind' => 'ippon', 'delta' => 1]],
+            [['action' => 'score', 'side' => 'b', 'kind' => 'wazaari', 'delta' => 1], ['action' => 'score', 'side' => 'b', 'kind' => 'wazaari', 'delta' => 1]],
+            [['action' => 'score', 'side' => 'a', 'kind' => 'wazaari', 'delta' => 1], ['action' => 'score', 'side' => 'b', 'kind' => 'shido', 'delta' => 1]],
+            [['action' => 'score', 'side' => 'b', 'kind' => 'ippon', 'delta' => 1]],
+        ];
+        // Tapis par tapis : on joue les combats dans l'ordre d'appel (les tableaux avancent au fil des résultats)
+        $budget = [0 => 22, 1 => 14, 2 => 9, 3 => 4];
+        foreach (CompetitionService::tatamis($cid) as $idx => $t) {
+            for ($k = 0; $k < ($budget[$idx] ?? 4); $k++) {
+                $b = Database::value("SELECT id FROM bouts WHERE tatami_id = ? AND status = 'scheduled' ORDER BY order_on_tatami LIMIT 1", [$t['id']]);
+                if (!$b) {
+                    break;
+                }
+                BoutService::selectCurrent((int) $t['id'], (int) $b);
+                $this->play((int) $b, $scripts[($k + $idx) % count($scripts)]);
+            }
+            $next = Database::value("SELECT id FROM bouts WHERE tatami_id = ? AND status = 'scheduled' ORDER BY order_on_tatami LIMIT 1", [$t['id']]);
+            if ($next) {
+                BoutService::selectCurrent((int) $t['id'], (int) $next);
+            }
+        }
         return $cid;
     }
 

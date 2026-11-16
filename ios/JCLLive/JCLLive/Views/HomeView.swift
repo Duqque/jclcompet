@@ -7,6 +7,8 @@ struct HomeView: View {
     @State private var error: String?
     @State private var settings = false
     @State private var search = false
+    @State private var showFavorites = false
+    @Environment(Favorites.self) private var favorites
 
     var body: some View {
         NavigationStack {
@@ -40,7 +42,8 @@ struct HomeView: View {
             .navigationDestination(for: Route.self) { $0.view }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $settings) { SettingsView() }
-            .sheet(isPresented: $search) { SearchView() }
+            .sheet(isPresented: $search) { SearchView().environment(favorites) }
+            .sheet(isPresented: $showFavorites) { FavoritesView().environment(favorites) }
         }
     }
 
@@ -54,17 +57,25 @@ struct HomeView: View {
                 Text("JCL Live").font(.score(26, weight: 900)).foregroundStyle(Theme.ink)
                 Text("Judo Club Leforest").font(.caption).foregroundStyle(Theme.muted)
             }
-            Spacer()
-            Button { search = true } label: {
-                Image(systemName: "magnifyingglass").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .frame(width: 42, height: 42).background(Theme.surface, in: Circle())
+            Spacer(minLength: 4)
+            HStack(spacing: 8) {
+                Button { search = true } label: {
+                    Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .frame(width: 40, height: 40).background(Theme.surface, in: Circle())
+                }
+                .accessibilityLabel("Rechercher un judoka")
+                Button { showFavorites = true } label: {
+                    Image(systemName: "star.fill").font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(favorites.items.isEmpty ? Theme.ink : Theme.yellow)
+                        .frame(width: 40, height: 40).background(Theme.surface, in: Circle())
+                }
+                .accessibilityLabel(favorites.items.isEmpty ? "Favoris" : "Favoris, \(favorites.items.count) judoka\(favorites.items.count > 1 ? "s" : "") suivi\(favorites.items.count > 1 ? "s" : "")")
+                Button { settings = true } label: {
+                    Image(systemName: "gearshape.fill").font(.system(size: 16)).foregroundStyle(Theme.ink)
+                        .frame(width: 40, height: 40).background(Theme.surface, in: Circle())
+                }
+                .accessibilityLabel("Réglages")
             }
-            .accessibilityLabel("Rechercher un judoka")
-            Button { settings = true } label: {
-                Image(systemName: "gearshape.fill").font(.system(size: 17)).foregroundStyle(Theme.ink)
-                    .frame(width: 42, height: 42).background(Theme.surface, in: Circle())
-            }
-            .accessibilityLabel("Réglages")
         }
         .padding(.top, 4)
     }
@@ -117,12 +128,14 @@ struct HomeView: View {
                                     FighterLine(fighter: m.current!.a, side: "a", winner: m.current!.winner, showScore: m.current!.isDone || m.current!.isLive)
                                     FighterLine(fighter: m.current!.b, side: "b", winner: m.current!.winner, showScore: m.current!.isDone || m.current!.isLive)
                                 }
+                                .frame(maxHeight: .infinity, alignment: .top)
                                 .card(padding: 14)
                                 .frame(width: 300)
                             }
                             .buttonStyle(.plain)
                         }
                     }
+                    .fixedSize(horizontal: false, vertical: true) // toutes les cartes à la hauteur de la plus grande
                     .padding(.horizontal, 16).padding(.vertical, 4)
                 }
                 .padding(.horizontal, -16)
@@ -145,6 +158,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     ForEach(podiums.prefix(8)) { p in PodiumCard(podium: p).frame(width: 290) }
                 }
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 16).padding(.vertical, 4)
             }
             .padding(.horizontal, -16)
@@ -205,13 +219,15 @@ struct PodiumCard: View {
                         .frame(width: 30, height: 30).background(Theme.medal(a.medal), in: Circle())
                     ClubLogo(path: a.logo, name: a.club, size: 30)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("\(a.firstName) \(Text(a.lastName).fontWeight(.bold))").font(.system(size: 14)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Text("\(a.firstName) \(Text(a.lastName).fontWeight(.bold))").font(.system(size: 14)).foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(a.clubShort ?? a.club ?? "").font(.caption2).foregroundStyle(Theme.muted).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                 }
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .card(padding: 14)
     }
 }
@@ -227,9 +243,11 @@ enum Route: Hashable {
     case bout(Int)
     case athlete(Int)
     case pool(String, Int)
+    case bracket(String, Int)
 
     @ViewBuilder var view: some View {
         switch self {
+        case let .bracket(slug, id): BracketDetailView(slug: slug, id: id)
         case let .competition(slug): CompetitionView(slug: slug)
         case let .bout(id): BoutView(id: id)
         case let .athlete(id): AthleteView(id: id)

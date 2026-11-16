@@ -227,6 +227,62 @@
     setTimeout(() => { form.dataset.submitting = '0'; }, 4000);
   });
 
+  // Tableaux : onglets par tour (une colonne par écran sur téléphone)
+  document.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-bk-tab]');
+    if (!tab) return;
+    const col = document.getElementById(tab.dataset.bkTab);
+    const cols = col && col.closest('[data-bk-cols]');
+    if (!cols) return;
+    cols.scrollTo({ left: cols.scrollLeft + col.getBoundingClientRect().left - cols.getBoundingClientRect().left, behavior: 'smooth' });
+    tab.parentElement.querySelectorAll('[data-bk-tab]').forEach((b) => b.setAttribute('aria-current', b === tab ? 'true' : 'false'));
+  });
+  document.querySelectorAll('[data-bk-cols]').forEach((cols) => {
+    const start = document.getElementById(cols.dataset.bkStart);
+    if (start) cols.scrollLeft = start.getBoundingClientRect().left - cols.getBoundingClientRect().left;
+    // Onglet actif selon la colonne visible
+    cols.addEventListener('scroll', () => {
+      const tabs = cols.previousElementSibling;
+      if (!tabs) return;
+      let best = null; let d = Infinity;
+      const left = cols.getBoundingClientRect().left;
+      cols.querySelectorAll('.bk-col').forEach((c) => { const x = Math.abs(c.getBoundingClientRect().left - left); if (x < d) { d = x; best = c; } });
+      if (best) tabs.querySelectorAll('[data-bk-tab]').forEach((b) => b.setAttribute('aria-current', b.dataset.bkTab === best.id ? 'true' : 'false'));
+    }, { passive: true });
+  });
+
+  // Tableaux : vue Arbre / Par tours, zoom (− / Tout voir / +), mémorisés par tableau
+  const fitTree = (art) => art.querySelectorAll('[data-bt-zoom]').forEach((z) => {
+    const box = z.parentElement; const tree = z.firstElementChild;
+    if (!tree) return;
+    const scale = Math.min(1, (box.clientWidth - 20) / tree.offsetWidth);
+    z.dataset.scale = scale; z.style.zoom = scale;
+  });
+  document.querySelectorAll('.sheet.bk').forEach((art) => { if (art.querySelector('[data-bt-zoom]')) fitTree(art); });
+  document.addEventListener('click', (e) => {
+    const v = e.target.closest('[data-bk-view]');
+    if (v) {
+      const art = v.closest('.sheet');
+      art.querySelectorAll('[data-bk-view]').forEach((b) => b.setAttribute('aria-pressed', b === v ? 'true' : 'false'));
+      art.querySelectorAll('[data-bk-pane]').forEach((p) => { p.hidden = p.dataset.bkPane !== v.dataset.bkView; });
+      const zoom = art.querySelector('[data-bk-zoom]'); if (zoom) zoom.hidden = v.dataset.bkView !== 'tree';
+      try { sessionStorage.setItem('bk-view:' + art.id, v.dataset.bkView); } catch (err) { /* stockage indisponible */ }
+      return;
+    }
+    const z = e.target.closest('[data-z]');
+    if (z) {
+      const art = z.closest('.sheet');
+      if (z.dataset.z === 'fit') { fitTree(art); return; }
+      art.querySelectorAll('[data-bt-zoom]').forEach((el) => {
+        const s = Math.max(0.25, Math.min(2.5, (+el.dataset.scale || 1) * (z.dataset.z === '+' ? 1.25 : 0.8)));
+        el.dataset.scale = s; el.style.zoom = s;
+      });
+    }
+  });
+  document.querySelectorAll('.sheet.bk').forEach((art) => {
+    try { const v = sessionStorage.getItem('bk-view:' + art.id); if (v) { const b = art.querySelector(`[data-bk-view="${v}"]`); if (b) b.click(); } } catch (err) { /* stockage indisponible */ }
+  });
+
   // Sélecteurs qui soumettent leur formulaire (filtres)
   document.addEventListener('change', (e) => {
     if (e.target.matches('[data-autosubmit]')) e.target.form.requestSubmit();

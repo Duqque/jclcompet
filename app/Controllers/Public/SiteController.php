@@ -233,6 +233,28 @@ final class SiteController extends Controller
     }
 
     /** Photo d'un judoka classé, seulement si l'organisation l'autorise pour l'écran de classement. */
+    /** Tableau d'une catégorie en PDF, généré à la demande avec les derniers résultats (public dès la publication des poules). */
+    public function bracketPdf(Request $r): Response
+    {
+        $c = CompetitionService::findBySlug((string) $r->param('slug'));
+        $published = in_array($c['status'], ['in_progress', 'finished', 'archived'], true) || \App\Services\SettingsService::get((int) $c['id'], 'pools_published');
+        if ($c['status'] === 'draft' || (!$published && !Auth::hasRole('admin'))) {
+            throw new HttpException(404, 'Tableau introuvable.');
+        }
+        $pool = Database::one(
+            "SELECT p.*, ac.name AS age_name, ac.name_m, ac.name_f, wc.label AS weight_label FROM pools p JOIN pool_generations g ON g.id = p.generation_id
+             JOIN age_categories ac ON ac.id = p.age_category_id LEFT JOIN weight_categories wc ON wc.id = p.weight_category_id
+             WHERE p.id = ? AND p.competition_id = ? AND p.kind <> 'pool' AND g.status IN ('draft','validated')",
+            [(int) $r->param('id'), $c['id']]
+        ) ?? throw new HttpException(404, 'Tableau introuvable.');
+        $bracket = \App\Services\BracketService::view($pool);
+        $label = \App\Services\CategoryService::label(['name' => $pool['age_name'], 'name_m' => $pool['name_m'], 'name_f' => $pool['name_f']], $pool['sex']) . ($pool['weight_label'] ? ' ' . $pool['weight_label'] . ' kg' : '');
+        $data = ['c' => $c, 'opt' => ['show_competition' => true], 'docTitle' => $label, 'docSubtitle' => $bracket['count'] . ' judokas · ' . ($pool['kind'] === 'final_block' ? '2 poules + tableau final' : 'tableau à double repêchage'),
+            'generatedAt' => date('d/m/Y H:i'), 'bracket' => $bracket];
+        $file = 'tableau-' . slugify($label) . '.pdf';
+        return \App\Services\PdfService::render('tableau', $data, $file, 'landscape', isset($r->query['html']))->header('Cache-Control', 'no-store');
+    }
+
     public function podiumPhoto(Request $r): Response
     {
         $c = CompetitionService::findBySlug((string) $r->param('slug'));

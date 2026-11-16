@@ -8,7 +8,7 @@
     <thead><tr><th>Catégorie</th><th>Années</th><th>Format</th><th>Filles</th><th>Garçons</th></tr></thead>
     <tbody><?php foreach ($ages as $a): ?>
       <tr><td><strong><?= e($a['name']) ?></strong> <span class="muted small"><?= e($a['code']) ?></span></td><td class="num"><?= e(CategoryService::birthYearsLabel($a)) ?></td>
-        <td><?= $a['format'] === 'animation' ? '<span class="badge badge-yellow">Animation</span>' : 'Poules' ?></td>
+        <td><?= $a['format'] === 'animation' ? '<span class="badge badge-yellow">Animation</span>' : ($a['format'] === 'brackets' ? '<span class="badge badge-red">Tableaux officiels</span>' : 'Poules morphologiques') ?></td>
         <?php foreach (['F', 'M'] as $sex): $cc = $open[$a['id']][$sex] ?? null; ?>
           <td><?php if ($cc): ?>
             <label class="check"><input type="checkbox" name="cc[<?= (int) $cc['id'] ?>][is_open]" value="1"<?= checked($cc['is_open']) ?>> Ouvert (<?= (int) ($counts[$a['id']][$sex] ?? 0) ?> inscrits)</label>
@@ -35,14 +35,14 @@
         <div class="field"><label>Nom (filles)</label><input name="name_f" value="<?= e($a['name_f']) ?>"></div>
         <div class="field"><label>Née / né en (de)</label><input name="birth_year_min" type="number" value="<?= (int) $a['birth_year_min'] ?>" required></div>
         <div class="field"><label>à</label><input name="birth_year_max" type="number" value="<?= (int) $a['birth_year_max'] ?>" required></div>
-        <div class="field"><label>Format</label><select name="format"><option value="pools"<?= selected($a['format'], 'pools') ?>>Combats en poules</option><option value="animation"<?= selected($a['format'], 'animation') ?>>Animation (sans combats)</option></select></div>
+        <div class="field"><label>Format</label><select name="format"><option value="pools"<?= selected($a['format'], 'pools') ?>>Poules morphologiques</option><option value="brackets"<?= selected($a['format'], 'brackets') ?>>Tableaux officiels (poids officiels : poules jusqu'à 8, double repêchage dès 9)</option><option value="animation"<?= selected($a['format'], 'animation') ?>>Animation (sans combats)</option></select></div>
         <div class="field"><label>Surclassement autorisé vers</label><select name="upgrade_to_id"><option value="">Aucun</option><?php foreach ($ages as $b): if ($b['id'] === $a['id']) continue; ?><option value="<?= (int) $b['id'] ?>"<?= selected($a['upgrade_to_id'], $b['id']) ?>><?= e($b['name']) ?></option><?php endforeach; ?></select></div>
         <div class="field"><label>Quota (toutes catégories de poids)</label><input name="max_participants" type="number" min="1" value="<?= e($a['max_participants']) ?>"></div>
         <div class="field"><label>Ordre</label><input name="sort_order" type="number" value="<?= (int) $a['sort_order'] ?>"></div>
       </div>
       <div class="btn-group" style="margin-top:.8rem"><button class="btn btn-red btn-sm" type="submit">Enregistrer</button></div>
     </form>
-    <?php if ($a['format'] === 'pools'): ?>
+    <?php if ($a['format'] !== 'animation'): ?>
     <div class="grid grid-2" style="margin-top:1rem">
       <?php foreach (['F' => 'Filles', 'M' => 'Garçons'] as $sex => $label): $ws = $weights[$a['id']][$sex] ?? []; ?>
         <div>
@@ -73,7 +73,7 @@
       <div class="field"><label>Nom</label><input name="name" required placeholder="Juniors"></div>
       <div class="field"><label>Né(e)s de</label><input name="birth_year_min" type="number" required value="<?= (int) $refYear - 20 ?>"></div>
       <div class="field"><label>à</label><input name="birth_year_max" type="number" required value="<?= (int) $refYear - 18 ?>"></div>
-      <div class="field"><label>Format</label><select name="format"><option value="pools">Combats en poules</option><option value="animation">Animation</option></select></div>
+      <div class="field"><label>Format</label><select name="format"><option value="pools">Poules morphologiques</option><option value="brackets">Tableaux officiels</option><option value="animation">Animation</option></select></div>
       <div class="field"><label>Ordre</label><input name="sort_order" type="number" value="<?= count($ages) * 10 + 10 ?>"></div>
     </div>
     <button class="btn btn-red" type="submit" style="margin-top:.8rem">Ajouter</button>

@@ -24,7 +24,7 @@ final class RankingController extends AdminController
         $tiebreaks = [];
         foreach ($pools as $p) {
             if ((int) $p['needs_tiebreak'] === 1) {
-                $p['calc'] = RankingService::computePool((int) $p['id']);
+                $p['calc'] = ($p['kind'] ?? 'pool') === 'pool' ? RankingService::computePool((int) $p['id']) : ['complete' => (int) $p['ranking_complete'] === 1, 'needs_tiebreak' => false, 'rows' => []];
                 $p['members'] = array_column($byId[$p['id']]['athletes'], null, 'registration_id');
                 $tiebreaks[] = $p;
             }

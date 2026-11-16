@@ -74,9 +74,10 @@ final class CompetitionService
         return implode(',', $list);
     }
 
-    public static function create(array $data, array $ageCodes = ['U11', 'U13', 'U15'], bool $withWeights = true): int
+    public static function create(array $data, array $ageCodes = ['U11', 'U13', 'U15'], bool $withWeights = true, string $formula = 'morpho'): int
     {
-        return Database::transaction(function () use ($data, $ageCodes, $withWeights) {
+        $formula = array_key_exists($formula, CategoryService::FORMULAS) ? $formula : 'morpho';
+        return Database::transaction(function () use ($data, $ageCodes, $withWeights, $formula) {
             $data['pool_sizes'] = self::validatePoolSizes($data['pool_sizes'] ?? '3,4,5');
             self::checkDates($data);
             $row = array_intersect_key($data, array_flip(self::EDITABLE_FIELDS));
@@ -90,7 +91,11 @@ final class CompetitionService
             $competition = self::find($id);
             SettingsService::initialize($id);
             self::syncTatamis($competition);
-            CategoryService::createFromTemplates($competition, $ageCodes, $withWeights);
+            CategoryService::createFromTemplates($competition, $ageCodes, $withWeights, ['M', 'F'], $formula);
+            SettingsService::set($id, 'competition_formula', $formula);
+            if ($formula === 'official') {
+                SettingsService::set($id, 'weight_input', 'weight'); // le poids déclaré donne la catégorie officielle
+            }
             DurationRuleService::createExamples($id);
             RankingService::createDefaultRules($id);
             AuditLogger::log('competition.create', 'competition', $id, null, ['name' => $row['name']], null, $id);

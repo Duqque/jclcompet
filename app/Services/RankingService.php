@@ -175,6 +175,14 @@ final class RankingService
             return [];
         }
         $cid = (int) $pool['competition_id'];
+        // Tableau à double repêchage ou tableau final croisé : avancement et places calculés par BracketService
+        if (($pool['kind'] ?? 'pool') !== 'pool') {
+            $st = BracketService::refresh($pool);
+            if ($withClubs) {
+                self::recomputeClubs($cid);
+            }
+            return ['complete' => $st['complete'], 'needs_tiebreak' => false, 'rows' => []];
+        }
         $calc = self::computePool($poolId);
         $final = $calc['complete'] && !$calc['needs_tiebreak'];
         foreach ($calc['rows'] as $r) {
@@ -193,6 +201,12 @@ final class RankingService
 
         // Places, points et médailles : jamais à partir d'un résultat incomplet.
         Database::run('DELETE FROM athlete_rankings WHERE pool_id = ?', [$poolId]);
+        // Poule suivie d'un tableau final croisé : le classement de la catégorie est celui du tableau final.
+        $block = BracketService::finalBlockFor($pool);
+        if ($block) {
+            BracketService::refresh($block);
+            $final = false;
+        }
         if ($final) {
             $rules = self::rules($cid);
             $policy = (string) SettingsService::get($cid, 'forfeit_policy');
@@ -215,6 +229,25 @@ final class RankingService
             self::recomputeClubs($cid);
         }
         return $calc;
+    }
+
+    /**
+     * Places d'une catégorie en tableau (1, 2, 3, 3, 5, 5, 7, 7) : points et médailles selon le barème.
+     * @param array<int,int> $places registration_id => place
+     */
+    public static function writePlaces(int $competitionId, int $poolId, array $places): void
+    {
+        $rules = self::rules($competitionId);
+        foreach ($places as $reg => $place) {
+            $rule = $rules[$place] ?? null;
+            Database::insert('athlete_rankings', [
+                'competition_id' => $competitionId, 'pool_id' => $poolId, 'registration_id' => $reg,
+                'club_id' => Database::value('SELECT club_id FROM registrations WHERE id = ?', [$reg]),
+                'place' => $place,
+                'points' => !$rule || !(int) $rule['counts_in_table'] ? 0 : (int) $rule['points'],
+                'medal' => $rule['medal'] ?? null,
+            ]);
+        }
     }
 
     public static function recomputeCompetition(int $competitionId): void

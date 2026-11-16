@@ -267,6 +267,9 @@ struct Athlete: Codable, Identifiable, Hashable {
     let photo: String?
     let poolNumber: Int?
     let mat: Int?
+    let poolId: Int?
+    let poolKind: String?
+    let categoryPoolId: Int?
     let present: Bool?
     let place: Int?
     let medal: String?

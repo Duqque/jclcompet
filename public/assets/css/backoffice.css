@@ -446,3 +446,71 @@ a.bout-row:hover { box-shadow: 0 0 0 1.5px var(--ink); color: var(--ink); }
 .acc-actions select { min-height: 34px; max-width: 220px; }
 .acc-actions form { display: contents; }
 .acc-actions select { flex: 1 1 100%; max-width: none; }
+
+/* Choix de la formule (création de compétition) */
+.formula-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; }
+.formula-card { display: grid; gap: .3rem; padding: .9rem 1rem; border-radius: 18px; background: var(--white); box-shadow: 0 0 0 1px var(--line, #e6e6e3); cursor: pointer; position: relative; }
+.formula-card input { position: absolute; opacity: 0; }
+.formula-card strong { font-size: 1rem; }
+.formula-card small { color: var(--muted); line-height: 1.35; }
+.formula-card:has(input:checked) { box-shadow: 0 0 0 2px var(--red); background: var(--red-soft); }
+.formula-card:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Tirage au sort en direct (écran projeté) */
+body.att-shell:has(.draw) { background: var(--surface-1, #ecebe8); }
+.draw { min-height: 100vh; padding: clamp(14px, 2.4vw, 32px); display: flex; flex-direction: column; gap: 1.2rem;
+  background: radial-gradient(60% 50% at 95% 0%, rgba(242,106,119,.45), transparent 70%), #ecebe8; }
+.draw-head { display: flex; align-items: center; gap: 1rem; }
+.draw-back { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--white); color: var(--ink); }
+.draw-title { flex: 1; }
+.draw-title h1 { margin: 0; font: 800 italic clamp(1.6rem, 3.2vw, 2.8rem)/1.05 var(--font-display, inherit); letter-spacing: -.02em; }
+.draw-lead { font-size: 1.15rem; color: var(--muted); margin: 0 0 .8rem; }
+.draw-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .9rem; }
+.draw-cat { display: grid; gap: .35rem; text-align: left; padding: 1.1rem 1.2rem; border: 0; border-radius: 22px; background: var(--white); cursor: pointer; font: inherit; color: var(--ink);
+  box-shadow: 0 10px 30px rgba(0,0,0,.05); transition: transform .15s, box-shadow .15s; }
+.draw-cat:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--red), 0 14px 34px rgba(0,0,0,.08); }
+.draw-cat strong { font-size: 1.15rem; }
+.draw-cat span:not(.badge) { color: var(--muted); }
+.draw-cat .badge { justify-self: start; }
+.draw-cat:disabled { opacity: .55; cursor: default; }
+.draw-bar { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }
+.draw-count { flex: 1; color: var(--muted); font-size: 1.05rem; }
+.draw-names { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: .6rem; }
+.draw-names li, .draw-pool li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .7rem; background: var(--white); border-radius: 16px; padding: .7rem .9rem; font-size: clamp(.95rem, 1.35vw, 1.25rem); animation: dnIn .35s ease backwards; }
+.draw-names li.is-seed, .draw-pool li.is-seed { box-shadow: inset 0 0 0 2px var(--red); }
+.dn-logo { width: 38px; height: 38px; border-radius: 10px; background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); display: grid; place-items: center; overflow: hidden; flex: none; }
+.dn-logo img { max-width: 30px; max-height: 30px; object-fit: contain; }
+.dn-name { min-width: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.dn-name small { display: block; color: var(--muted); font-size: .78em; }
+.dn-seed { font: 800 italic .85rem/1 var(--font-display, inherit); background: var(--red); color: #fff; border-radius: 999px; padding: .3rem .55rem; white-space: nowrap; }
+@keyframes dnIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.draw-stage { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 1rem; align-items: start; }
+.draw-pool { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; max-height: calc(100vh - 220px); overflow: auto; }
+.draw-pool li { padding: .45rem .6rem; font-size: .95rem; transition: opacity .3s, transform .3s; }
+.draw-pool li .dn-logo { width: 28px; height: 28px; }
+.draw-pool li.is-picked { transform: scale(1.04); box-shadow: 0 0 0 3px var(--red); }
+.draw-pool li.is-placed { opacity: .25; transform: none; box-shadow: none; }
+.draw-bracket { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 1rem; }
+.db-col { display: grid; gap: .55rem; align-content: start; }
+.db-pair { display: grid; gap: 2px; background: var(--white); border-radius: 16px; padding: .3rem; box-shadow: 0 6px 20px rgba(0,0,0,.04); }
+.db-slot { display: grid; grid-template-columns: 2rem auto 1fr; align-items: center; gap: .4rem; min-height: 46px; padding: .25rem .5rem; border-radius: 12px; background: var(--surface-2); transition: background .3s, box-shadow .3s; }
+.db-num { font: 800 italic .85rem/1 var(--font-display, inherit); color: var(--muted); text-align: center; }
+.db-who { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5rem; min-width: 0; font-size: clamp(.85rem, 1.05vw, 1.05rem); }
+.db-who .dn-logo { width: 28px; height: 28px; }
+.db-slot.is-filled { background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.db-slot.is-new { background: var(--red-soft); box-shadow: inset 0 0 0 2px var(--red); animation: dbPop .5s ease; }
+.db-slot.is-bye .db-who { color: var(--muted); font-style: italic; display: block; }
+@keyframes dbPop { 0% { transform: scale(.96); } 60% { transform: scale(1.03); } 100% { transform: none; } }
+.draw-seeds { max-width: 620px; }
+.draw-seed-list { display: grid; gap: .4rem; max-height: 55vh; overflow: auto; margin: .8rem 0; }
+.draw-seed-row { display: grid; grid-template-columns: auto 1fr 110px; align-items: center; gap: .6rem; background: var(--surface-2); border-radius: 12px; padding: .4rem .6rem; }
+@media (max-width: 900px) { .draw-stage { grid-template-columns: 1fr; } .draw-pool { max-height: 30vh; } .draw-names { --cols: 2 !important; } .draw-bracket { --cols: 1 !important; } }
+@media (prefers-reduced-motion: reduce) { .draw-names li, .db-slot.is-new { animation: none; } }
+
+/* Rouge (premier appelé, case du haut) et blanc (case du bas) dans chaque combat du tirage */
+.db-slot { position: relative; }
+.db-slot::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 5px; border-radius: 4px; }
+.db-slot.is-red::before { background: #c21a2c; }
+.db-slot.is-white::before { background: #fff; box-shadow: inset 0 0 0 1px #a1a1aa; }
+.db-slot.is-red.is-filled { background: #fff4f5; }
+.db-belt { display: grid; place-items: center; }

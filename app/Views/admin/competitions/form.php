@@ -39,9 +39,17 @@ $archived = $c && $c['status'] === 'archived';
       <div class="field"><span class="label">Tailles de poules autorisées</span>
         <div class="btn-group"><?php foreach ([3, 4, 5] as $n): ?><label class="check"><input type="checkbox" name="pool_sizes[]" value="<?= $n ?>"<?= checked(in_array((string) $n, $sizes, true)) ?>> <?= $n ?> combattants</label><?php endforeach; ?></div></div>
       <?php if (!$c): ?>
+        <div class="field span-all"><span class="label">Formule de la compétition</span>
+          <div class="formula-pick">
+            <label class="formula-card"><input type="radio" name="formula" value="morpho" checked>
+              <strong>Poules morphologiques</strong><small>Groupes de poids proches par âge et sexe, poules de 3, 4 ou 5. Idéal pour les plus jeunes.</small></label>
+            <label class="formula-card"><input type="radio" name="formula" value="official">
+              <strong>Tableaux officiels France Judo</strong><small>Catégories de poids officielles 2025-2026 dès benjamins. Par catégorie : 1 à 5 en poule ; 6 à 8 en 2 poules puis tableau croisé ; 9 et plus en tableau à double repêchage (jusqu'à 8 têtes de série). Poussins en poules morphologiques.</small></label>
+          </div>
+          <span class="hint">Modifiable ensuite catégorie par catégorie dans « Catégories ».</span></div>
         <div class="field span-all"><span class="label">Catégories d'âge à créer (modèles à confirmer)</span>
           <div class="btn-group"><?php foreach ($templates as $t): ?><label class="check"><input type="checkbox" name="age_templates[]" value="<?= e($t['code']) ?>"<?= checked(in_array($t['code'], ['U11', 'U13', 'U15'], true)) ?>> <?= e($t['name']) ?> (<?= e($t['code']) ?>)</label><?php endforeach; ?></div>
-          <label class="check" style="margin-top:.4rem"><input type="checkbox" name="with_weights" value="1" checked> Créer des catégories de poids d'exemple</label>
+          <label class="check" style="margin-top:.4rem"><input type="checkbox" name="with_weights" value="1" checked> Créer les catégories de poids officielles (benjamins et plus)</label>
           <span class="hint">Tout reste modifiable dans « Catégories ». Les années de naissance sont calculées à partir de la date de référence.</span></div>
       <?php endif; ?>
     </div>

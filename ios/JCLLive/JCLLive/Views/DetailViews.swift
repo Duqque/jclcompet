@@ -5,6 +5,7 @@ struct BoutView: View {
     let id: Int
     @State private var d: BoutDetail?
     @State private var error: String?
+    @AppStorage(SideColor.key) private var firstColor = SideColor.defaultValue
 
     var body: some View {
         ScrollView {
@@ -38,7 +39,8 @@ struct BoutView: View {
                     NavigationLink(value: Route.athlete(f.registrationId)) {
                         HStack(spacing: 8) {
                             BeltMark(side: side)
-                            Text(f.lastName).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.ink).lineLimit(1)
+                            Text(f.lastName).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.ink)
+                                .lineLimit(1).minimumScaleFactor(0.5).fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                             FavoriteButton(athlete: FollowedAthlete(f, competition: d.competition.slug, category: d.bout.categoryLine))
                         }
@@ -63,7 +65,7 @@ struct BoutView: View {
                         .font(.system(size: 13, weight: .semibold, design: .monospaced)).foregroundStyle(Theme.muted).frame(width: 46, alignment: .leading)
                     VStack(spacing: 0) {
                         Circle().fill(dot(t.side)).frame(width: 12, height: 12)
-                            .overlay(Circle().stroke(t.side == "b" ? Color(hex: 0xD4D4D8) : .clear))
+                            .overlay(Circle().stroke(t.side != nil && !SideColor.isRed(t.side, firstColor: firstColor) ? Color(hex: 0xD4D4D8) : .clear))
                         if i < d.timeline.count - 1 { Rectangle().fill(Theme.line).frame(width: 2).frame(maxHeight: .infinity) }
                     }
                     .frame(width: 12)
@@ -80,7 +82,7 @@ struct BoutView: View {
     }
 
     private func isScore(_ type: String) -> Bool { ["ippon", "wazaari", "yuko", "shido", "hansoku", "hansoku_make", "validate"].contains(type) }
-    private func dot(_ side: String?) -> Color { side == "a" ? Theme.red : side == "b" ? .white : Theme.ink }
+    private func dot(_ side: String?) -> Color { side == nil ? Theme.ink : SideColor.isRed(side, firstColor: firstColor) ? Theme.red : .white }
 
     @ViewBuilder private func others(_ f: Fighter?, _ list: [Bout], _ d: BoutDetail) -> some View {
         let rest = list.filter { $0.id != d.bout.id }
@@ -127,11 +129,20 @@ struct AthleteView: View {
                     .card(padding: 20)
 
                     HStack(spacing: 10) {
-                        StatTile(value: a.poolNumber.map(String.init) ?? "—", label: "poule")
+                        if (a.poolKind ?? "pool") == "pool" { StatTile(value: a.poolNumber.map(String.init) ?? "—", label: "poule") }
                         StatTile(value: a.mat.map(String.init) ?? "—", label: "tapis")
                         StatTile(value: a.place.map { "\($0)e" } ?? "—", label: a.medal.map { _ in Theme.medalLabel(a.place) } ?? "classement")
                     }
-                    if let p = a.poolNumber, let pool = d.bouts.first?.poolId {
+                    // Catégorie en tableau (ou 2 poules + tableau final) : le tableau complet de la catégorie
+                    if let cat = a.categoryPoolId, a.poolKind != "pool" || cat != a.poolId {
+                        NavigationLink(value: Route.bracket(d.competition.slug, cat)) {
+                            Label("Voir le tableau de la catégorie", systemImage: "trophy").font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .foregroundStyle(Theme.red)
+                        }
+                    }
+                    if (a.poolKind ?? "pool") == "pool", let p = a.poolNumber, let pool = a.poolId ?? d.bouts.first?.poolId {
                         NavigationLink(value: Route.pool(d.competition.slug, pool)) {
                             Label("Voir la feuille de la poule \(p)", systemImage: "tablecells").font(.subheadline.weight(.semibold))
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -193,10 +204,13 @@ struct PoolView: View {
 
     private func grid(_ p: Pool) -> some View {
         let n = p.athletes.count
+        // Colonne des noms assez large pour le nom de famille le plus long (jamais tronqué).
+        let longest = p.athletes.map(\.lastName.count).max() ?? 0
+        let nameW = max(104, CGFloat(longest) * 8.5 + 48)
         return ScrollView(.horizontal, showsIndicators: false) {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
-                    Text("Judoka").frame(width: 104, alignment: .leading)
+                    Text("Judoka").frame(width: nameW, alignment: .leading)
                     ForEach(1...max(n, 1), id: \.self) { c in Text("\(c)").frame(width: 40) }
                     Text("V").frame(width: 26); Text("Pts").frame(width: 32); Text("Cl.").frame(width: 32)
                 }
@@ -209,11 +223,12 @@ struct PoolView: View {
                             Text("\(a.seed)").font(.score(13, weight: 900)).foregroundStyle(Theme.red).frame(width: 12)
                             ClubLogo(path: a.clubLogo, name: a.club, size: 24)
                             VStack(alignment: .leading, spacing: 0) {
-                                Text(a.lastName).font(.system(size: 12, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                                Text(a.lastName).font(.system(size: 12, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+                                    .fixedSize(horizontal: false, vertical: true)
                                 Text(a.firstName).font(.caption2).foregroundStyle(Theme.muted).lineLimit(1)
                             }
                         }
-                        .frame(width: 104, alignment: .leading)
+                        .frame(width: nameW, alignment: .leading)
                         ForEach(1...max(n, 1), id: \.self) { c in cell(p, row: a.seed, col: c) }
                         Text("\(a.wins)").font(.score(14, weight: 800)).frame(width: 26)
                         Text("\(a.points)").font(.score(14, weight: 800)).frame(width: 32)
@@ -266,7 +281,8 @@ struct PoolView: View {
     private func name(_ a: PoolAthlete?, side: String, won: Bool) -> some View {
         HStack(spacing: 8) {
             BeltMark(side: side, width: 16)
-            Text(a.map { "\($0.firstName) \($0.lastName)" } ?? "—").font(.system(size: 14, weight: won ? .bold : .regular)).foregroundStyle(Theme.ink).lineLimit(1)
+            Text(a.map { "\($0.firstName) \($0.lastName)" } ?? "—").font(.system(size: 14, weight: won ? .bold : .regular)).foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

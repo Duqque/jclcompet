@@ -22,11 +22,14 @@ final class CategoryService
         ['code' => 'SEN', 'name' => 'Seniors', 'name_m' => 'Seniors Hommes', 'name_f' => 'Seniors Femmes',       'min_age' => 21, 'max_age' => 45],
     ];
 
-    /** Catégories de poids d'exemple (kg, limite supérieure ; null = « + »). */
+    /**
+     * Catégories de poids officielles France Judo, saison 2025-2026 (kg, limite supérieure ; null = « + »).
+     * Poussins et plus jeunes : catégories morphologiques (pas de poids officiels).
+     */
     public const WEIGHT_TEMPLATES = [
         'U13' => [
-            'M' => [30, 34, 38, 42, 46, 50, 55, 60, null],
-            'F' => [28, 32, 36, 40, 44, 48, 52, 57, null],
+            'M' => [26, 30, 34, 38, 42, 46, 50, 55, 60, 66, null],
+            'F' => [28, 32, 36, 40, 44, 48, 52, 57, 63, null],
         ],
         'U15' => [
             'M' => [34, 38, 42, 46, 50, 55, 60, 66, 73, null],
@@ -37,13 +40,19 @@ final class CategoryService
             'F' => [40, 44, 48, 52, 57, 63, 70, null],
         ],
         'U21' => [
-            'M' => [60, 66, 73, 81, 90, 100, null],
-            'F' => [48, 52, 57, 63, 70, 78, null],
+            'M' => [55, 60, 66, 73, 81, 90, 100, null],
+            'F' => [44, 48, 52, 57, 63, 70, 78, null],
         ],
         'SEN' => [
             'M' => [60, 66, 73, 81, 90, 100, null],
             'F' => [48, 52, 57, 63, 70, 78, null],
         ],
+    ];
+
+    /** Formules proposées à la création d'une compétition. */
+    public const FORMULAS = [
+        'morpho' => 'Poules morphologiques',
+        'official' => 'Tableaux officiels France Judo',
     ];
 
     public static function referenceYear(array $competition): int
@@ -53,7 +62,12 @@ final class CategoryService
     }
 
     /** Crée les catégories d'âge choisies (codes) pour une compétition, avec poids d'exemple facultatifs. */
-    public static function createFromTemplates(array $competition, array $codes, bool $withWeights = true, array $sexes = ['M', 'F']): void
+    /**
+     * @param string $formula 'morpho' : poules morphologiques partout ; 'official' : benjamins et plus en catégories de poids
+     *                        officielles et tableaux (poules jusqu'à 8, double repêchage à partir de 9), poussins et plus
+     *                        jeunes en poules morphologiques.
+     */
+    public static function createFromTemplates(array $competition, array $codes, bool $withWeights = true, array $sexes = ['M', 'F'], string $formula = 'morpho'): void
     {
         $year = self::referenceYear($competition);
         $order = 0;
@@ -71,6 +85,7 @@ final class CategoryService
                 'birth_year_min' => $year - $tpl['max_age'],
                 'birth_year_max' => $year - $tpl['min_age'],
                 'sort_order' => $order,
+                'format' => $formula === 'official' && isset(self::WEIGHT_TEMPLATES[$tpl['code']]) ? 'brackets' : 'pools',
             ]);
             foreach ($sexes as $sex) {
                 Database::insert('competition_categories', [
@@ -78,7 +93,7 @@ final class CategoryService
                     'age_category_id' => $ageId,
                     'sex' => $sex,
                 ]);
-                if ($withWeights && isset(self::WEIGHT_TEMPLATES[$tpl['code']][$sex])) {
+                if (($withWeights || $formula === 'official') && isset(self::WEIGHT_TEMPLATES[$tpl['code']][$sex])) {
                     self::createWeights((int) $competition['id'], $ageId, $sex, self::WEIGHT_TEMPLATES[$tpl['code']][$sex]);
                 }
             }

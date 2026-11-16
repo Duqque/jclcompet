@@ -132,3 +132,16 @@ struct SwipeBackLock: UIViewRepresentable {
         }
     }
 }
+
+/// Couleur des combattants. Par défaut le premier appelé (côté « a ») porte le rouge et le second le blanc ;
+/// le réglage « Premier appelé : Blanc » inverse l'affichage partout. Les vues lisent
+/// `@AppStorage(SideColor.key)` pour se mettre à jour instantanément.
+enum SideColor {
+    static let key = "first_called_color"
+    static let defaultValue = "red"
+
+    static func isRed(_ side: String?, firstColor: String) -> Bool {
+        guard let side else { return false }
+        return (side == "a") == (firstColor != "white")
+    }
+}
