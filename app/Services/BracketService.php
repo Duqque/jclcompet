@@ -264,6 +264,99 @@ final class BracketService
                 $slots[$i] = null;
             }
         }
+        return self::separateClubs($slots, $club, $seededIds);
+    }
+
+    /**
+     * Coût « clubs » d'un placement : même club au premier combat réel (premier tour, ou adversaire direct après un
+     * tour offert) très pénalisé, puis même club dans le même quart, puis dans la même moitié.
+     * @param array<int, ?int> $slots @param array<int, ?int> $club
+     */
+    public static function clubCost(array $slots, array $club): int
+    {
+        $size = count($slots);
+        $same = fn ($a, $b) => $a !== null && $b !== null && ($club[$a] ?? null) !== null && ($club[$a] ?? null) === ($club[$b] ?? null);
+        $cost = 0;
+        for ($p = 0; $p < $size; $p += 2) {
+            [$a, $b] = [$slots[$p], $slots[$p + 1]];
+            if ($same($a, $b)) {
+                $cost += 10000;
+            }
+            // Tour offert : le premier adversaire vient de la paire voisine
+            $alone = $a ?? $b;
+            if ($size >= 4 && ($a === null) !== ($b === null) && $p % 4 === 0) {
+                [$c, $d] = [$slots[$p + 2], $slots[$p + 3]];
+                if (($c === null) !== ($d === null)) {
+                    $cost += $same($alone, $c ?? $d) ? 10000 : 0; // deux exemptés face à face
+                } else {
+                    $cost += ($same($alone, $c) ? 3000 : 0) + ($same($alone, $d) ? 3000 : 0);
+                }
+            } elseif ($size >= 4 && ($a === null) === ($b === null) && $a !== null && $p % 4 === 2) {
+                // paire complète dont la voisine (avant) a un exempté
+                [$c, $d] = [$slots[$p - 2], $slots[$p - 1]];
+                if (($c === null) !== ($d === null)) {
+                    $cost += ($same($c ?? $d, $a) ? 3000 : 0) + ($same($c ?? $d, $b) ? 3000 : 0);
+                }
+            } elseif ($size >= 4 && ($a === null) !== ($b === null) && $p % 4 === 2) {
+                [$c, $d] = [$slots[$p - 2], $slots[$p - 1]];
+                if (($c === null) === ($d === null) && $c !== null) {
+                    $cost += ($same($alone, $c) ? 3000 : 0) + ($same($alone, $d) ? 3000 : 0);
+                }
+            }
+        }
+        foreach ([[intdiv($size, 4), 100], [intdiv($size, 2), 10]] as [$len, $w]) {
+            if ($len < 4) {
+                continue;
+            }
+            for ($s = 0; $s < $size; $s += $len) {
+                $ids = array_values(array_filter(array_slice($slots, $s, $len), fn ($v) => $v !== null));
+                $n = count($ids);
+                for ($i = 0; $i < $n; $i++) {
+                    for ($j = $i + 1; $j < $n; $j++) {
+                        $cost += $same($ids[$i], $ids[$j]) ? $w : 0;
+                    }
+                }
+            }
+        }
+        return $cost;
+    }
+
+    /**
+     * Amélioration du tirage : échanges entre combattants non têtes de série tant qu'ils diminuent le coût « clubs »
+     * (éviter au maximum deux combattants du même club au premier combat). Les exemptions et têtes de série restent en place.
+     * @param array<int, ?int> $slots @param array<int, ?int> $club @param int[] $fixed
+     */
+    public static function separateClubs(array $slots, array $club, array $fixed = []): array
+    {
+        $movable = [];
+        foreach ($slots as $i => $v) {
+            if ($v !== null && !in_array($v, $fixed, true)) {
+                $movable[] = $i;
+            }
+        }
+        $cost = self::clubCost($slots, $club);
+        for ($pass = 0; $pass < 30 && $cost > 0; $pass++) {
+            $improved = false;
+            $order = self::shuffled($movable);
+            foreach ($order as $x) {
+                foreach ($order as $y) {
+                    if ($x >= $y || ($club[$slots[$x]] ?? null) === ($club[$slots[$y]] ?? null)) {
+                        continue;
+                    }
+                    $try = $slots;
+                    [$try[$x], $try[$y]] = [$try[$y], $try[$x]];
+                    $c = self::clubCost($try, $club);
+                    if ($c < $cost) {
+                        $slots = $try;
+                        $cost = $c;
+                        $improved = true;
+                    }
+                }
+            }
+            if (!$improved) {
+                break;
+            }
+        }
         return $slots;
     }
 
@@ -342,28 +435,83 @@ final class BracketService
      * Nouveau tirage d'un tableau (têtes de série mises à jour), tant qu'aucun de ses combats n'a commencé.
      * @param array<int,int> $seeds registration_id => tête de série (1..8), les autres sont ignorés
      */
-    public static function redraw(int $poolId, array $seeds): void
+    /**
+     * Refait le tirage d'un tableau.
+     * $mode null : premier tirage (refusé si le tirage est validé ou si des combats ont commencé) ;
+     * 'reset' : tout recommencer (les combats déjà disputés sont supprimés, avec trace dans le journal) ;
+     * 'keep'  : les combattants des combats déjà disputés et les têtes de série gardent leur case, les autres sont retirés.
+     * Dans les deux cas le tableau redevient « à valider ».
+     */
+    public static function redraw(int $poolId, array $seeds, ?string $mode = null): void
     {
         $pool = PoolService::pool($poolId);
         CompetitionService::assertWritable((int) $pool['competition_id']);
         if ($pool['kind'] !== 'bracket') {
             throw new DomainError('Seul un tableau à double repêchage se tire au sort.');
         }
-        if (Database::value("SELECT 1 FROM bouts WHERE pool_id = ? AND status <> 'scheduled' AND status <> 'cancelled' LIMIT 1", [$poolId])) {
-            throw new DomainError('Un combat de ce tableau a commencé : le tirage ne peut plus être refait.');
+        if (Database::value("SELECT 1 FROM bouts WHERE pool_id = ? AND status = 'in_progress' LIMIT 1", [$poolId])) {
+            throw new DomainError('Un combat de ce tableau est en cours sur un tapis : attendez sa fin pour refaire le tirage.');
         }
-        if ((int) $pool['is_locked'] === 1) {
-            throw new DomainError('Ce tirage a été validé : déverrouillez le tableau pour le refaire.');
+        $played = Database::all("SELECT id, bracket_key, a_registration_id, b_registration_id, status FROM bouts WHERE pool_id = ? AND status IN ('finished','validated')", [$poolId]);
+        if ($mode === null) {
+            if ($played) {
+                throw new DomainError('Des combats de ce tableau ont été disputés : choisissez de les garder ou de tout recommencer.');
+            }
+            if ((int) $pool['is_locked'] === 1) {
+                throw new DomainError('Ce tirage a été validé : utilisez « Refaire le tirage ».');
+            }
+        } elseif (!in_array($mode, ['reset', 'keep'], true)) {
+            throw new DomainError('Choix de tirage inconnu.');
         }
-        $seeds = self::saveSeeds($poolId, $seeds);
+        $keep = $mode === 'keep' && $played;
+        $seeds = $keep ? self::seedsFor((int) $pool['competition_id'], $pool['group_key']) : self::saveSeeds($poolId, $seeds);
         $members = Database::all(
-            'SELECT pa.registration_id AS id, pa.reference_weight_kg AS weight, r.club_id FROM pool_athletes pa JOIN registrations r ON r.id = pa.registration_id WHERE pa.pool_id = ?',
+            'SELECT pa.registration_id AS id, pa.seed AS slot, pa.reference_weight_kg AS weight, r.club_id FROM pool_athletes pa JOIN registrations r ON r.id = pa.registration_id WHERE pa.pool_id = ?',
             [$poolId]
         );
         $athletes = array_map(fn ($m) => ['id' => (int) $m['id'], 'club_id' => $m['club_id'] === null ? null : (int) $m['club_id'], 'weight' => $m['weight']], $members);
-        $slots = self::draw($athletes, $seeds, (int) $pool['bracket_size'], random_int(1, 2_000_000_000));
-        Database::transaction(function () use ($pool, $slots, $seeds, $poolId) {
-            Database::run("DELETE FROM bouts WHERE pool_id = ? AND status = 'scheduled'", [$poolId]);
+        $size = (int) $pool['bracket_size'];
+        mt_srand(random_int(1, 2_000_000_000));
+        if ($keep) {
+            // Combattants déjà engagés (et têtes de série) à leur place ; les exemptions restent où elles sont
+            $fixed = [];
+            foreach ($played as $b) {
+                $fixed[(int) $b['a_registration_id']] = true;
+                $fixed[(int) $b['b_registration_id']] = true;
+            }
+            foreach (array_keys($seeds) as $id) {
+                $fixed[(int) $id] = true;
+            }
+            $slots = array_fill(0, $size, null);
+            $free = [];
+            $movers = [];
+            foreach ($members as $m) {
+                $slot = (int) $m['slot'] - 1;
+                if (isset($fixed[(int) $m['id']])) {
+                    $slots[$slot] = (int) $m['id'];
+                } else {
+                    $free[] = $slot;
+                    $movers[] = (int) $m['id'];
+                }
+            }
+            foreach (self::shuffled($movers) as $k => $id) {
+                $slots[$free[$k]] = $id;
+            }
+            $club = array_column($athletes, 'club_id', 'id');
+            $slots = self::separateClubs($slots, $club, array_map('intval', array_keys($fixed)));
+        } else {
+            $slots = self::draw($athletes, $seeds, $size, mt_rand());
+        }
+        Database::transaction(function () use ($pool, $slots, $seeds, $poolId, $mode, $keep, $played) {
+            if ($mode === 'reset' && $played) {
+                Database::run('DELETE FROM bouts WHERE pool_id = ?', [$poolId]);
+            } else {
+                Database::run("DELETE FROM bouts WHERE pool_id = ? AND status = 'scheduled'", [$poolId]);
+            }
+            if (!$keep && in_array($pool['status'], ['in_progress', 'finished'], true)) {
+                Database::run("UPDATE pools SET status = 'validated' WHERE id = ?", [$poolId]);
+            }
+            Database::run('UPDATE pools SET is_locked = 0 WHERE id = ?', [$poolId]);
             Database::run('UPDATE pool_athletes SET seed = seed + 1000 WHERE pool_id = ?', [$poolId]);
             foreach ($slots as $slot => $reg) {
                 if ($reg !== null) {
@@ -371,7 +519,11 @@ final class BracketService
                 }
             }
             self::refresh(PoolService::pool($poolId));
-            AuditLogger::log('bracket.redraw', 'pool', $poolId, null, ['seeds' => $seeds], null, (int) $pool['competition_id']);
+            if ($played) {
+                RankingService::recomputeClubs((int) $pool['competition_id']);
+            }
+            AuditLogger::log('bracket.redraw', 'pool', $poolId, $played ? ['played_bouts' => $played] : null,
+                ['seeds' => $seeds, 'mode' => $mode ?? 'first', 'kept_bouts' => $keep ? count($played) : 0], null, (int) $pool['competition_id']);
         });
     }
 
@@ -973,7 +1125,7 @@ final class BracketService
     public static function categories(int $generationId): array
     {
         $pools = Database::all(
-            "SELECT p.*, ac.sort_order AS age_sort, wc.sort_order AS weight_sort, t.number AS tatami_number,
+            "SELECT p.*, ac.sort_order AS age_sort, ac.name AS age_name, wc.sort_order AS weight_sort, t.number AS tatami_number,
                     (SELECT COUNT(*) FROM pool_athletes pa WHERE pa.pool_id = p.id) AS n
              FROM pools p JOIN age_categories ac ON ac.id = p.age_category_id LEFT JOIN weight_categories wc ON wc.id = p.weight_category_id
              LEFT JOIN tatamis t ON t.id = p.tatami_id
@@ -983,7 +1135,8 @@ final class BracketService
         $groups = [];
         foreach ($pools as $p) {
             $k = $p['group_key'];
-            $groups[$k] ??= ['key' => $k, 'label' => preg_replace('/ · (Poule \d+|Tableau final|Tableau)$/u', '', $p['label']), 'pools' => [], 'count' => 0, 'kind' => 'pool', 'main_pool_id' => null, 'tatami' => null, 'finished' => true];
+            $groups[$k] ??= ['key' => $k, 'label' => preg_replace('/ · (Poule \d+|Tableau final|Tableau)$/u', '', $p['label']), 'pools' => [], 'count' => 0, 'kind' => 'pool', 'main_pool_id' => null, 'tatami' => null, 'finished' => true,
+                'sex' => $p['sex'], 'age' => $p['age_name']];
             $groups[$k]['pools'][] = (int) $p['id'];
             $groups[$k]['count'] += (int) $p['n'];
             $groups[$k]['tatami'] ??= $p['tatami_number'] === null ? null : (int) $p['tatami_number'];

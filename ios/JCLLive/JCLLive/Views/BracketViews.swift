@@ -16,6 +16,8 @@ struct BracketCategory: Codable, Identifiable, Hashable {
     let count: Int
     let mat: Int?
     let finished: Bool
+    let sex: String?
+    let age: String?
 
     var kindLabel: String {
         switch kind {
@@ -97,6 +99,8 @@ struct BracketDetail: Codable {
     let size: Int?
     let sections: [BracketSection]
     let rankings: [RankingGroup]
+    let trees: [TreeDrawing]?
+    let pdf: String?
 }
 
 extension API {
@@ -113,10 +117,20 @@ struct BracketTabView: View {
     @State private var data: BracketCategoriesResponse?
     @State private var error: String?
     @State private var query = ""
+    @State private var sex = "all"
+    @State private var age = "all"
+
+    private var ages: [String] {
+        var seen: [String] = []
+        for c in data?.categories ?? [] { if let a = c.age, !seen.contains(a) { seen.append(a) } }
+        return seen
+    }
 
     private var shown: [BracketCategory] {
         let q = query.folded
-        return (data?.categories ?? []).filter { q.isEmpty || $0.label.folded.contains(q) }
+        return (data?.categories ?? []).filter {
+            (q.isEmpty || $0.label.folded.contains(q)) && (sex == "all" || $0.sex == sex) && (age == "all" || $0.age == age)
+        }
     }
 
     var body: some View {
@@ -147,6 +161,14 @@ struct BracketTabView: View {
                     if let error, data == nil { ErrorCard(message: error) { Task { await load() } } }
                     if let d = data {
                         if d.categories.count > 6 { SearchField(text: $query, prompt: "Catégorie, poids") }
+                        // Filtres : âge et sexe
+                        if ages.count > 1 {
+                            PillTabs(items: [("all", "Tous les âges")] + ages.map { ($0, $0) }, selection: $age).padding(.horizontal, -16)
+                        }
+                        PillTabs(items: [("all", "Filles et garçons"), ("M", "Garçons"), ("F", "Filles")], selection: $sex).padding(.horizontal, -16)
+                        if !d.categories.isEmpty && shown.isEmpty {
+                            EmptyState(icon: "line.3.horizontal.decrease.circle", title: "Aucune catégorie pour ces filtres")
+                        }
                         if d.categories.isEmpty {
                             EmptyState(icon: "trophy", title: "Pas encore de tableaux", message: "Les tableaux et poules apparaissent dès que l'organisation les publie.")
                         }
@@ -214,7 +236,12 @@ struct BracketDetailView: View {
     @State private var d: BracketDetail?
     @State private var error: String?
     @State private var page = ""
+    @AppStorage("bracket_mode") private var mode = "tree"
+    @State private var treePage = 0
+    @State private var download = false
     @Environment(Favorites.self) private var favorites
+
+    private var hasTree: Bool { !(d?.trees ?? []).isEmpty }
 
     private var pages: [(String, String)] {
         guard let d else { return [] }
@@ -225,6 +252,19 @@ struct BracketDetailView: View {
         VStack(spacing: 0) {
             if let d {
                 header(d)
+                if hasTree { modeBar(d) }
+                if hasTree && mode == "tree", let trees = d.trees {
+                    PillTabs(items: trees.indices.map { ($0, $0 == 0 ? "Tableau principal" : (trees[$0].title.contains("(1)") ? "Repêchage 1" : "Repêchage 2")) } + [(-1, "Classement")],
+                             selection: $treePage).padding(.vertical, 8)
+                    if treePage >= 0 && treePage < trees.count {
+                        BracketTreeView(tree: trees[treePage]).id(trees[treePage].title).padding(.horizontal, 12).padding(.bottom, 8)
+                    } else {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 14) { ForEach(d.rankings) { g in RankingCard(group: g, slug: slug) } }
+                                .padding(.horizontal, 16).padding(.bottom, 24).fixedScreenWidth()
+                        }
+                    }
+                } else {
                 PillTabs(items: pages, selection: $page).padding(.vertical, 8)
                 TabView(selection: $page) {
                     ForEach(d.sections) { s in
@@ -255,6 +295,7 @@ struct BracketDetailView: View {
                     .tag("rank")
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                }
             } else if let error {
                 ErrorCard(message: error) { Task { await load() } }.padding(16)
                 Spacer()
@@ -268,6 +309,30 @@ struct BracketDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .polling(every: 4) { await load() }
+        .sheet(isPresented: $download) {
+            if let path = d?.pdf { BracketPDFSheet(path: path, title: d?.label ?? "Tableau") }
+        }
+    }
+
+    /// Deux affichages : l'arbre (forme du tableau, zoomable) ou les combats par tour ; téléchargement du PDF à jour.
+    private func modeBar(_ d: BracketDetail) -> some View {
+        HStack(spacing: 8) {
+            Picker("Affichage", selection: $mode) {
+                Text("Tableau").tag("tree")
+                Text("Par tours").tag("rounds")
+            }
+            .pickerStyle(.segmented)
+            if d.pdf != nil {
+                Button { download = true } label: {
+                    Label("Télécharger", systemImage: "arrow.down.doc.fill").font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 12).frame(height: 34)
+                        .foregroundStyle(.white).background(Theme.red, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Télécharger le tableau à jour (PDF)")
+            }
+        }
+        .padding(.horizontal, 16).padding(.top, 6)
     }
 
     private func header(_ d: BracketDetail) -> some View {
@@ -345,15 +410,16 @@ struct BracketMatchCard: View {
         let s = side == "a" ? match.a : match.b
         let win = match.winner == side
         let lost = match.winner != nil && !win && match.bout != nil
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             BeltMark(side: side, width: 20)
             if let a = s.athlete {
                 ClubLogo(path: a.clubLogo, name: a.club, size: 38)
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
-                        Text("\(a.firstName) \(Text(a.lastName).fontWeight(.heavy))")
-                            .font(.system(size: 17, weight: win ? .semibold : .regular)).foregroundStyle(Theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
+                        // NOM Prénom, même taille sur toutes les lignes (retour à la ligne seulement si le nom est très long)
+                        Text("\(Text(a.lastName).fontWeight(.heavy)) \(a.firstName)")
+                            .font(.system(size: 16, weight: win ? .semibold : .regular)).foregroundStyle(Theme.ink)
+                            .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                         if favorites.contains(a.registrationId) { Image(systemName: "star.fill").font(.caption).foregroundStyle(Theme.yellow) }
                     }
                     HStack(spacing: 6) {
@@ -361,9 +427,17 @@ struct BracketMatchCard: View {
                         Text(a.clubShort ?? a.club ?? "").font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
                     }
                 }
-                Spacer(minLength: 4)
-                if let sc = s.score { Text(sc).font(.score(20, weight: 800)).foregroundStyle(win ? Theme.ink : Theme.muted) }
-                if win { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green) }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
+                // Scores alignés d'une ligne à l'autre : colonne de largeur fixe + place réservée pour la coche
+                if match.a.score != nil || match.b.score != nil || match.winner != nil {
+                    Text(s.score ?? "").font(.score(20, weight: 800)).monospacedDigit()
+                        .foregroundStyle(win ? Theme.ink : Theme.muted)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .frame(width: 58, alignment: .trailing)
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green)
+                        .frame(width: 22).opacity(win ? 1 : 0).accessibilityHidden(!win)
+                }
             } else {
                 Text(s.type == "bye" ? "Exempt" : (s.text ?? "À venir")).font(.subheadline.italic()).foregroundStyle(Theme.faint)
                     .fixedSize(horizontal: false, vertical: true)

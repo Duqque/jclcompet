@@ -226,4 +226,79 @@ final class BracketTest extends TestCase
         $this->assertDomainError(fn () => BracketService::redraw((int) $pool['id'], [$ids[1] => 1, $ids[2] => 1]), 'une fois');
         $this->assertDomainError(fn () => PoolService::moveAthlete($ids[0], (int) $pool['id']), 'tableau');
     }
+
+    public function testRedrawAfterStartKeepsOrResetsPlayedBouts(): void
+    {
+        $this->admin();
+        $cid = $this->officialCompetition();
+        $this->fighters($cid, 12);
+        $gen = $this->generateAndValidate($cid);
+        $pool = Database::one("SELECT * FROM pools WHERE generation_id = ? AND kind = 'bracket'", [$gen]);
+        $pid = (int) $pool['id'];
+        Database::run('UPDATE pools SET is_locked = 1 WHERE id = ?', [$pid]);
+        $this->assertDomainError(fn () => BracketService::redraw($pid, []), 'Refaire');
+        $this->playAll($cid, 2);
+        $played = Database::all("SELECT id, a_registration_id, b_registration_id FROM bouts WHERE pool_id = ? AND status = 'validated'", [$pid]);
+        $this->assertCount(2, $played);
+        $slotOf = fn ($reg) => (int) Database::value('SELECT seed FROM pool_athletes WHERE pool_id = ? AND registration_id = ?', [$pid, $reg]);
+        $before = [];
+        foreach ($played as $b) {
+            $before[(int) $b['a_registration_id']] = $slotOf($b['a_registration_id']);
+            $before[(int) $b['b_registration_id']] = $slotOf($b['b_registration_id']);
+        }
+        $this->assertDomainError(fn () => BracketService::redraw($pid, []), 'garder');
+
+        // Garder : les combats disputés et leurs combattants restent en place
+        BracketService::redraw($pid, [], 'keep');
+        foreach ($before as $reg => $slot) {
+            $this->assertSame($slot, $slotOf($reg), 'combattant déjà engagé gardé à sa place');
+        }
+        $this->assertSame(2, (int) Database::value("SELECT COUNT(*) FROM bouts WHERE pool_id = ? AND status = 'validated'", [$pid]));
+        $this->assertSame(0, (int) Database::value('SELECT is_locked FROM pools WHERE id = ?', [$pid]), 'tirage à valider de nouveau');
+        $this->assertSame(12, (int) Database::value('SELECT COUNT(DISTINCT seed) FROM pool_athletes WHERE pool_id = ?', [$pid]));
+
+        // Tout recommencer : résultats effacés, tableau reprogrammé depuis le premier tour
+        BracketService::redraw($pid, [], 'reset');
+        $this->assertSame(0, (int) Database::value("SELECT COUNT(*) FROM bouts WHERE pool_id = ? AND status <> 'scheduled'", [$pid]));
+        $this->assertSame(4, (int) Database::value("SELECT COUNT(*) FROM bouts WHERE pool_id = ? AND stage_label LIKE '8e de finale%'", [$pid]));
+        $this->assertGreaterThanOrEqual(1, (int) Database::value("SELECT COUNT(*) FROM audit_logs WHERE entity_id = ? AND action = 'bracket.redraw' AND old_values IS NOT NULL", [(string) $pid]), 'résultats effacés gardés dans le journal');
+    }
+
+    public function testClubsNeverMeetInFirstFightWhenAvoidable(): void
+    {
+        // 45 combattants de 4 clubs (dont un très représenté) dans un tableau de 64, 8 têtes de série
+        for ($run = 1; $run <= 20; $run++) {
+            $athletes = [];
+            for ($i = 1; $i <= 45; $i++) {
+                $athletes[] = ['id' => $i, 'club_id' => $i <= 16 ? 1 : 2 + $i % 3];
+            }
+            $seeds = [];
+            foreach ([1, 2, 3, 4, 17, 18, 19, 20] as $k => $id) {
+                $seeds[$id] = $k + 1;
+            }
+            $slots = BracketService::draw($athletes, $seeds, 64, $run);
+            $club = array_column($athletes, 'club_id', 'id');
+            // Premier combat réel : paire du premier tour, ou adversaire de la paire voisine après un tour offert
+            for ($p = 0; $p < 64; $p += 2) {
+                [$a, $b] = [$slots[$p], $slots[$p + 1]];
+                if ($a !== null && $b !== null) {
+                    $this->assertNotSame($club[$a], $club[$b], "tirage $run : même club au premier tour (cases " . ($p + 1) . ')');
+                }
+            }
+            // Exempté au premier tour : son premier adversaire sort de la paire voisine
+            for ($p = 0; $p < 64; $p += 2) {
+                [$a, $b] = [$slots[$p], $slots[$p + 1]];
+                if (($a === null) === ($b === null)) {
+                    continue;
+                }
+                $alone = $a ?? $b;
+                $q = $p ^ 2;
+                [$c, $d] = [$slots[$q], $slots[$q + 1]];
+                $next = ($c === null) !== ($d === null) ? [$c ?? $d] : array_filter([$c, $d], fn ($v) => $v !== null);
+                foreach ($next as $o) {
+                    $this->assertNotSame($club[$alone], $club[$o], "tirage $run : même club au premier combat après exemption (case " . ($p + 1) . ')');
+                }
+            }
+        }
+    }
 }

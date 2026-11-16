@@ -484,33 +484,68 @@ body.att-shell:has(.draw) { background: var(--surface-1, #ecebe8); }
 .dn-name small { display: block; color: var(--muted); font-size: .78em; }
 .dn-seed { font: 800 italic .85rem/1 var(--font-display, inherit); background: var(--red); color: #fff; border-radius: 999px; padding: .3rem .55rem; white-space: nowrap; }
 @keyframes dnIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.draw-stage { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 1rem; align-items: start; }
-.draw-pool { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; max-height: calc(100vh - 220px); overflow: auto; }
-.draw-pool li { padding: .45rem .6rem; font-size: .95rem; transition: opacity .3s, transform .3s; }
-.draw-pool li .dn-logo { width: 28px; height: 28px; }
-.draw-pool li.is-picked { transform: scale(1.04); box-shadow: 0 0 0 3px var(--red); }
+.draw-stage { display: grid; gap: .9rem; }
+/* Noms à placer : bandeau au-dessus de l'arbre */
+.draw-pool { list-style: none; margin: 0; padding: .2rem .2rem .5rem; display: flex; gap: .4rem; overflow-x: auto; scroll-behavior: smooth; }
+.draw-pool li { flex: none; padding: .4rem .7rem .4rem .45rem; font-size: .9rem; transition: opacity .3s, transform .3s; }
+.draw-pool li .dn-logo { width: 26px; height: 26px; }
+.draw-pool li.is-picked { transform: scale(1.06); box-shadow: 0 0 0 3px var(--red); }
 .draw-pool li.is-placed { opacity: .25; transform: none; box-shadow: none; }
-.draw-bracket { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 1rem; }
-.db-col { display: grid; gap: .55rem; align-content: start; }
-.db-pair { display: grid; gap: 2px; background: var(--white); border-radius: 16px; padding: .3rem; box-shadow: 0 6px 20px rgba(0,0,0,.04); }
-.db-slot { display: grid; grid-template-columns: 2rem auto 1fr; align-items: center; gap: .4rem; min-height: 46px; padding: .25rem .5rem; border-radius: 12px; background: var(--surface-2); transition: background .3s, box-shadow .3s; }
-.db-num { font: 800 italic .85rem/1 var(--font-display, inherit); color: var(--muted); text-align: center; }
-.db-who { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5rem; min-width: 0; font-size: clamp(.85rem, 1.05vw, 1.05rem); }
-.db-who .dn-logo { width: 28px; height: 28px; }
-.db-slot.is-filled { background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
-.db-slot.is-new { background: var(--red-soft); box-shadow: inset 0 0 0 2px var(--red); animation: dbPop .5s ease; }
-.db-slot.is-bye .db-who { color: var(--muted); font-style: italic; display: block; }
+/* Arbre du tirage : moitié haute à gauche, moitié basse à droite, finale au centre */
+.draw-bracket { position: relative; overflow: hidden; background: var(--white); border-radius: 26px; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,.05); }
+.db-tree { position: absolute; left: 0; top: 0; transform-origin: top left; }
+.draw-bracket { box-sizing: content-box; border: 18px solid var(--white); }
+.db-lines { position: absolute; inset: 0; overflow: visible; }
+.db-lines path { fill: none; stroke: #b8b8c0; stroke-width: 1.6; }
+.db-slot, .db-node, .db-cat { position: absolute; box-sizing: border-box; }
+.db-slot { display: grid; grid-template-columns: 1.7rem 24px 1fr; align-items: center; gap: .35rem; padding: 0 .55rem 0 .7rem; border-radius: 10px; background: var(--surface-2); transition: background .3s, box-shadow .3s; }
+.db-slot.is-right { grid-template-columns: 1.7rem 24px 1fr; }
+.db-belt svg { width: 22px; height: 15px; }
+.db-num { font: 800 italic .78rem/1 var(--font-display, inherit); color: var(--muted); text-align: center; }
+.db-who { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .4rem; min-width: 0; font-size: .86rem; }
+.db-who .dn-logo { width: 24px; height: 24px; border-radius: 7px; }
+.db-who .dn-logo img { max-width: 19px; max-height: 19px; }
+.db-who .dn-name { line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-who .dn-name small { font-size: .72rem; overflow: hidden; text-overflow: ellipsis; }
+.db-who .dn-seed { font-size: .68rem; padding: .22rem .4rem; }
+.db-slot.is-filled { background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.db-slot.is-new { background: var(--red-soft); box-shadow: inset 0 0 0 2px var(--red); animation: dbPop .5s ease; z-index: 2; }
+.db-slot.is-bye { background: transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.db-slot.is-bye .db-who { color: var(--muted); font-style: italic; display: block; font-size: .8rem; }
+.db-node { border-radius: 8px; background: var(--surface-2); box-shadow: inset 0 0 0 1px rgba(0,0,0,.05); }
+.db-node.is-final { display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 2.5px var(--gold, #d4a72c); border-radius: 12px; }
+.db-node.is-final span { font: 800 italic 1rem/1 var(--font-display, inherit); text-transform: uppercase; letter-spacing: .04em; }
+.db-cat { display: grid; place-content: center; text-align: center; gap: .15rem; background: var(--ink); color: #fff; border-radius: 16px; }
+.db-cat small { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; opacity: .7; }
+.db-cat strong { font: 800 italic 1.1rem/1.05 var(--font-display, inherit); white-space: nowrap; }
 @keyframes dbPop { 0% { transform: scale(.96); } 60% { transform: scale(1.03); } 100% { transform: none; } }
 .draw-seeds { max-width: 620px; }
 .draw-seed-list { display: grid; gap: .4rem; max-height: 55vh; overflow: auto; margin: .8rem 0; }
 .draw-seed-row { display: grid; grid-template-columns: auto 1fr 110px; align-items: center; gap: .6rem; background: var(--surface-2); border-radius: 12px; padding: .4rem .6rem; }
-@media (max-width: 900px) { .draw-stage { grid-template-columns: 1fr; } .draw-pool { max-height: 30vh; } .draw-names { --cols: 2 !important; } .draw-bracket { --cols: 1 !important; } }
+@media (max-width: 900px) { .draw-names { --cols: 2 !important; } }
 @media (prefers-reduced-motion: reduce) { .draw-names li, .db-slot.is-new { animation: none; } }
 
 /* Rouge (premier appelé, case du haut) et blanc (case du bas) dans chaque combat du tirage */
-.db-slot { position: relative; }
-.db-slot::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 5px; border-radius: 4px; }
+.db-slot::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 4px; border-radius: 4px; }
 .db-slot.is-red::before { background: #c21a2c; }
 .db-slot.is-white::before { background: #fff; box-shadow: inset 0 0 0 1px #a1a1aa; }
 .db-slot.is-red.is-filled { background: #fff4f5; }
 .db-belt { display: grid; place-items: center; }
+
+/* Refaire le tirage : choix garder / tout recommencer */
+.draw-redo { max-width: 560px; }
+.draw-redo-choices { display: grid; gap: .6rem; margin-top: .9rem; }
+.draw-redo-choice { display: grid; gap: .25rem; text-align: left; padding: 1rem 1.1rem; border: 0; border-radius: 18px; background: var(--surface-2); color: var(--ink); font: inherit; cursor: pointer; transition: box-shadow .2s, transform .2s; }
+.draw-redo-choice:hover, .draw-redo-choice:focus-visible { box-shadow: inset 0 0 0 2px var(--ink); transform: translateY(-1px); }
+.draw-redo-choice strong { font-size: 1.05rem; }
+.draw-redo-choice span { color: var(--muted); font-size: .92rem; line-height: 1.35; }
+.draw-redo-choice.is-danger strong { color: var(--red); }
+.draw-redo-choice.is-danger:hover { box-shadow: inset 0 0 0 2px var(--red); }
+.db-slot.is-kept { background: #f4f4f5; }
+.db-slot.is-kept::after { content: "gardé"; position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.draw-redo .cd-head h2, .draw-seeds .cd-head h2 { flex: 1; }
+.draw-redo > p, .draw-seeds > p { margin: 0; padding: 1rem 1.2rem 0; line-height: 1.45; }
+.draw-redo .draw-redo-choices { padding: 0 1.2rem 1.2rem; }
+.draw-redo .draw-redo-choice { background: var(--white); }
+.draw-seeds .draw-seed-list, .draw-seeds > .draw-bar { padding: 0 1.2rem; }
+.draw-seeds > .draw-bar { padding-bottom: 1.1rem; justify-content: flex-end; }

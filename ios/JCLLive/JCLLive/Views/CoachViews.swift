@@ -53,6 +53,8 @@ struct CoachWelcomeView: View {
                     .background(Theme.redSoft, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                Text("Pas de compte ? Les onglets Accueil, Compétitions, Direct et Tableau sont accessibles à tous, sans connexion.")
+                    .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 4)
                 Text("Commissaires, accueil et buvette : utilisez le site avec les comptes fournis par l'organisation.")
                     .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 4)
             }

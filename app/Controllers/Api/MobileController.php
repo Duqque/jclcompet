@@ -285,6 +285,7 @@ final class MobileController extends Controller
         $cats = $g ? BracketService::categories((int) $g['id']) : [];
         return $this->out(['competition' => $this->summary($c), 'categories' => array_map(fn ($k) => [
             'id' => $k['main_pool_id'], 'label' => $k['label'], 'kind' => $k['kind'], 'count' => $k['count'], 'mat' => $k['tatami'], 'finished' => $k['finished'],
+            'sex' => $k['sex'], 'age' => $k['age'],
         ], $cats)], 'no-store');
     }
 
@@ -344,6 +345,11 @@ final class MobileController extends Controller
             'id' => (int) $pool['id'], 'label' => $label, 'kind' => $pool['kind'] === 'bracket' ? 'bracket' : ($pool['kind'] === 'final_block' ? 'pools_final' : (count($siblings) > 1 ? 'pools' : 'pool')),
             'mat' => $tatami, 'complete' => $complete, 'size' => $pool['bracket_size'] === null ? null : (int) $pool['bracket_size'],
             'sections' => $sections, 'rankings' => $rankings, 'server_now_ms' => BoutService::nowMs(),
+            // Arbre façon feuille officielle (mêmes positions que le site et le PDF) et PDF à jour à la demande
+            'trees' => $pool['kind'] === 'pool' ? [] : array_map(fn ($t) => ['title' => $t['title'], 'cols' => $t['cols'], 'rows' => $t['rows'],
+                'joins' => $t['joins'], 'items' => array_map(fn ($it) => array_intersect_key($it, array_flip(['leaf', 'type', 'athlete', 'seed', 'text', 'key', 'label', 'winner', 'score', 'status', 'bout_id', 'mat', 'y', 'col', 'span'])), $t['items'])],
+                BracketService::drawings($pool)),
+            'pdf' => $pool['kind'] === 'pool' ? null : '/competitions/' . $c['slug'] . '/tableaux/' . $pool['id'] . '.pdf',
         ], 'no-store');
     }
 

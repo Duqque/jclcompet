@@ -21,7 +21,7 @@ $stateLabel = ['todo' => ['', 'À tirer'], 'validated' => ['badge-green', 'Tirag
       <p class="draw-lead">Choisissez la catégorie à tirer au sort.</p>
       <div class="draw-cats">
         <?php foreach ($categories as $cat): [$cls, $txt] = $stateLabel[$cat['state']]; ?>
-          <button type="button" class="draw-cat" data-cat="<?= (int) $cat['id'] ?>" data-state="<?= e($cat['state']) ?>"<?= $cat['state'] === 'started' ? ' disabled' : '' ?>>
+          <button type="button" class="draw-cat" data-cat="<?= (int) $cat['id'] ?>" data-state="<?= e($cat['state']) ?>">
             <strong><?= e($cat['label']) ?></strong>
             <span><?= (int) $cat['count'] ?> judokas · tableau de <?= (int) $cat['size'] ?></span>
             <span class="badge <?= $cls ?>" data-cat-state><?= $txt ?></span>
@@ -38,6 +38,7 @@ $stateLabel = ['todo' => ['', 'À tirer'], 'validated' => ['badge-green', 'Tirag
       <span class="draw-count" data-draw-count></span>
       <button type="button" class="btn btn-ghost" data-dialog-open="draw-seeds"><?= icon('flag') ?>Têtes de série</button>
       <button type="button" class="btn btn-red btn-lg" data-draw-run>Lancer le tirage</button>
+      <button type="button" class="btn btn-red btn-lg" data-draw-redo hidden><?= icon('refresh') ?>Refaire le tirage</button>
     </div>
     <ol class="draw-names" data-draw-names></ol>
   </section>
@@ -54,6 +55,12 @@ $stateLabel = ['todo' => ['', 'À tirer'], 'validated' => ['badge-green', 'Tirag
       <div class="draw-bracket" data-draw-bracket></div>
     </div>
   </section>
+
+  <dialog class="club-dialog draw-redo" id="draw-redo" aria-labelledby="draw-redo-t">
+    <div class="cd-head"><h2 id="draw-redo-t">Refaire le tirage</h2><button type="button" class="icon-btn" data-dialog-close aria-label="Fermer"><?= icon('x') ?></button></div>
+    <p data-redo-text></p>
+    <div class="draw-redo-choices" data-redo-choices></div>
+  </dialog>
 
   <dialog class="club-dialog draw-seeds" id="draw-seeds" aria-labelledby="draw-seeds-t">
     <div class="cd-head"><h2 id="draw-seeds-t">Têtes de série</h2><button type="button" class="icon-btn" data-dialog-close aria-label="Fermer"><?= icon('x') ?></button></div>
