@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 // Création (ou mise à jour) d'un compte, quel que soit son rôle.
 // Usage :
-//   php bin/create-user.php --role=admin --email=prenom.nom@exemple.fr --name="Prénom NOM" [--changer]
+//   php bin/create-user.php --role=admin --email=prenom.nom@exemple.fr --name="Prénom NOM" [--club="Judo Club Leforest"] [--changer]
+//     (--club rattache aussi l'administrateur à un club : il accède en plus à l'espace club)
 //   php bin/create-user.php --role=commissioner --email=table1@exemple.fr --name="Table 1" --tatami=1
 //   php bin/create-user.php --role=seller --email=buvette@exemple.fr --name="Buvette"
 //   php bin/create-user.php --role=coach --email=club@exemple.fr --name="Club - JC Leforest" --club="Judo Club Leforest"
@@ -63,8 +64,8 @@ function createAccount(array $opt): bool
     }
 
     $clubId = null;
-    if ($role === 'coach') {
-        $clubName = trim((string) ($opt['club'] ?? ''));
+    $clubName = trim((string) ($opt['club'] ?? ''));
+    if ($role === 'coach' || ($role === 'admin' && $clubName !== '')) {
         $clubId = $clubName !== '' ? (int) Database::value('SELECT id FROM clubs WHERE name = ? OR short_name = ?', [$clubName, $clubName]) : 0;
         if (!$clubId) {
             fwrite(STDERR, "Club introuvable : indiquez --club=\"nom exact du club\" (voir Administration › Profils › Clubs).\n");
