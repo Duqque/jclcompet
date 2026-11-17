@@ -17,6 +17,7 @@ struct BoutView: View {
                         if let p = d.bout.poolNumber { Chip(text: "Poule \(p)" + (d.bout.poolPosition.map { " · combat \($0)/\(d.bout.poolBouts ?? 0)" } ?? ""), fill: Theme.surface) }
                     }
                     Scoreboard(bout: d.bout)
+                    if let r = d.bout.replay { BoutReplayCard(replay: r, bout: d.bout) }
                     fighters(d)
                     timeline(d)
                     others(d.bout.a, d.otherA, d)

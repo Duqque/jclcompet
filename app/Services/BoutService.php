@@ -155,6 +155,13 @@ final class BoutService
                 'validate' => self::doValidate($b),
                 'reopen' => self::doReopen($b),
             };
+            // Repères vidéo à la milliseconde (replays, vidéo-arbitrage)
+            if (array_key_exists('started_at', $changes) && ($changes['started_at'] === null || $b['started_at'] === null)) {
+                $changes['started_at_ms'] = $changes['started_at'] === null ? null : $now;
+            }
+            if (array_key_exists('ended_at', $changes)) {
+                $changes['ended_at_ms'] = $changes['ended_at'] === null ? null : $now;
+            }
             $changes['version'] = (int) $b['version'] + 1;
             Database::update('bouts', $changes, 'id = :id', ['id' => $boutId]);
             Database::insert('score_events', [
@@ -164,6 +171,7 @@ final class BoutService
                 'side' => in_array($input['side'] ?? null, ['a', 'b'], true) ? $input['side'] : (in_array($input['winner_side'] ?? null, ['a', 'b'], true) ? $input['winner_side'] : null),
                 'payload_json' => json_encode(array_intersect_key($input, array_flip(['delta', 'method', 'held_ms'])), JSON_UNESCAPED_UNICODE),
                 'clock_ms' => self::elapsedMs(array_merge($b, $changes), $now),
+                'at_ms' => $now,
                 'user_id' => Auth::id(),
             ]);
             $after = self::find($boutId);
@@ -678,6 +686,7 @@ final class BoutService
             'b' => $side('b'),
             'winner_side' => $b['winner_side'],
             'win_method' => $b['win_method'],
+            'started_at_ms' => $b['started_at_ms'] === null ? null : (int) $b['started_at_ms'],
             'win_method_label' => $b['win_method'] ? (self::METHODS[$b['win_method']] ?? $b['win_method']) : null,
         ];
         if ($full) {

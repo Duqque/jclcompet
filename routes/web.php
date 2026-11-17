@@ -155,6 +155,19 @@ $router->group('/commissaire', ['auth'], function ($r) {
     $r->post('/combats/{bid:\d+}/corriger', [CommissionerController::class, 'correct']);
 });
 
+// --- Vidéo-arbitrage : régie de chaque tapis (caméras, VAR, sortie programme pour le direct YouTube) ----------------
+use App\Controllers\Video\VideoController;
+use App\Controllers\Video\CameraController;
+$router->group('/video', ['auth'], function ($r) {
+    $r->get('', [VideoController::class, 'home']);
+    $r->get('/tapis/{tid:\d+}', [VideoController::class, 'regie']);
+    $r->get('/tapis/{tid:\d+}/sortie', [VideoController::class, 'output']);
+});
+// Téléphone / iPad caméra : code donné par la régie, sans compte
+$router->get('/camera', [CameraController::class, 'form']);
+$router->post('/camera', [CameraController::class, 'enter'], ['nocsrf']);
+$router->get('/camera/{code:[A-Za-z0-9]+}', [CameraController::class, 'show']);
+
 // --- Caisse buvette / boutique ------------------------------------------------------
 $router->group('/caisse', ['auth', 'can:sales.record'], function ($r) {
     $r->get('', [PosController::class, 'index']);

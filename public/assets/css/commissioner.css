@@ -103,3 +103,10 @@
 .cm-choice .badge { justify-self: start; }
 .cm-choice-go { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--red); color: #fff; }
 .cm-others { color: var(--orange, #c2410c); font-weight: 600; }
+
+/* Vidéo-arbitrage en cours (état partagé avec la régie vidéo) */
+.cm-var { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1rem; margin: .8rem 1.2rem 0; padding: .8rem 1.1rem; border-radius: 14px; background: var(--ink); color: #fff; box-shadow: inset 6px 0 0 var(--red); animation: cmVar 1.6s ease-in-out infinite; }
+.cm-var strong { font: 800 italic 1.05rem var(--font-display); text-transform: uppercase; letter-spacing: .02em; }
+.cm-var span { opacity: .8; font-size: .92rem; }
+@keyframes cmVar { 50% { box-shadow: inset 6px 0 0 var(--yellow); } }
+@media (prefers-reduced-motion: reduce) { .cm-var { animation: none; } }

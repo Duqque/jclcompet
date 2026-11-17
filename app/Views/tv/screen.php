@@ -30,6 +30,7 @@
   <?php endforeach; ?>
   <section class="tv-next" data-next></section>
 </main>
+<div class="tv-var" data-var hidden><span class="tv-var-dot"></span>VIDÉO-ARBITRAGE EN COURS</div>
 <div class="tv-status" data-status hidden></div>
 <button class="tv-fs" type="button" data-fullscreen>Plein écran</button>
 <?= json_script('tv-initial', $state) ?>

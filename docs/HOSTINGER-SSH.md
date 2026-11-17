@@ -70,6 +70,7 @@ Si une vérification échoue, il dit quoi corriger (version de PHP, extension, `
 | Coach (Hénin Judo) | coach2@demo-judo.test | CoachDemo2026! |
 | Commissaire tapis 1 | commissaire1@demo-judo.test | CommissaireDemo2026! |
 | Commissaire tapis 2 | commissaire2@demo-judo.test | CommissaireDemo2026! |
+| Vidéo-arbitrage | video@demo-judo.test | VideoDemo2026! |
 | Accueil | accueil@demo-judo.test | AccueilDemo2026! |
 | Buvette | buvette@demo-judo.test | VendeurDemo2026! |
 

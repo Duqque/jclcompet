@@ -31,7 +31,7 @@ final class App
             $message = Config::get('app.debug') ? get_class($e) . ' : ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')' : HttpException::defaultMessage(500);
             $response = $this->errorResponse(500, $message, $request);
         }
-        return $this->secureHeaders($response);
+        return $this->secureHeaders($response, $request);
     }
 
     private function runMiddleware(array $middleware, Request $request): void
@@ -156,13 +156,16 @@ final class App
         return Response::html($html, $status);
     }
 
-    private function secureHeaders(Response $response): Response
+    private function secureHeaders(Response $response, ?Request $request = null): Response
     {
+        // Caméra autorisée uniquement sur la régie vidéo et la page caméra (téléphone / iPad) ; ailleurs, interdite.
+        $path = $request?->path ?? '';
+        $camera = str_starts_with($path, '/video/') || $path === '/camera' || str_starts_with($path, '/camera/');
         $response->header('X-Content-Type-Options', 'nosniff')
             ->header('X-Frame-Options', 'SAMEORIGIN')
             ->header('Referrer-Policy', 'strict-origin-when-cross-origin')
-            ->header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-            ->header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+            ->header('Permissions-Policy', ($camera ? 'camera=(self)' : 'camera=()') . ', microphone=(), geolocation=()')
+            ->header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
         if ((bool) Config::get('app.force_secure_cookies', false)) {
             $response->header('Strict-Transport-Security', 'max-age=31536000');
         }

@@ -53,6 +53,9 @@
 
   function render() {
     const cur = state.current;
+    const v = state.video || {};
+    $('[data-var]').hidden = !v.var;
+    body.classList.toggle('var-on', !!v.var);
     body.classList.toggle('blue', state.display && state.display.fighter_color === 'blue');
     body.classList.toggle('waiting', !cur);
     const cat = $('[data-cat]'), sub = $('[data-sub]');
@@ -147,7 +150,7 @@
       offset = data.server_now_ms + rtt / 2 - Date.now();
       state = data;
       refresh = (data.display && data.display.refresh_ms) || 1000;
-      const key = JSON.stringify([data.mode, data.current, data.next.map((n) => n.id)]);
+      const key = JSON.stringify([data.mode, data.current, data.next.map((n) => n.id), data.video && data.video.var]);
       if (key !== lastKey) { lastKey = key; render(); }
       failures = 0;
       $('[data-status]').hidden = true;

@@ -184,6 +184,7 @@ final class Auth
             'admin' => '/admin',
             'coach' => '/espace-club',
             'commissioner' => '/commissaire',
+            'video' => '/video',
             'reception' => '/accueil',
             'seller' => '/caisse',
             default => '/',

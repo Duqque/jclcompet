@@ -163,6 +163,7 @@ final class CommissionerController extends Controller
             'current' => $current,
             'remaining' => array_map(fn ($b) => BoutService::state((int) $b['id'], false), $remaining),
             'done_count' => (int) Database::value("SELECT COUNT(*) FROM bouts WHERE tatami_id = ? AND status = 'validated'", [$t['id']]),
+            'video' => \App\Services\VideoService::publicState(Database::one('SELECT * FROM tatamis WHERE id = ?', [$t['id']])),
             'server_now_ms' => BoutService::nowMs(),
         ]);
     }

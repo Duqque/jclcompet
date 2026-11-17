@@ -98,7 +98,23 @@ struct Mat: Codable, Identifiable {
     let mode: String
     let current: Bout?
     let next: [Bout]
+    let video: MatVideo?
     var id: Int { number }
+}
+
+/// Vidéo d'un tapis : direct YouTube (régie vidéo) et vidéo-arbitrage en cours.
+struct MatVideo: Codable, Hashable {
+    let youtubeId: String?
+    let review: Bool
+    let varOnAir: Bool?
+    enum CodingKeys: String, CodingKey { case youtubeId, review = "var", varOnAir }
+}
+
+/// « Revoir le combat » : vidéo YouTube du tapis et seconde du hajime (moins quelques secondes).
+struct BoutReplay: Codable, Hashable {
+    let youtubeId: String
+    let startS: Int
+    let live: Bool
 }
 
 struct LivePayload: Codable {
@@ -168,6 +184,7 @@ struct Bout: Codable, Identifiable, Hashable {
     let osaekomi: OsaekomiState?
     let model: ScoreModel?
     let boutsBefore: Int?
+    let replay: BoutReplay?
 
     var isLive: Bool { status == "in_progress" }
     /// « Prochain combat », « Dans 3 combats » : place dans la file du tapis (calculée par le serveur).

@@ -1,0 +1,27 @@
+/* Téléphone / iPad caméra : image plein écran, bandeau d'état, gros boutons. */
+.cam { margin: 0; min-height: 100vh; min-height: 100dvh; background: #000; color: #fff; font-family: var(--font-body); }
+.cam-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.cam-bar { position: fixed; left: 12px; right: 12px; top: max(12px, env(safe-area-inset-top)); display: flex; align-items: center; gap: .7rem; padding: .7rem .9rem; border-radius: 16px; background: rgba(16,16,19,.78); backdrop-filter: blur(10px); }
+.cam-bar div { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+.cam-bar strong { font: 800 italic 1rem var(--font-score); text-transform: uppercase; }
+.cam-bar span { font-size: .85rem; opacity: .8; }
+.cam-dot { width: 12px; height: 12px; border-radius: 50%; background: #71717a; flex: none; }
+.cam-dot.on { background: #c21a2c; animation: camBlink 1s steps(2, jump-none) infinite; }
+.cam-dot.wait { background: #f5c400; }
+.cam-dot.off { background: #71717a; }
+@keyframes camBlink { 50% { opacity: .3; } }
+.cam-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 1.3rem; }
+.cam-start { position: fixed; left: 16px; right: 16px; bottom: max(24px, env(safe-area-inset-bottom)); display: grid; gap: .8rem; text-align: center; }
+.cam-start[hidden] { display: none; }
+.cam-start p { margin: 0; opacity: .85; }
+.cam-start button, .cam-box button { min-height: 56px; border: 0; border-radius: 16px; background: #c21a2c; color: #fff; font: 800 italic 1.1rem var(--font-score); text-transform: uppercase; }
+.cam-code { display: grid; place-items: center; padding: 24px 16px; background: radial-gradient(circle at 50% 0%, #3a0d13, #000 70%); }
+.cam-box { width: min(420px, 100%); display: grid; gap: 1rem; text-align: center; justify-items: center; }
+.cam-box h1 { margin: 0; font: 900 italic 2rem var(--font-score); text-transform: uppercase; }
+.cam-box p { margin: 0; opacity: .8; }
+.cam-box form { display: grid; gap: .8rem; width: 100%; }
+.cam-box input { min-height: 64px; border-radius: 16px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff; text-align: center; font: 800 2rem ui-monospace, Menlo, monospace; letter-spacing: .3em; text-transform: uppercase; }
+.cam-box img { background: #fff; border-radius: 14px; padding: 8px; height: auto; }
+/* Appareil tenu verticalement : rappel de le tourner (l'image du tapis est en 16:9) */
+.cam-turn { display: none; }
+@media (orientation: portrait) { .cam-turn { display: block; position: fixed; left: 12px; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 84px); pointer-events: none; padding: .7rem .9rem; border-radius: 14px; background: rgba(245,196,0,.95); color: #111; font-weight: 700; text-align: center; } }

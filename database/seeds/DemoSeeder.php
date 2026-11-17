@@ -25,6 +25,7 @@ final class DemoSeeder
         ['admin@demo-judo.test', 'AdminDemo2026!', 'Admin Démo', 'admin'],
         ['commissaire1@demo-judo.test', 'CommissaireDemo2026!', 'Commissaire Tapis 1 (démo)', 'commissioner'],
         ['commissaire2@demo-judo.test', 'CommissaireDemo2026!', 'Commissaire Tapis 2 (démo)', 'commissioner'],
+        ['video@demo-judo.test', 'VideoDemo2026!', 'Vidéo-arbitrage (démo)', 'video'],
         ['coach@demo-judo.test', 'CoachDemo2026!', 'Entraîneur JC Lensois (démo)', 'coach'],
         ['coach2@demo-judo.test', 'CoachDemo2026!', 'Entraîneure Hénin Judo (démo)', 'coach'],
         ['accueil@demo-judo.test', 'AccueilDemo2026!', 'Accueil (démo)', 'reception'],

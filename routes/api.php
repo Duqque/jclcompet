@@ -26,6 +26,21 @@ $router->post('/api/commissaire/tapis/{tid:\d+}/selection', [CommissionerControl
 $router->post('/api/combats/{bid:\d+}/action', [CommissionerController::class, 'act'], ['auth']);
 $router->post('/api/combats/{bid:\d+}/correction', [CommissionerController::class, 'correctApi'], ['auth']);
 
+// Régie vidéo (compte vidéo-arbitrage ou administrateur)
+use App\Controllers\Video\VideoController;
+use App\Controllers\Video\CameraController;
+$router->get('/api/video/tapis/{tid:\d+}', [VideoController::class, 'state'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/var', [VideoController::class, 'setVar'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/direct', [VideoController::class, 'startStream'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/direct/arret', [VideoController::class, 'stopStream'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/decalage', [VideoController::class, 'offset'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/cameras/{slot:[12]}', [VideoController::class, 'createCamera'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/cameras/{slot:[12]}/retirer', [VideoController::class, 'removeCamera'], ['auth']);
+$router->post('/api/video/tapis/{tid:\d+}/cameras/{slot:[12]}/reponse', [VideoController::class, 'answer'], ['auth']);
+// Téléphone caméra : code d'appairage dans l'adresse, sans session ni CSRF
+$router->post('/api/camera/{code:[A-Za-z0-9]+}/offre', [CameraController::class, 'offer'], ['nocsrf']);
+$router->get('/api/camera/{code:[A-Za-z0-9]+}/reponse', [CameraController::class, 'answer']);
+
 // Accueil
 $router->get('/api/accueil/{id:\d+}/athletes', [AttendanceController::class, 'list'], ['auth', 'can:attendance.manage']);
 $router->post('/api/accueil/inscriptions/{rid:\d+}/presence', [AttendanceController::class, 'mark'], ['auth', 'can:attendance.manage']);

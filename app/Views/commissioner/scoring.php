@@ -14,6 +14,7 @@
       </div>
       <button class="btn btn-red btn-display" type="button" data-finish-top>Fin du combat</button>
     </header>
+    <div class="cm-var" data-var-banner hidden role="status"><strong>Vidéo-arbitrage en cours</strong><span>Les arbitres revoient l'action : chronomètre arrêté (matte) jusqu'à la décision.</span></div>
     <section class="cm-bout-head" data-bout-head><p class="muted">Aucun combat sélectionné.</p></section>
     <section class="cm-fighters" data-fighters hidden>
       <?php foreach (['a' => 'Premier appelé', 'b' => 'Second appelé'] as $side => $label): ?>

@@ -1,0 +1,102 @@
+/* Régie vidéo d'un tapis : écran sombre de régie, accents rouge JCL et jaune ; tout tient sur un écran d'ordinateur. */
+.cm:has(.vr) { background: #0e0e10; }
+.vr { --bg: #0e0e10; --panel: #18181b; --panel-2: #222226; --line: rgba(255,255,255,.09); --fg: #f4f4f5; --mute: #a1a1aa;
+  --red: #c21a2c; --red-hi: #e2404f; --yellow: #f5c400; --green: #22c55e;
+  min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; background: var(--bg); color: var(--fg); font-family: var(--font-body, Inter, system-ui, sans-serif); }
+.vr-top { display: flex; align-items: center; gap: .9rem; padding: .55rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+.vr-back { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--fg); background: var(--panel-2); }
+.vr-title { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+.vr-title strong { font: 800 italic 1.1rem var(--font-display, inherit); text-transform: uppercase; letter-spacing: .01em; }
+.vr-title span { font-size: .84rem; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vr-pill, .vr-net { display: inline-flex; align-items: center; gap: .45rem; font-size: .82rem; font-weight: 700; padding: .35rem .7rem; border-radius: 999px; background: var(--panel-2); white-space: nowrap; }
+.vr-pill .dot, .vr-net .dot, .vr-var-main .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mute); }
+.vr-pill.live { background: var(--red); }
+.vr-pill.live .dot { background: #fff; animation: vrBlink 1s steps(2, jump-none) infinite; }
+.vr-pill.var { background: var(--yellow); color: #111; }
+.vr-pill.var .dot { background: #111; animation: vrBlink .6s steps(2, jump-none) infinite; }
+.vr-net.ok .dot { background: var(--green); } .vr-net.off .dot { background: var(--red); }
+@keyframes vrBlink { 50% { opacity: .2; } }
+
+.vr-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; padding: 1rem; min-height: 0; }
+.vr-monitor-wrap { display: flex; flex-direction: column; gap: .8rem; min-width: 0; }
+.vr-monitor { position: relative; aspect-ratio: 16 / 9; width: 100%; max-height: calc(100vh - 290px); max-height: calc(100dvh - 290px); margin: 0 auto; background: #000; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.vr-monitor.is-var { box-shadow: 0 0 0 3px var(--yellow); }
+.vr-monitor-canvas { width: 100%; height: 100%; display: block; cursor: default; touch-action: none; }
+.vr-monitor.is-var .vr-monitor-canvas { cursor: grab; }
+.vr-monitor.is-var .vr-monitor-canvas:active { cursor: grabbing; }
+.vr-monitor-tag, .vr-monitor-time, .vr-zoom-tag { position: absolute; font: 800 .78rem/1 var(--font-body, inherit); letter-spacing: .06em; text-transform: uppercase; padding: .45rem .6rem; border-radius: 8px; background: rgba(0,0,0,.6); }
+.vr-monitor-tag { right: .7rem; top: .7rem; }
+.vr-monitor.is-var .vr-monitor-tag { background: var(--yellow); color: #111; }
+.vr-monitor-time { right: .7rem; bottom: .7rem; font: 800 1.15rem/1 ui-monospace, Menlo, monospace; letter-spacing: 0; text-transform: none; }
+.vr-zoom-tag { left: .7rem; bottom: .7rem; }
+
+.vr-var { background: var(--panel); border-radius: 14px; padding: .8rem; box-shadow: 0 0 0 1px var(--line); }
+.vr-var-row { display: flex; flex-wrap: wrap; gap: .5rem .7rem; align-items: center; }
+.vr-var-main { display: inline-flex; align-items: center; gap: .55rem; border: 0; border-radius: 12px; padding: .7rem 1rem; background: var(--yellow); color: #111; font: 800 italic 1rem var(--font-display, inherit); text-transform: uppercase; cursor: pointer; }
+.vr-var-main .dot { background: #111; }
+.vr-var-main kbd, .vr-hint kbd { font: 700 .7rem ui-monospace, monospace; background: rgba(0,0,0,.15); border-radius: 4px; padding: .1rem .3rem; }
+.vr.is-var .vr-var-main { background: var(--red); color: #fff; }
+.vr.is-var .vr-var-main .dot { background: #fff; animation: vrBlink .6s steps(2, jump-none) infinite; }
+.vr-group { display: inline-flex; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.vr-group-full { display: flex; margin-top: .6rem; }
+.vr-group-full .vr-btn { flex: 1; }
+.vr-btn { border: 0; background: var(--panel-2); color: var(--fg); font: 700 .86rem var(--font-body, inherit); padding: .6rem .7rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 40px; white-space: nowrap; }
+.vr-group .vr-btn + .vr-btn { border-left: 1px solid var(--line); }
+.vr-btn:hover { background: #2c2c31; }
+.vr-btn:focus-visible, .vr-var-main:focus-visible, .vr-back:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.vr-btn.on { background: var(--fg); color: #111; }
+.vr-btn:disabled { opacity: .35; cursor: default; }
+.vr-icon { min-width: 42px; }
+.vr-play { min-width: 52px; font-size: 1rem; background: #34343a; }
+.vr-btn-ghost { background: transparent; box-shadow: 0 0 0 1px var(--line); border-radius: 10px; }
+.vr-btn-red { background: var(--red); border-radius: 10px; width: 100%; margin-top: .5rem; }
+.vr-btn-red:hover { background: var(--red-hi); }
+.vr-live { border-radius: 10px; background: var(--red); margin-left: auto; }
+.vr-live:hover { background: var(--red-hi); }
+.vr:not(.is-var) .vr-var [data-seek], .vr:not(.is-var) .vr-var [data-frame], .vr:not(.is-var) .vr-var [data-play], .vr:not(.is-var) .vr-var [data-speed], .vr:not(.is-var) .vr-live { opacity: .35; pointer-events: none; }
+.vr-switch { display: inline-flex; align-items: center; gap: .5rem; font-size: .86rem; font-weight: 700; cursor: pointer; }
+.vr-switch input { position: absolute; opacity: 0; }
+.vr-switch span { width: 40px; height: 22px; border-radius: 999px; background: #3f3f46; position: relative; transition: background .2s; }
+.vr-switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.vr-switch input:checked + span { background: var(--red); }
+.vr-switch input:checked + span::after { transform: translateX(18px); }
+.vr-switch input:focus-visible + span { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+.vr-timeline { position: relative; height: 54px; margin-top: .8rem; border-radius: 10px; background: #0b0b0d; box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; overflow: hidden; }
+.vr-tl-buffer { position: absolute; top: 0; bottom: 18px; background: rgba(255,255,255,.07); }
+.vr-tl-markers { position: absolute; inset: 0 0 18px; }
+.vr-tl-mark { position: absolute; top: 6px; bottom: 4px; width: 2px; transform: translateX(-1px); background: var(--mute); border: 0; padding: 0; cursor: pointer; }
+.vr-tl-mark::after { content: attr(data-short); position: absolute; top: -2px; left: 4px; font: 800 .62rem/1 var(--font-body, inherit); color: var(--fg); white-space: nowrap; pointer-events: none; }
+.vr-tl-mark.score { background: var(--yellow); }
+.vr-tl-mark.shido { background: #f59e0b; }
+.vr-tl-mark.start, .vr-tl-mark.end { background: var(--green); }
+.vr-tl-mark.side-a::after { color: var(--red-hi); }
+.vr-tl-head { position: absolute; top: 0; bottom: 18px; width: 2px; background: var(--red); box-shadow: 0 0 0 3px rgba(194,26,44,.3); pointer-events: none; }
+.vr-tl-scale { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; font: 600 .62rem/18px ui-monospace, monospace; color: var(--mute); }
+.vr-tl-scale span { position: absolute; transform: translateX(-50%); }
+.vr-hint { margin: .6rem 0 0; font-size: .74rem; color: var(--mute); }
+
+.vr-side { display: flex; flex-direction: column; gap: .8rem; min-height: 0; overflow-y: auto; }
+.vr-card { background: var(--panel); border-radius: 14px; padding: .8rem; box-shadow: 0 0 0 1px var(--line); }
+.vr-card h2 { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin: 0 0 .6rem; font: 800 italic .95rem var(--font-display, inherit); text-transform: uppercase; color: var(--fg); }
+.vr-card h2 small { font: 600 .7rem var(--font-body, inherit); text-transform: none; color: var(--mute); }
+.vr-program { width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 8px; background: #000; box-shadow: 0 0 0 2px var(--red); }
+.vr-cam-state { font: 700 .68rem var(--font-body, inherit); text-transform: none; color: var(--mute); }
+.vr-cam-state.ok { color: var(--green); } .vr-cam-state.wait { color: var(--yellow); }
+.vr-cam-preview { aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: .6rem; }
+.vr-cam-preview video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vr-label { display: block; font-size: .72rem; font-weight: 700; color: var(--mute); margin-bottom: .25rem; }
+.vr select, .vr input[type=url] { width: 100%; min-height: 38px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); padding: .4rem .6rem; font: inherit; font-size: .86rem; }
+.vr-phone { margin-top: .6rem; padding: .6rem; border-radius: 10px; background: var(--panel-2); font-size: .82rem; }
+.vr-phone p { margin: 0 0 .3rem; }
+.vr-code { font: 800 2rem/1.1 ui-monospace, Menlo, monospace !important; letter-spacing: .25em; color: var(--yellow); }
+.vr-small { font-size: .78rem; color: var(--mute); margin: 0 0 .5rem; }
+.vr-small a { color: var(--fg); }
+.vr-allow { width: 100%; }
+.vr-live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: vrBlink 1s steps(2, jump-none) infinite; vertical-align: middle; }
+.vr-offset { display: flex; align-items: center; gap: .4rem; margin: .4rem 0 .6rem; }
+.vr-offset .vr-small { margin: 0 auto 0 0; }
+.vr-offset .vr-btn { border-radius: 8px; min-height: 32px; padding: .3rem .5rem; }
+.vr-hidden { position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; left: -10px; top: -10px; }
+@media (max-width: 1100px) { .vr-main { grid-template-columns: 1fr; } .vr-monitor { max-height: none; } }
+@media (prefers-reduced-motion: reduce) { .vr-pill .dot, .vr-var-main .dot, .vr-live-dot { animation: none !important; } }

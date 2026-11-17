@@ -45,7 +45,7 @@
     <div class="form-grid">
       <div class="field"><label class="required">Nom affiché</label><input name="display_name" required></div>
       <div class="field"><label class="required">E-mail (identifiant)</label><input name="email" type="email" required></div>
-      <div class="field"><label class="required">Rôle</label><select name="role_id"><?php foreach ($roles as $r): ?><option value="<?= (int) $r['id'] ?>"<?= $role === $r['code'] ? ' selected' : '' ?>><?= e($r['name']) ?></option><?php endforeach; ?></select><span class="hint">Commissaire : saisie des combats · Accueil : présences · Vendeur : caisse.</span></div>
+      <div class="field"><label class="required">Rôle</label><select name="role_id"><?php foreach ($roles as $r): ?><option value="<?= (int) $r['id'] ?>"<?= $role === $r['code'] ? ' selected' : '' ?>><?= e($r['name']) ?></option><?php endforeach; ?></select><span class="hint">Commissaire : saisie des combats · Vidéo-arbitrage : régie vidéo des tapis (caméras, ralentis, direct YouTube) · Accueil : présences · Vendeur : caisse.</span></div>
       <div class="field"><label>Club (comptes entraîneurs)</label><select name="club_id"><option value="">—</option><?php foreach ($clubs as $cl): ?><option value="<?= (int) $cl['id'] ?>"><?= e($cl['name']) ?></option><?php endforeach; ?></select></div>
       <div class="field"><label>Téléphone</label><input name="phone"></div>
       <div class="field"><label class="required">Mot de passe provisoire</label><input name="password" type="text" minlength="12" required autocomplete="off"></div>

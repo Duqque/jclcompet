@@ -18,6 +18,7 @@ use App\Services\PoolService;
 use App\Services\RankingService;
 use App\Services\SettingsService;
 use App\Services\TvTokenService;
+use App\Services\VideoService;
 
 /**
  * API publique en lecture seule de l'application mobile « JCL Live » (suivi des combats en direct).
@@ -145,6 +146,8 @@ final class MobileController extends Controller
             'clock' => $s['clock'] ?? null, 'osaekomi' => $s['osaekomi'] ?? null,
             'model' => isset($s['model']) ? ['osaekomi' => $s['model']['osaekomi'], 'use_yuko' => $s['model']['use_yuko'], 'shido_max' => $s['model']['shido_for_hansoku']] : null,
             'bouts_before' => in_array($s['status'], ['scheduled', 'in_progress', 'finished'], true) ? $this->boutsBefore((int) $s['id']) : null,
+            // « Revoir le combat » : direct YouTube du tapis, à la seconde du hajime
+            'replay' => !empty($s['started_at_ms']) ? VideoService::replay(['tatami_id' => $s['tatami_id'], 'started_at_ms' => $s['started_at_ms']]) : null,
         ];
     }
 
@@ -537,6 +540,8 @@ final class MobileController extends Controller
             $state = TvTokenService::tvState($t + ['competition_name' => $c['name']]);
             $out[] = [
                 'number' => (int) $t['number'], 'mode' => $state['mode'],
+                // Vidéo du tapis (direct YouTube) et vidéo-arbitrage en cours
+                'video' => VideoService::publicState($t),
                 'current' => $state['current'] ? $this->bout($state['current']) : null,
                 'next' => array_map(fn ($b) => $this->bout($b), array_slice($state['next'], 0, $next)),
             ];

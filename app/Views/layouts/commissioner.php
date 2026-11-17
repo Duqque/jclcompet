@@ -12,7 +12,7 @@
 <body class="cm">
 <?php if (empty($fullApp)): ?>
 <header class="cm-bar">
-  <a class="cm-brand" href="<?= e(url('/commissaire')) ?>"><img src="<?= e(asset('img/logo-jcl.png')) ?>" alt="" width="54" height="36"><span>Commissaire sportif</span></a>
+  <a class="cm-brand" href="<?= e(url($brandHref ?? '/commissaire')) ?>"><img src="<?= e(asset('img/logo-jcl.png')) ?>" alt="" width="54" height="36"><span><?= e($brand ?? 'Commissaire sportif') ?></span></a>
   <span class="cm-user"><?= e($user['display_name']) ?></span>
   <?php if (\App\Core\Auth::hasRole('admin')): ?><a class="btn btn-ghost btn-sm" href="<?= e(url('/admin')) ?>">Administration</a><?php endif; ?>
   <form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-sm" type="submit">Déconnexion</button></form>

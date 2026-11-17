@@ -155,6 +155,8 @@ final class TvTokenService
             ],
             'current' => $current,
             'next' => $next,
+            // Vidéo-arbitrage en cours (bandeau sur l'écran TV, chez le commissaire et dans l'application)
+            'video' => VideoService::publicState(array_key_exists('var_active', $tatami) ? $tatami : (Database::one('SELECT * FROM tatamis WHERE id = ?', [$tatami['id']]) ?? $tatami)),
             'server_now_ms' => BoutService::nowMs(),
         ];
     }

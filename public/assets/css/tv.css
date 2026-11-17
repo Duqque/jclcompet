@@ -83,3 +83,8 @@
   .tv-cat { font-size: 4.4vh; }
 }
 @media (prefers-reduced-motion: reduce) { .tv-score .d.blink { animation: none; text-decoration: underline; } }
+
+/* Vidéo-arbitrage en cours : bandeau plein largeur en bas de l'écran */
+.tv-var { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 1.2vw; padding: 1.6vh 2vw; background: #18181b; color: #fff; font: 800 italic clamp(1.4rem, 3.6vw, 4rem)/1 var(--font-display, sans-serif); letter-spacing: .02em; box-shadow: 0 -0.6vh 0 #c21a2c inset; }
+.tv-var-dot { width: 2.2vw; height: 2.2vw; min-width: 16px; min-height: 16px; border-radius: 50%; background: #c21a2c; animation: tvVar 1s steps(2, jump-none) infinite; }
+@keyframes tvVar { 50% { opacity: .25; } }

@@ -51,6 +51,10 @@
       const t0 = Date.now();
       const d = await JCL.api(cfg.stateUrl);
       offset = d.server_now_ms + (Date.now() - t0) / 2 - Date.now();
+      // Vidéo-arbitrage en cours sur ce tapis : bandeau (le commissaire laisse le chronomètre arrêté)
+      const v = d.video || {};
+      const varBox = document.querySelector('[data-var-banner]');
+      if (varBox) varBox.hidden = !v.var;
       // Les données reçues ne remplacent pas un état plus récent issu d'une action en cours d'envoi.
       if (!queue.length) {
         data = d;

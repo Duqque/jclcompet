@@ -231,6 +231,23 @@ struct LiveMatsView: View {
                         Spacer()
                         Text(modeLabel(m)).font(.caption.weight(.semibold)).foregroundStyle(m.mode == "running" ? Theme.red : Theme.muted)
                     }
+                    // Vidéo du tapis : lecteur en vue « un tapis », raccourci en vue « tous les tapis »
+                    if let v = m.video {
+                        if selected != 0 && v.youtubeId != nil {
+                            MatVideoCard(mat: m.number, video: v)
+                        } else {
+                            if v.review { VarBanner() }
+                            if v.youtubeId != nil {
+                                Button { selected = m.number } label: {
+                                    Label("Regarder le tapis \(m.number) en vidéo", systemImage: "play.rectangle.fill")
+                                        .font(.subheadline.weight(.bold)).foregroundStyle(.white)
+                                        .frame(maxWidth: .infinity).padding(.vertical, 11)
+                                        .background(Theme.red, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
                     if let c = m.current {
                         NavigationLink(value: Route.bout(c.id)) { Scoreboard(bout: c, large: selected != 0) }.buttonStyle(.plain)
                     } else {

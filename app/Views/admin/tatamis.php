@@ -17,6 +17,14 @@ $labels = ['online' => ['badge-green', 'Connecté'], 'idle' => ['badge-orange', 
       <button class="btn btn-ghost btn-sm" type="submit"<?= $commissioners ? '' : ' disabled' ?>>Affecter</button></form>
     <?php if (!$commissioners): ?><p class="small muted">Créez d'abord des comptes « commissaire » dans <a href="<?= e(url('/admin/utilisateurs')) ?>">Comptes</a>.</p><?php endif; ?>
 
+    <h3 style="margin-top:1.2rem">Vidéo</h3>
+    <p class="small muted" style="margin:0 0 .5rem">
+      <?= $t['video_seen_at'] && strtotime($t['video_seen_at']) > time() - 20 ? '<span class="badge badge-green">Régie ouverte</span>' : '<span class="badge">Régie fermée</span>' ?>
+      <?= $t['youtube_video_id'] ? ' <span class="badge badge-red">En direct sur YouTube</span> <a href="https://youtu.be/' . e($t['youtube_video_id']) . '" target="_blank" rel="noopener">youtu.be/' . e($t['youtube_video_id']) . '</a>' : '' ?>
+      <?= (int) $t['var_active'] ? ' <span class="badge badge-yellow">Vidéo-arbitrage en cours</span>' : '' ?>
+    </p>
+    <a class="btn btn-ghost btn-sm" href="<?= e(url('/video/tapis/' . $t['id'])) ?>" target="_blank">Ouvrir la régie vidéo ↗</a>
+
     <h3 style="margin-top:1.2rem">Écran TV</h3>
     <?php foreach ($tokens[$t['id']] ?? [] as $tk): $st = TvTokenService::status($tk); ?>
       <div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--line)">
